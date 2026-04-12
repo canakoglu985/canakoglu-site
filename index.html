@@ -2179,6 +2179,25 @@
       supabaseClient = getSupabaseClient();
     }
 
+    function getBackendUserIdValue() {
+      const rawId = currentUser?.id;
+      if (rawId === null || rawId === undefined) return null;
+      if (rawId === "guest" || currentUser?.role === "guest") return null;
+      if (typeof rawId === "number") return rawId;
+      if (typeof rawId === "string" && /^\d+$/.test(rawId.trim())) return Number(rawId.trim());
+      return null;
+    }
+
+    function normalizePaymentMethodLabel(value) {
+      const map = {
+        "card": "Kredi Kartı",
+        "cash": "Kapıda Ödeme",
+        "door": "Kapıda Ödeme",
+        "online": "Online Ödeme"
+      };
+      return map[value] || value || "";
+    }
+
     function normalizeDbProduct(product) {
       return {
         id: product.id || Date.now(),
@@ -2383,18 +2402,23 @@
 
     async function saveOrderToBackend(orderPayload, items = []) {
       const client = getSupabaseClient();
-      if (!client) return { success: false, orderId: null };
+      if (!client) return { success: false, orderId: null, errorMessage: "Supabase istemcisi başlatılamadı." };
 
       try {
+        const sanitizedPayload = {
+          ...orderPayload,
+          user_id: orderPayload.user_id === undefined ? null : orderPayload.user_id
+        };
+
         const { data: insertedOrder, error: orderError } = await client
           .from("orders")
-          .insert(orderPayload)
+          .insert(sanitizedPayload)
           .select()
           .single();
 
         if (orderError) {
           console.error("Supabase sipariş kaydı başarısız:", orderError);
-          return { success: false, orderId: null };
+          return { success: false, orderId: null, errorMessage: orderError.message || "Sipariş kaydı eklenemedi." };
         }
 
         const orderId = insertedOrder?.id;
@@ -2411,13 +2435,14 @@
           const { error: itemsError } = await client.from("order_items").insert(rows);
           if (itemsError) {
             console.error("Supabase sipariş kalemleri kaydedilemedi:", itemsError);
+            return { success: false, orderId, errorMessage: itemsError.message || "Sipariş kalemleri eklenemedi." };
           }
         }
 
-        return { success: true, orderId };
+        return { success: true, orderId, errorMessage: "" };
       } catch (error) {
         console.error("Supabase sipariş kaydı hatası:", error);
-        return { success: false, orderId: null };
+        return { success: false, orderId: null, errorMessage: error?.message || "Beklenmeyen veritabanı hatası." };
       }
     }
 
@@ -3130,12 +3155,12 @@ function renderCart() {
       };
 
       const backendPayload = {
-        user_id: currentUser.id,
+        user_id: getBackendUserIdValue(),
         user_name: currentUser.name,
         customer_name: name,
         phone,
         address,
-        payment_method: paymentMethod,
+        payment_method: normalizePaymentMethodLabel(paymentMethod),
         subtotal: pricing.subtotal,
         discount: pricing.discount,
         shipping: pricing.shipping,
@@ -3935,7 +3960,7 @@ async function completeCartCheckout() {
     customer_name: currentUser?.name || "Misafir",
     phone: "",
     address: "",
-    payment_method: paymentMethod,
+    payment_method: normalizePaymentMethodLabel(paymentMethod),
     subtotal: pricing.subtotal,
     discount: pricing.discount,
     shipping: pricing.shipping,
