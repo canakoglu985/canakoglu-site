@@ -1,120 +1,298 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Çanakoğlu Market</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body { font-family: Arial; padding:20px; background:#f5f5f5; }
-.product { background:white; padding:10px; margin:10px; border-radius:10px; }
-button { padding:10px; margin-top:5px; cursor:pointer; }
-.cart { position:fixed; right:20px; top:20px; background:white; padding:10px; }
-#whatsappBox {
-  display:none;
-  position:fixed;
-  bottom:20px;
-  left:20px;
-  background:white;
-  padding:20px;
-  border-radius:10px;
-  box-shadow:0 0 10px rgba(0,0,0,0.2);
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Çanakoğlu Market</title>
+  <meta name="description" content="Çanakoğlu Market online sipariş" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#eef3f9; --card:#fff; --text:#17324f; --muted:#6f8196; --primary:#f49a27; --navy:#1d4678; --border:#dbe6f1;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{background:linear-gradient(135deg,#16375e,#1d4678);color:#fff;padding:18px 20px;position:sticky;top:0}
+    .wrap{max-width:1200px;margin:0 auto;padding:20px}
+    .test{background:#c62828;color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;margin-bottom:16px}
+    .hero{background:#fff;border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:0 8px 20px rgba(18,50,85,.07)}
+    .name{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px}
+    .price{font-size:22px;font-weight:900;margin-bottom:12px}
+    .muted{color:var(--muted);font-size:13px}
+    button,.btn{border:none;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-block}
+    .primary{background:linear-gradient(135deg,#f49a27,#ffb34d);color:#fff}
+    .secondary{background:#edf4fb;color:var(--navy);border:1px solid var(--border)}
+    .cartbar{position:fixed;right:16px;top:16px;z-index:50}
+    .cartbtn{background:linear-gradient(135deg,#f49a27,#ffb34d);color:#fff;box-shadow:0 10px 20px rgba(244,154,39,.2)}
+    .drawer{position:fixed;right:-380px;top:0;width:360px;height:100%;background:#fff;border-left:1px solid var(--border);box-shadow:-8px 0 24px rgba(0,0,0,.12);transition:.25s;padding:18px;overflow:auto;z-index:60}
+    .drawer.open{right:0}
+    .row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .item{padding:12px 0;border-bottom:1px solid var(--border)}
+    .qty{display:flex;align-items:center;gap:8px;margin-top:8px}
+    .qty button{width:34px;height:34px;padding:0;border-radius:10px}
+    .form{display:grid;gap:10px;margin-top:16px}
+    input,textarea,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;font:inherit}
+    textarea{min-height:82px;resize:vertical}
+    .successmodal{position:fixed;inset:0;background:rgba(8,18,31,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+    .successmodal.show{display:flex}
+    .box{width:100%;max-width:540px;background:#fff;border-radius:24px;padding:24px;border:1px solid var(--border)}
+    .summary{margin-top:12px;padding:14px;border:1px solid var(--border);border-radius:16px;background:#f7f9fc;line-height:1.6}
+    .footer-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .badge{display:inline-block;padding:6px 10px;background:#fff5e7;color:#dd8211;border-radius:999px;font-size:12px;font-weight:900}
+  </style>
 </head>
-
 <body>
+  <header>
+    <div class="row" style="max-width:1200px;margin:0 auto;">
+      <div>
+        <div style="font-size:28px;font-weight:900;">Çanakoğlu Market</div>
+        <div style="opacity:.9;font-size:13px;">Online sipariş</div>
+      </div>
+      <div class="badge">Kurtarma sürümü</div>
+    </div>
+  </header>
 
-<div style="background:red;color:white;padding:10px;">TEST AKTİF</div>
+  <div class="cartbar">
+    <button class="cartbtn btn" onclick="toggleCart()">Sepet <span id="cart-count">(0)</span></button>
+  </div>
 
-<h1>Çanakoğlu Market</h1>
+  <div class="wrap">
+    <div class="test">TEST AKTİF — Bu sürüm sıfırdan hazırlanmış sade çalışan sürümdür.</div>
+    <div class="hero">
+      <h2 style="margin:0 0 8px;">Hızlı Sipariş</h2>
+      <p style="margin:0;color:var(--muted)">Önce sistemin stabil çalışmasını sağlıyoruz: ürün ekleme, sipariş kaydı ve görünür WhatsApp butonu.</p>
+    </div>
+    <div id="products" class="grid"></div>
+  </div>
 
-<div id="products"></div>
+  <aside id="cart-drawer" class="drawer">
+    <div class="row">
+      <h2 style="margin:0;color:var(--navy)">Sepet</h2>
+      <button class="secondary" onclick="toggleCart()">Kapat</button>
+    </div>
+    <div id="cart-items" style="margin-top:12px"></div>
+    <div id="cart-empty" class="muted" style="margin-top:12px">Sepetiniz boş.</div>
+    <div style="margin-top:16px;font-size:22px;font-weight:900;">Toplam: <span id="cart-total">0 TL</span></div>
 
-<div class="cart">
-  <h3>Sepet</h3>
-  <div id="cart"></div>
-  <button onclick="placeOrder()">Sipariş Ver</button>
-</div>
+    <div class="form">
+      <input id="customer-name" placeholder="Ad Soyad" />
+      <input id="customer-phone" placeholder="Telefon" />
+      <textarea id="customer-address" placeholder="Adres"></textarea>
+      <select id="payment-method">
+        <option value="Kapıda Nakit">Kapıda Nakit</option>
+        <option value="Kapıda Kart">Kapıda Kart</option>
+      </select>
+      <button class="primary" onclick="placeOrder()">Sipariş Ver</button>
+    </div>
+  </aside>
 
-<div id="whatsappBox">
-  <h3>Sipariş alındı</h3>
-  <button id="wpBtn">WhatsApp ile Gönder</button>
-</div>
+  <div id="success-modal" class="successmodal">
+    <div class="box">
+      <h3 style="margin:0 0 8px;color:var(--navy);font-size:24px;">Siparişiniz alındı</h3>
+      <p style="margin:0;color:var(--muted)">Sipariş veritabanına kaydedildiyse aşağıdaki butondan WhatsApp ile de markete gönderebilirsiniz.</p>
+      <div id="order-summary" class="summary"></div>
+      <div class="footer-actions">
+        <a id="whatsapp-btn" class="btn primary" href="#" target="_blank" rel="noopener noreferrer">WhatsApp ile Gönder</a>
+        <button class="btn secondary" onclick="closeSuccessModal()">Kapat</button>
+      </div>
+    </div>
+  </div>
 
 <script>
-const supabase = window.supabase.createClient(
-  "https://jpguymicdiujhutnycvl.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I"
-);
+const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
+const WHATSAPP_NUMBER = "905518857099";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const WHATSAPP = "905518857099";
+const products = [
+  { id: 1, name: "Ekmek", price: 12, unit: "adet" },
+  { id: 2, name: "Yumurta", price: 50, unit: "adet" },
+  { id: 3, name: "Çay", price: 195, unit: "adet" },
+  { id: 4, name: "Domates", price: 39.9, unit: "kg" },
+  { id: 5, name: "Salatalık", price: 29.9, unit: "kg" },
+  { id: 6, name: "Pirinç", price: 72.5, unit: "kg" }
+];
 
 let cart = [];
 
-const products = [
-  {name:"Ekmek", price:12},
-  {name:"Yumurta", price:50},
-  {name:"Çay", price:195}
-];
+function money(v){ return Number(v || 0).toFixed(2) + " TL"; }
+function qtyText(item){ return item.unit === "kg" ? Number(item.quantity).toFixed(2) + " kg" : Number(item.quantity) + " adet"; }
 
 function renderProducts(){
-  const div = document.getElementById("products");
-  div.innerHTML="";
-  products.forEach((p,i)=>{
-    div.innerHTML += `
-      <div class="product">
-        ${p.name} - ${p.price} TL
-        <br>
-        <button onclick="addToCart(${i})">Sepete ekle</button>
+  const box = document.getElementById("products");
+  box.innerHTML = "";
+  products.forEach((p, index) => {
+    box.innerHTML += `
+      <div class="card">
+        <div class="name">${p.name}</div>
+        <div class="price">${money(p.price)}</div>
+        <div class="muted">Birim: ${p.unit}</div>
+        <button class="primary" style="margin-top:12px" onclick="addToCart(${index})">Sepete Ekle</button>
       </div>
     `;
   });
 }
 
-function addToCart(i){
-  cart.push(products[i]);
+function addToCart(index){
+  const product = products[index];
+  const found = cart.find(x => x.id === product.id);
+  const step = product.unit === "kg" ? 0.10 : 1;
+  if(found){
+    found.quantity = Number((found.quantity + step).toFixed(2));
+  } else {
+    cart.push({ ...product, quantity: step });
+  }
+  renderCart();
+}
+
+function changeQty(id, delta){
+  const item = cart.find(x => x.id === id);
+  if(!item) return;
+  const step = item.unit === "kg" ? 0.10 : 1;
+  item.quantity = Number((item.quantity + delta * step).toFixed(2));
+  if(item.quantity <= 0){
+    cart = cart.filter(x => x.id !== id);
+  }
   renderCart();
 }
 
 function renderCart(){
-  const div = document.getElementById("cart");
-  div.innerHTML="";
-  cart.forEach(p=>{
-    div.innerHTML += `${p.name}<br>`;
+  const itemsBox = document.getElementById("cart-items");
+  const empty = document.getElementById("cart-empty");
+  const count = document.getElementById("cart-count");
+  const totalBox = document.getElementById("cart-total");
+
+  itemsBox.innerHTML = "";
+  let total = 0;
+  cart.forEach(item => {
+    total += item.price * item.quantity;
+    itemsBox.innerHTML += `
+      <div class="item">
+        <div class="row">
+          <strong>${item.name}</strong>
+          <span>${money(item.price * item.quantity)}</span>
+        </div>
+        <div class="muted">${qtyText(item)}</div>
+        <div class="qty">
+          <button class="secondary" onclick="changeQty(${item.id}, -1)">-</button>
+          <button class="secondary" onclick="changeQty(${item.id}, 1)">+</button>
+        </div>
+      </div>
+    `;
   });
+
+  empty.style.display = cart.length ? "none" : "block";
+  count.textContent = "(" + cart.length + ")";
+  totalBox.textContent = money(total);
+}
+
+function toggleCart(){
+  document.getElementById("cart-drawer").classList.toggle("open");
+}
+
+function buildWhatsappMessage(order){
+  const productsText = order.items.map(item =>
+    `• ${item.name} - ${qtyText(item)} - ${money(item.price * item.quantity)}`
+  ).join("%0A");
+  const text =
+`Yeni sipariş
+Müşteri: ${order.customer_name}
+Telefon: ${order.phone}
+Adres: ${order.address}
+Ödeme: ${order.payment_method}
+Toplam: ${money(order.total)}
+
+Ürünler:
+${order.items.map(item => `• ${item.name} - ${qtyText(item)} - ${money(item.price * item.quantity)}`).join("\n")}`;
+  return encodeURIComponent(text);
+}
+
+function showSuccess(order){
+  const modal = document.getElementById("success-modal");
+  const summary = document.getElementById("order-summary");
+  const btn = document.getElementById("whatsapp-btn");
+  summary.innerHTML = `
+    <strong>${order.customer_name}</strong><br>
+    Telefon: ${order.phone || "-"}<br>
+    Adres: ${order.address || "-"}<br>
+    Ödeme: ${order.payment_method}<br>
+    Toplam: ${money(order.total)}<br><br>
+    ${order.items.map(i => `• ${i.name} - ${qtyText(i)} - ${money(i.price * i.quantity)}`).join("<br>")}
+  `;
+  btn.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsappMessage(order)}`;
+  modal.classList.add("show");
+}
+
+function closeSuccessModal(){
+  document.getElementById("success-modal").classList.remove("show");
 }
 
 async function placeOrder(){
-  const total = cart.reduce((s,p)=>s+p.price,0);
-
-  const { error } = await supabase.from("orders").insert([
-    { customer_name:"Misafir", total:total }
-  ]);
-
-  if(error){
-    alert("Hata: "+error.message);
+  if(!cart.length){
+    alert("Önce sepete ürün ekleyin.");
     return;
   }
 
-  document.getElementById("whatsappBox").style.display="block";
+  const customer_name = document.getElementById("customer-name").value.trim() || "Misafir";
+  const phone = document.getElementById("customer-phone").value.trim();
+  const address = document.getElementById("customer-address").value.trim();
+  const payment_method = document.getElementById("payment-method").value;
+  const total = Number(cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
 
-  const text = encodeURIComponent(
-    "Yeni sipariş\nToplam: "+total+" TL"
-  );
-
-  document.getElementById("wpBtn").onclick = ()=>{
-    window.open(`https://wa.me/${WHATSAPP}?text=${text}`, "_blank");
+  const orderPayload = {
+    customer_name,
+    phone,
+    address,
+    payment_method,
+    status: "Hazırlanıyor",
+    total,
+    total_amount: total,
+    created_at: new Date().toISOString()
   };
 
-  cart=[];
-  renderCart();
+  try{
+    const { data: insertedOrder, error: orderError } = await supabaseClient
+      .from("orders")
+      .insert([orderPayload])
+      .select()
+      .single();
+
+    if(orderError){
+      alert("Sipariş kaydı hatası: " + orderError.message);
+      return;
+    }
+
+    const orderId = insertedOrder?.id;
+    if(orderId){
+      const rows = cart.map(item => ({
+        order_id: orderId,
+        product_name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        unit: item.unit
+      }));
+      const { error: itemError } = await supabaseClient.from("order_items").insert(rows);
+      if(itemError){
+        alert("Sipariş kaydedildi ama ürün kalemleri yazılamadı: " + itemError.message);
+      }
+    }
+
+    showSuccess({ ...orderPayload, items: [...cart] });
+    cart = [];
+    renderCart();
+    document.getElementById("customer-name").value = "";
+    document.getElementById("customer-phone").value = "";
+    document.getElementById("customer-address").value = "";
+    toggleCart();
+  }catch(err){
+    alert("Beklenmeyen hata: " + (err?.message || err));
+  }
 }
 
 renderProducts();
+renderCart();
 </script>
-
 </body>
 </html>
