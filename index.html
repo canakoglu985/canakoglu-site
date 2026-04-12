@@ -2405,37 +2405,100 @@
       if (!client) return { success: false, orderId: null, errorMessage: "Supabase istemcisi başlatılamadı." };
 
       try {
-        const sanitizedPayload = {
-          ...orderPayload,
-          user_id: orderPayload.user_id === undefined ? null : orderPayload.user_id
+        const basePayload = {
+          customer_name: orderPayload.customer_name || "Misafir",
+          phone: orderPayload.phone || "",
+          address: orderPayload.address || "",
+          payment_method: normalizePaymentMethodLabel(orderPayload.payment_method || ""),
+          status: orderPayload.status || "Hazırlanıyor",
+          created_at: orderPayload.created_at || new Date().toISOString()
         };
 
-        const { data: insertedOrder, error: orderError } = await client
-          .from("orders")
-          .insert(sanitizedPayload)
-          .select()
-          .single();
+        const orderPayloadCandidates = [
+          {
+            ...basePayload,
+            user_id: orderPayload.user_id === undefined ? null : orderPayload.user_id,
+            user_name: orderPayload.user_name || "",
+            subtotal: Number(orderPayload.subtotal || 0),
+            discount: Number(orderPayload.discount || 0),
+            shipping: Number(orderPayload.shipping || 0),
+            total_amount: Number(orderPayload.total_amount || 0),
+            coupon: orderPayload.coupon || ""
+          },
+          {
+            ...basePayload,
+            total_amount: Number(orderPayload.total_amount || 0)
+          }
+        ];
 
-        if (orderError) {
-          console.error("Supabase sipariş kaydı başarısız:", orderError);
-          return { success: false, orderId: null, errorMessage: orderError.message || "Sipariş kaydı eklenemedi." };
+        let insertedOrder = null;
+        let lastOrderError = null;
+
+        for (const candidate of orderPayloadCandidates) {
+          const { data, error } = await client
+            .from("orders")
+            .insert([candidate])
+            .select()
+            .single();
+
+          if (!error) {
+            insertedOrder = data;
+            lastOrderError = null;
+            break;
+          }
+
+          console.error("Supabase sipariş kaydı denemesi başarısız:", error);
+          lastOrderError = error;
+        }
+
+        if (!insertedOrder) {
+          return {
+            success: false,
+            orderId: null,
+            errorMessage: lastOrderError?.message || "Sipariş kaydı eklenemedi."
+          };
         }
 
         const orderId = insertedOrder?.id;
-        if (orderId && items.length) {
-          const rows = items.map(item => ({
-            order_id: orderId,
-            product_id: item.id,
-            product_name: item.name,
-            price: Number(item.price || 0),
-            quantity: Number(item.quantity || 0),
-            unit: item.unit || "adet"
-          }));
 
-          const { error: itemsError } = await client.from("order_items").insert(rows);
-          if (itemsError) {
-            console.error("Supabase sipariş kalemleri kaydedilemedi:", itemsError);
-            return { success: false, orderId, errorMessage: itemsError.message || "Sipariş kalemleri eklenemedi." };
+        if (orderId && items.length) {
+          const itemPayloadCandidates = [
+            items.map(item => ({
+              order_id: orderId,
+              product_id: item.id,
+              product_name: item.name,
+              price: Number(item.price || 0),
+              quantity: Number(item.quantity || 0),
+              unit: item.unit || "adet"
+            })),
+            items.map(item => ({
+              order_id: orderId,
+              product_name: item.name,
+              price: Number(item.price || 0),
+              quantity: Number(item.quantity || 0)
+            }))
+          ];
+
+          let itemsInserted = false;
+          let lastItemsError = null;
+
+          for (const rows of itemPayloadCandidates) {
+            const { error } = await client.from("order_items").insert(rows);
+            if (!error) {
+              itemsInserted = true;
+              lastItemsError = null;
+              break;
+            }
+            console.error("Supabase sipariş kalemleri ekleme denemesi başarısız:", error);
+            lastItemsError = error;
+          }
+
+          if (!itemsInserted) {
+            return {
+              success: false,
+              orderId,
+              errorMessage: lastItemsError?.message || "Sipariş kalemleri eklenemedi."
+            };
           }
         }
 
@@ -3186,7 +3249,7 @@ function renderCart() {
         }
       }
 
-      alert(backendResult.success ? "Sipariş başarıyla oluşturuldu." : "Sipariş oluşturuldu. Veritabanı bağlantısı kurulamadığı için yerel yedek de tutuldu.");
+      alert(backendResult.success ? "Sipariş başarıyla oluşturuldu." : ("Siparişiniz yerel olarak kaydedildi. Veritabanı hatası: " + (backendResult.errorMessage || "Bilinmeyen hata")));
       cart = [];
       appliedCoupon = null;
       document.getElementById("coupon-code").value = "";
