@@ -2071,9 +2071,9 @@
 
   <script>
     window.APP_CONFIG = {
-      supabaseUrl: "",
-      supabaseAnonKey: "",
-      useSupabase: false
+      supabaseUrl: "https://jpguymicdiujhutnycvl.supabase.co",
+      supabaseAnonKey: "sb_publishable_qhih14wKxwoit8TtaQwCvg_T04SQLAN",
+      useSupabase: true
     };
   </script>
 
@@ -2158,22 +2158,25 @@
 
 
 
-    const APP_CONFIG = {
-      supabaseUrl: "https://jpguymicdiujhutnycvl.supabase.co",
-      supabaseKey: "sb_publishable_qhih14wKxwoit8TtaQwCvg_T04SQLAN",
-      useSupabase: true
-    };
+    const APP_CONFIG = window.APP_CONFIG;
 
     let supabaseClient = null;
 
-    function initSupabase() {
+    function getSupabaseClient() {
       try {
-        if (window.supabase && APP_CONFIG.useSupabase) {
-          supabaseClient = window.supabase.createClient(APP_CONFIG.supabaseUrl, APP_CONFIG.supabaseKey);
+        if (!window.supabase || !APP_CONFIG.useSupabase) return null;
+        if (!supabaseClient) {
+          supabaseClient = window.supabase.createClient(APP_CONFIG.supabaseUrl, APP_CONFIG.supabaseAnonKey);
         }
+        return supabaseClient;
       } catch (e) {
-        console.error("Supabase başlatılamadı:", e);
+        console.error("Supabase istemcisi oluşturulamadı:", e);
+        return null;
       }
+    }
+
+    function initSupabase() {
+      supabaseClient = getSupabaseClient();
     }
 
     function normalizeDbProduct(product) {
@@ -2307,28 +2310,145 @@
 
 
     async function fetchProductsFromBackend() {
-      if (!window.APP_CONFIG.useSupabase || !window.supabase) return null;
-      const client = window.supabase.createClient(window.APP_CONFIG.supabaseUrl, window.APP_CONFIG.supabaseAnonKey);
+      const client = getSupabaseClient();
+      if (!client) return null;
       const { data, error } = await client.from("products").select("*").order("id", { ascending: true });
       if (error) {
         console.error("Supabase ürünleri alınamadı:", error);
         return null;
       }
-      return data;
+      return (data || []).map(normalizeDbProduct);
     }
 
-    async function saveOrderToBackend(orderPayload) {
-      if (!window.APP_CONFIG.useSupabase || !window.supabase) return false;
+    function normalizeBackendOrder(order, items = []) {
+      return {
+        id: order.id,
+        userId: order.user_id || order.userId || "guest",
+        userName: order.user_name || order.userName || "Misafir",
+        customerName: order.customer_name || order.customerName || order.user_name || "Misafir",
+        phone: order.phone || "",
+        address: order.address || "",
+        paymentMethod: order.payment_method || order.paymentMethod || "",
+        subtotal: Number(order.subtotal || 0),
+        discount: Number(order.discount || 0),
+        shipping: Number(order.shipping || 0),
+        totalAmount: Number(order.total_amount || order.totalAmount || 0),
+        coupon: order.coupon || "",
+        status: order.status || "Hazırlanıyor",
+        createdAt: order.created_at ? new Date(order.created_at).toLocaleString("tr-TR") : new Date().toLocaleString("tr-TR"),
+        items: (items || []).map(item => ({
+          id: item.product_id || item.productId || item.id,
+          name: item.product_name || item.productName || item.name || "Ürün",
+          price: Number(item.price || 0),
+          quantity: Number(item.quantity || 0),
+          unit: item.unit || "adet"
+        }))
+      };
+    }
+
+    async function fetchOrdersFromBackend() {
+      const client = getSupabaseClient();
+      if (!client) return null;
+
       try {
-        const client = window.supabase.createClient(window.APP_CONFIG.supabaseUrl, window.APP_CONFIG.supabaseAnonKey);
-        const { error } = await client.from("orders").insert(orderPayload);
-        if (error) {
-          console.error("Supabase sipariş kaydı başarısız:", error);
-          return false;
+        const { data: ordersData, error: ordersError } = await client
+          .from("orders")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (ordersError) {
+          console.error("Supabase siparişleri alınamadı:", ordersError);
+          return null;
+        }
+
+        const { data: itemsData, error: itemsError } = await client
+          .from("order_items")
+          .select("*")
+          .order("id", { ascending: true });
+
+        if (itemsError) {
+          console.error("Supabase sipariş kalemleri alınamadı:", itemsError);
+          return (ordersData || []).map(order => normalizeBackendOrder(order, []));
+        }
+
+        return (ordersData || []).map(order => {
+          const relatedItems = (itemsData || []).filter(item => String(item.order_id) === String(order.id));
+          return normalizeBackendOrder(order, relatedItems);
+        });
+      } catch (error) {
+        console.error("Sipariş okuma hatası:", error);
+        return null;
+      }
+    }
+
+    async function saveOrderToBackend(orderPayload, items = []) {
+      const client = getSupabaseClient();
+      if (!client) return { success: false, orderId: null };
+
+      try {
+        const { data: insertedOrder, error: orderError } = await client
+          .from("orders")
+          .insert(orderPayload)
+          .select()
+          .single();
+
+        if (orderError) {
+          console.error("Supabase sipariş kaydı başarısız:", orderError);
+          return { success: false, orderId: null };
+        }
+
+        const orderId = insertedOrder?.id;
+        if (orderId && items.length) {
+          const rows = items.map(item => ({
+            order_id: orderId,
+            product_id: item.id,
+            product_name: item.name,
+            price: Number(item.price || 0),
+            quantity: Number(item.quantity || 0),
+            unit: item.unit || "adet"
+          }));
+
+          const { error: itemsError } = await client.from("order_items").insert(rows);
+          if (itemsError) {
+            console.error("Supabase sipariş kalemleri kaydedilemedi:", itemsError);
+          }
+        }
+
+        return { success: true, orderId };
+      } catch (error) {
+        console.error("Supabase sipariş kaydı hatası:", error);
+        return { success: false, orderId: null };
+      }
+    }
+
+    async function updateOrderStatusInBackend(orderId, newStatus) {
+      const client = getSupabaseClient();
+      if (!client) return false;
+      const { error } = await client.from("orders").update({ status: newStatus }).eq("id", orderId);
+      if (error) {
+        console.error("Sipariş durumu güncellenemedi:", error);
+        return false;
+      }
+      return true;
+    }
+
+    async function syncProductStocksToBackend(products) {
+      const client = getSupabaseClient();
+      if (!client) return false;
+      try {
+        for (const product of products) {
+          const { error } = await client
+            .from("products")
+            .update({ stock: Number(product.stock || 0), unit: product.unit || "adet" })
+            .eq("id", product.id);
+          if (error) {
+            console.error("Stok senkronizasyon hatası:", error);
+            return false;
+          }
         }
         return true;
       } catch (error) {
-        console.error("Supabase sipariş kaydı hatası:", error);
+        console.error("Toplu stok senkronizasyon hatası:", error);
         return false;
       }
     }
@@ -2960,7 +3080,7 @@ function renderCart() {
       document.getElementById("card-fields").style.display = (paymentMethod === "Kredi Kartı" || paymentMethod === "Online Ödeme") ? "block" : "none";
     }
 
-    function completeOrder() {
+    async function completeOrder() {
       const name = document.getElementById("customer-name").value.trim();
       const phone = document.getElementById("customer-phone").value.trim();
       const address = document.getElementById("customer-address").value.trim();
@@ -2987,10 +3107,11 @@ function renderCart() {
       });
 
       saveProducts(products);
-      const pricing = calculatePricing();
-      const orders = getOrders();
+      await syncProductStocksToBackend(products);
 
-      orders.unshift({
+      const pricing = calculatePricing();
+      const orderItems = cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity, unit: item.unit || "adet" }));
+      const orderRecord = {
         id: Date.now(),
         userId: currentUser.id,
         userName: currentUser.name,
@@ -3005,11 +3126,42 @@ function renderCart() {
         coupon: appliedCoupon || "",
         status: "Hazırlanıyor",
         createdAt: new Date().toLocaleString("tr-TR"),
-        items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity, unit: item.unit || "adet" }))
-      });
+        items: orderItems
+      };
 
+      const backendPayload = {
+        user_id: currentUser.id,
+        user_name: currentUser.name,
+        customer_name: name,
+        phone,
+        address,
+        payment_method: paymentMethod,
+        subtotal: pricing.subtotal,
+        discount: pricing.discount,
+        shipping: pricing.shipping,
+        total_amount: pricing.total,
+        coupon: appliedCoupon || "",
+        status: "Hazırlanıyor",
+        created_at: new Date().toISOString()
+      };
+
+      const backendResult = await saveOrderToBackend(backendPayload, orderItems);
+      if (backendResult.success && backendResult.orderId) {
+        orderRecord.id = backendResult.orderId;
+      }
+
+      const orders = getOrders();
+      orders.unshift(orderRecord);
       saveOrders(orders);
-      alert("Sipariş başarıyla oluşturuldu.");
+
+      if (backendResult.success) {
+        const remoteOrders = await fetchOrdersFromBackend();
+        if (remoteOrders && remoteOrders.length) {
+          saveOrders(remoteOrders);
+        }
+      }
+
+      alert(backendResult.success ? "Sipariş başarıyla oluşturuldu." : "Sipariş oluşturuldu. Veritabanı bağlantısı kurulamadığı için yerel yedek de tutuldu.");
       cart = [];
       appliedCoupon = null;
       document.getElementById("coupon-code").value = "";
@@ -3026,6 +3178,7 @@ function renderCart() {
       renderCart();
       renderMyOrders();
       renderAvailableCoupons();
+      if (currentUser && currentUser.role === "admin") renderAdminPanel();
     }
 
     function toggleFavorite(productId) {
@@ -3341,7 +3494,7 @@ function renderCart() {
       });
     }
 
-    function updateOrderStatus(orderId, newStatus) {
+    async function updateOrderStatus(orderId, newStatus) {
       const orders = getOrders();
       const order = orders.find(o => o.id === orderId);
       if (!order) return;
@@ -3358,6 +3511,9 @@ function renderCart() {
 
       order.status = newStatus;
       saveOrders(orders);
+      await updateOrderStatusInBackend(orderId, newStatus);
+      const remoteOrders = await fetchOrdersFromBackend();
+      if (remoteOrders && remoteOrders.length) saveOrders(remoteOrders);
       renderAdminPanel();
       renderMyOrders();
     }
@@ -3408,7 +3564,7 @@ function renderCart() {
       });
     }
 
-    function cancelMyOrder(orderId) {
+    async function cancelMyOrder(orderId) {
       const orders = getOrders();
       const order = orders.find(o => o.id === orderId && o.userId === currentUser.id);
       if (!order) return;
@@ -3422,7 +3578,11 @@ function renderCart() {
       });
 
       saveProducts(products);
+      await syncProductStocksToBackend(products);
       saveOrders(orders);
+      await updateOrderStatusInBackend(orderId, "İptal Edildi");
+      const remoteOrders = await fetchOrdersFromBackend();
+      if (remoteOrders && remoteOrders.length) saveOrders(remoteOrders);
       renderMyOrders();
       renderProducts();
       alert("Sipariş iptal edildi.");
@@ -3640,9 +3800,14 @@ function renderCart() {
 
     async function initializeBackendReadyData() {
       if (!window.APP_CONFIG.useSupabase) return;
+      initSupabase();
       const remoteProducts = await fetchProductsFromBackend();
       if (remoteProducts && remoteProducts.length) {
         saveProducts(remoteProducts);
+      }
+      const remoteOrders = await fetchOrdersFromBackend();
+      if (remoteOrders && remoteOrders.length) {
+        saveOrders(remoteOrders);
       }
     }
 
@@ -3746,22 +3911,72 @@ async function completeCartCheckout() {
     }
   }
 
+  const products = getProducts();
+  for (const cartItem of cart) {
+    const product = products.find(p => p.id === cartItem.id);
+    if (!product || product.stock < cartItem.quantity) {
+      alert(cartItem.name + " için yeterli stok yok.");
+      return;
+    }
+  }
+
+  cart.forEach(cartItem => {
+    const product = products.find(p => p.id === cartItem.id);
+    product.stock = normalizeQuantity(product.stock - cartItem.quantity, product.unit || "adet");
+  });
+  saveProducts(products);
+  await syncProductStocksToBackend(products);
+
   const pricing = calculatePricing();
-  const orderPayload = {
+  const orderItems = cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity, unit: item.unit || "adet" }));
+  const backendPayload = {
+    user_id: currentUser?.id || "guest",
     user_name: currentUser?.name || "Misafir",
-    total_amount: pricing.total,
-    status: "Hazırlanıyor",
+    customer_name: currentUser?.name || "Misafir",
+    phone: "",
+    address: "",
     payment_method: paymentMethod,
-    created_at: new Date().toISOString(),
-    items: cart
+    subtotal: pricing.subtotal,
+    discount: pricing.discount,
+    shipping: pricing.shipping,
+    total_amount: pricing.total,
+    coupon: appliedCoupon || "",
+    status: "Hazırlanıyor",
+    created_at: new Date().toISOString()
   };
 
-  await saveOrderToBackend(orderPayload);
+  const backendResult = await saveOrderToBackend(backendPayload, orderItems);
 
-  alert("Siparişiniz alındı. Bu alan şu an demo akışta çalışıyor.");
+  const orders = getOrders();
+  orders.unshift({
+    id: backendResult.orderId || Date.now(),
+    userId: currentUser?.id || "guest",
+    userName: currentUser?.name || "Misafir",
+    customerName: currentUser?.name || "Misafir",
+    phone: "",
+    address: "",
+    paymentMethod,
+    subtotal: pricing.subtotal,
+    discount: pricing.discount,
+    shipping: pricing.shipping,
+    totalAmount: pricing.total,
+    coupon: appliedCoupon || "",
+    status: "Hazırlanıyor",
+    createdAt: new Date().toLocaleString("tr-TR"),
+    items: orderItems
+  });
+  saveOrders(orders);
+
+  const remoteOrders = await fetchOrdersFromBackend();
+  if (remoteOrders && remoteOrders.length) saveOrders(remoteOrders);
+
+  alert(backendResult.success ? "Siparişiniz alındı." : "Siparişiniz yerel olarak kaydedildi. Veritabanı bağlantısı başarısız oldu.");
   cart = [];
   appliedCoupon = null;
   renderCart();
+  renderProducts();
+  renderMyOrders();
+  if (currentUser && currentUser.role === "admin") renderAdminPanel();
   toggleCart();
 }
 </script>
