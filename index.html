@@ -1653,6 +1653,10 @@
       header { padding: 16px; }
     }
   </style>
+
+<script>
+const WHATSAPP_NUMBER = "905518857099";
+</script>
 </head>
 <body>
   <div id="auth-screen" class="auth-screen hidden">
@@ -2073,7 +2077,8 @@
     window.APP_CONFIG = {
       supabaseUrl: "https://jpguymicdiujhutnycvl.supabase.co",
       supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I",
-      useSupabase: true
+      useSupabase: true,
+      storeWhatsappNumber: ""
     };
   </script>
 
@@ -2196,6 +2201,34 @@
         "online": "Online Ödeme"
       };
       return map[value] || value || "";
+    }
+
+    function buildWhatsappOrderMessage(orderRecord) {
+      const lines = [];
+      lines.push("Merhaba, yeni bir sipariş bırakıyorum.");
+      lines.push("");
+      lines.push(`Sipariş No: ${orderRecord.id}`);
+      lines.push(`Müşteri: ${orderRecord.customerName}`);
+      if (orderRecord.phone) lines.push(`Telefon: ${orderRecord.phone}`);
+      if (orderRecord.address) lines.push(`Adres: ${orderRecord.address}`);
+      if (orderRecord.paymentMethod) lines.push(`Ödeme: ${orderRecord.paymentMethod}`);
+      lines.push("");
+      lines.push("Ürünler:");
+      (orderRecord.items || []).forEach(item => {
+        lines.push(`- ${item.name} / ${formatQuantity(item.quantity, item.unit)} / ${formatMoney(item.price)}`);
+      });
+      lines.push("");
+      lines.push(`Toplam: ${formatMoney(orderRecord.totalAmount || 0)}`);
+      return lines.join("\n");
+    }
+
+    function openWhatsappForOrder(orderRecord) {
+      const rawNumber = APP_CONFIG.storeWhatsappNumber || "";
+      const cleanNumber = rawNumber.replace(/\D/g, "");
+      if (!cleanNumber) return false;
+      const text = encodeURIComponent(buildWhatsappOrderMessage(orderRecord));
+      window.open(`https://wa.me/${cleanNumber}?text=${text}`, "_blank");
+      return true;
     }
 
     function normalizeDbProduct(product) {
@@ -2351,7 +2384,7 @@
         subtotal: Number(order.subtotal || 0),
         discount: Number(order.discount || 0),
         shipping: Number(order.shipping || 0),
-        totalAmount: Number(order.total_amount || order.totalAmount || 0),
+        totalAmount: Number(order.total_amount || order.totalAmount || order.total || 0),
         coupon: order.coupon || "",
         status: order.status || "Hazırlanıyor",
         createdAt: order.created_at ? new Date(order.created_at).toLocaleString("tr-TR") : new Date().toLocaleString("tr-TR"),
@@ -2405,20 +2438,43 @@
       if (!client) return { success: false, orderId: null, errorMessage: "Supabase istemcisi başlatılamadı." };
 
       try {
-        const totalValue =
-          Number(orderPayload.total || orderPayload.total_amount || orderPayload.totalAmount || 0);
-
-        const minimalOrderPayload = {
+        const fullOrderPayload = {
+          user_id: orderPayload.user_id ?? null,
+          user_name: orderPayload.user_name || "",
           customer_name: orderPayload.customer_name || orderPayload.customerName || "Misafir",
-          total: totalValue,
+          phone: orderPayload.phone || "",
+          address: orderPayload.address || "",
+          payment_method: orderPayload.payment_method || "",
+          subtotal: Number(orderPayload.subtotal || 0),
+          discount: Number(orderPayload.discount || 0),
+          shipping: Number(orderPayload.shipping || 0),
+          total_amount: Number(orderPayload.total_amount || orderPayload.totalAmount || orderPayload.total || 0),
+          total: Number(orderPayload.total || orderPayload.total_amount || orderPayload.totalAmount || 0),
+          coupon: orderPayload.coupon || "",
+          status: orderPayload.status || "Hazırlanıyor",
+          whatsapp_sent: Boolean(orderPayload.whatsapp_sent || false),
           created_at: orderPayload.created_at || new Date().toISOString()
         };
 
-        const { data: insertedOrder, error: orderError } = await client
-          .from("orders")
-          .insert([minimalOrderPayload])
-          .select()
-          .single();
+        const minimalOrderPayload = {
+          customer_name: fullOrderPayload.customer_name,
+          total: fullOrderPayload.total,
+          created_at: fullOrderPayload.created_at
+        };
+
+        let insertedOrder = null;
+        let orderError = null;
+
+        const fullAttempt = await client.from("orders").insert([fullOrderPayload]).select().single();
+        insertedOrder = fullAttempt.data || null;
+        orderError = fullAttempt.error || null;
+
+        if (orderError || !insertedOrder) {
+          console.warn("Tam sipariş kaydı başarısız, sade kayıt deneniyor:", orderError);
+          const minimalAttempt = await client.from("orders").insert([minimalOrderPayload]).select().single();
+          insertedOrder = minimalAttempt.data || null;
+          orderError = minimalAttempt.error || null;
+        }
 
         if (orderError || !insertedOrder) {
           console.error("Supabase sipariş kaydı başarısız:", orderError);
@@ -2435,9 +2491,18 @@
           const itemPayloadCandidates = [
             items.map(item => ({
               order_id: orderId,
+              product_id: item.id || null,
+              product_name: item.name,
+              price: Number(item.price || 0),
+              quantity: Number(item.quantity || 0),
+              unit: item.unit || "adet"
+            })),
+            items.map(item => ({
+              order_id: orderId,
               product_name: item.name,
               quantity: Number(item.quantity || 0),
-              price: Number(item.price || 0)
+              price: Number(item.price || 0),
+              unit: item.unit || "adet"
             })),
             items.map(item => ({
               order_id: orderId,
@@ -2447,7 +2512,7 @@
             })),
             items.map(item => ({
               order_id: orderId,
-              product_id: item.id,
+              product_id: item.id || null,
               quantity: Number(item.quantity || 0)
             }))
           ];
@@ -2458,7 +2523,7 @@
           for (const rows of itemPayloadCandidates) {
             const { error } = await client.from("order_items").insert(rows);
             if (!error) {
-              itemsInserted = true
+              itemsInserted = true;
               lastItemsError = null;
               break;
             }
@@ -3188,7 +3253,7 @@ function renderCart() {
 
       const backendPayload = {
         user_id: getBackendUserIdValue(),
-        user_name: currentUser.name,
+        user_name: currentUser?.name || "Misafir",
         customer_name: name,
         phone,
         address,
@@ -3197,8 +3262,10 @@ function renderCart() {
         discount: pricing.discount,
         shipping: pricing.shipping,
         total_amount: pricing.total,
+        total: pricing.total,
         coupon: appliedCoupon || "",
         status: "Hazırlanıyor",
+        whatsapp_sent: false,
         created_at: new Date().toISOString()
       };
 
@@ -3215,10 +3282,22 @@ function renderCart() {
         const remoteOrders = await fetchOrdersFromBackend();
         if (remoteOrders && remoteOrders.length) {
           saveOrders(remoteOrders);
+          const matchedOrder = remoteOrders.find(order => String(order.id) === String(orderRecord.id));
+          if (matchedOrder) {
+            orderRecord.id = matchedOrder.id;
+            orderRecord.status = matchedOrder.status;
+          }
         }
       }
 
-      alert(backendResult.success ? "Sipariş başarıyla oluşturuldu." : ("Siparişiniz yerel olarak kaydedildi. Veritabanı hatası: " + (backendResult.errorMessage || "Bilinmeyen hata")));
+      const whatsappOpened = openWhatsappForOrder(orderRecord);
+      let successMessage = backendResult.success ? "Siparişiniz alındı." : ("Siparişiniz yerel olarak kaydedildi. Veritabanı hatası: " + (backendResult.errorMessage || "Bilinmeyen hata"));
+      if (backendResult.success && whatsappOpened) {
+        successMessage += " WhatsApp sipariş ekranı da yeni sekmede açıldı.";
+      } else if (backendResult.success && !whatsappOpened) {
+        successMessage += " WhatsApp yönlendirmesi için market numarası henüz eklenmedi.";
+      }
+      alert(successMessage);
       cart = [];
       appliedCoupon = null;
       document.getElementById("coupon-code").value = "";
