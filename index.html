@@ -2222,13 +2222,18 @@ const WHATSAPP_NUMBER = "905518857099";
       return lines.join("\n");
     }
 
-    function openWhatsappForOrder(orderRecord) {
+    function openWhatsappForOrder(orderRecord, popupRef = null) {
       const rawNumber = APP_CONFIG.storeWhatsappNumber || "";
       const cleanNumber = rawNumber.replace(/\D/g, "");
       if (!cleanNumber) return false;
       const text = encodeURIComponent(buildWhatsappOrderMessage(orderRecord));
-      window.open(`https://wa.me/${cleanNumber}?text=${text}`, "_blank");
-      return true;
+      const targetUrl = `https://wa.me/${cleanNumber}?text=${text}`;
+      if (popupRef && !popupRef.closed) {
+        popupRef.location.href = targetUrl;
+        return true;
+      }
+      const opened = window.open(targetUrl, "_blank");
+      return !!opened;
     }
 
     function normalizeDbProduct(product) {
@@ -3203,6 +3208,7 @@ function renderCart() {
     }
 
     async function completeOrder() {
+      let whatsappPopup = null;
       const name = document.getElementById("customer-name").value.trim();
       const phone = document.getElementById("customer-phone").value.trim();
       const address = document.getElementById("customer-address").value.trim();
@@ -3216,6 +3222,11 @@ function renderCart() {
       if (!name || !phone || !address) return alert("Lütfen müşteri bilgilerini doldurun.");
       if (!paymentMethod) return alert("Lütfen ödeme yöntemi seçin.");
       if ((paymentMethod === "Kredi Kartı" || paymentMethod === "Online Ödeme") && (!cardName || !cardNumber || !cardExpiry || !cardCvv)) return alert("Lütfen kart bilgilerini doldurun.");
+
+      const rawWhatsappNumber = (APP_CONFIG.storeWhatsappNumber || "").replace(/\D/g, "");
+      if (rawWhatsappNumber) {
+        whatsappPopup = window.open("about:blank", "_blank");
+      }
 
       const products = getProducts();
       for (const cartItem of cart) {
@@ -3290,7 +3301,7 @@ function renderCart() {
         }
       }
 
-      const whatsappOpened = openWhatsappForOrder(orderRecord);
+      const whatsappOpened = openWhatsappForOrder(orderRecord, whatsappPopup);
       let successMessage = backendResult.success ? "Siparişiniz alındı." : ("Siparişiniz yerel olarak kaydedildi. Veritabanı hatası: " + (backendResult.errorMessage || "Bilinmeyen hata"));
       if (backendResult.success && whatsappOpened) {
         successMessage += " WhatsApp sipariş ekranı da yeni sekmede açıldı.";
