@@ -1652,6 +1652,72 @@
       .top-bar { margin: 14px 14px 0; }
       header { padding: 16px; }
     }
+  
+    .whatsapp-success-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 18, 31, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 4000;
+      backdrop-filter: blur(5px);
+    }
+
+    .whatsapp-success-modal.show {
+      display: flex;
+    }
+
+    .whatsapp-success-box {
+      width: 100%;
+      max-width: 520px;
+      background: var(--card);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .whatsapp-success-box h3 {
+      margin: 0 0 10px;
+      color: var(--navy);
+      font-size: 24px;
+    }
+
+    .whatsapp-success-box p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .whatsapp-success-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .whatsapp-success-actions button,
+    .whatsapp-success-actions a {
+      flex: 1;
+      min-width: 180px;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .whatsapp-order-summary {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(29,70,120,0.05), rgba(244,154,39,0.07));
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
   </style>
 
 <script>
@@ -2202,6 +2268,44 @@ const WHATSAPP_NUMBER = "905518857099";
       };
       return map[value] || value || "";
     }
+
+    
+    function closeWhatsappSuccessModal() {
+      const modal = document.getElementById("whatsapp-success-modal");
+      if (modal) modal.classList.remove("show");
+    }
+
+    function showWhatsappSuccessModal(orderRecord) {
+      const modal = document.getElementById("whatsapp-success-modal");
+      const summaryEl = document.getElementById("whatsapp-order-summary");
+      const buttonEl = document.getElementById("whatsapp-send-btn");
+      if (!modal || !summaryEl || !buttonEl) return;
+
+      const rawNumber = (APP_CONFIG.storeWhatsappNumber || "").replace(/\D/g, "");
+      const itemText = (orderRecord.items || [])
+        .map(item => `• ${item.name} - ${formatQuantity(item.quantity, item.unit || "adet")} x ${formatMoney(item.price)}`)
+        .join("<br>");
+
+      summaryEl.innerHTML = `
+        <strong>Müşteri:</strong> ${orderRecord.customerName || "-"}<br>
+        <strong>Telefon:</strong> ${orderRecord.phone || "-"}<br>
+        <strong>Adres:</strong> ${orderRecord.address || "-"}<br>
+        <strong>Toplam:</strong> ${formatMoney(orderRecord.totalAmount || 0)}<br><br>
+        <strong>Ürünler:</strong><br>${itemText || "Ürün bilgisi yok"}
+      `;
+
+      if (rawNumber) {
+        const text = encodeURIComponent(buildWhatsappOrderMessage(orderRecord));
+        buttonEl.href = `https://wa.me/${rawNumber}?text=${text}`;
+        buttonEl.classList.remove("hidden");
+      } else {
+        buttonEl.href = "#";
+        buttonEl.classList.add("hidden");
+      }
+
+      modal.classList.add("show");
+    }
+
 
     function buildWhatsappOrderMessage(orderRecord) {
       const lines = [];
@@ -3303,12 +3407,11 @@ function renderCart() {
 
       const whatsappOpened = openWhatsappForOrder(orderRecord, whatsappPopup);
       let successMessage = backendResult.success ? "Siparişiniz alındı." : ("Siparişiniz yerel olarak kaydedildi. Veritabanı hatası: " + (backendResult.errorMessage || "Bilinmeyen hata"));
-      if (backendResult.success && whatsappOpened) {
-        successMessage += " WhatsApp sipariş ekranı da yeni sekmede açıldı.";
-      } else if (backendResult.success && !whatsappOpened) {
-        successMessage += " WhatsApp yönlendirmesi için market numarası henüz eklenmedi.";
+      if (!backendResult.success) {
+        alert(successMessage);
+      } else {
+        showWhatsappSuccessModal(orderRecord);
       }
-      alert(successMessage);
       cart = [];
       appliedCoupon = null;
       document.getElementById("coupon-code").value = "";
@@ -4129,6 +4232,19 @@ async function completeCartCheckout() {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <div id="whatsapp-success-modal" class="whatsapp-success-modal">
+    <div class="whatsapp-success-box">
+      <h3>Siparişiniz alındı</h3>
+      <p>İsterseniz sipariş özetini WhatsApp üzerinden de markete gönderebilirsiniz.</p>
+      <div id="whatsapp-order-summary" class="whatsapp-order-summary"></div>
+      <div class="whatsapp-success-actions">
+        <a id="whatsapp-send-btn" class="auth-submit" href="#" target="_blank" rel="noopener noreferrer">WhatsApp ile Gönder</a>
+        <button class="secondary-btn" onclick="closeWhatsappSuccessModal()">Kapat</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 
 </html>
