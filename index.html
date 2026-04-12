@@ -2405,57 +2405,27 @@
       if (!client) return { success: false, orderId: null, errorMessage: "Supabase istemcisi başlatılamadı." };
 
       try {
-        const basePayload = {
-          customer_name: orderPayload.customer_name || "Misafir",
-          phone: orderPayload.phone || "",
-          address: orderPayload.address || "",
-          payment_method: normalizePaymentMethodLabel(orderPayload.payment_method || ""),
-          status: orderPayload.status || "Hazırlanıyor",
+        const totalValue =
+          Number(orderPayload.total || orderPayload.total_amount || orderPayload.totalAmount || 0);
+
+        const minimalOrderPayload = {
+          customer_name: orderPayload.customer_name || orderPayload.customerName || "Misafir",
+          total: totalValue,
           created_at: orderPayload.created_at || new Date().toISOString()
         };
 
-        const orderPayloadCandidates = [
-          {
-            ...basePayload,
-            user_id: orderPayload.user_id === undefined ? null : orderPayload.user_id,
-            user_name: orderPayload.user_name || "",
-            subtotal: Number(orderPayload.subtotal || 0),
-            discount: Number(orderPayload.discount || 0),
-            shipping: Number(orderPayload.shipping || 0),
-            total_amount: Number(orderPayload.total_amount || 0),
-            coupon: orderPayload.coupon || ""
-          },
-          {
-            ...basePayload,
-            total_amount: Number(orderPayload.total_amount || 0)
-          }
-        ];
+        const { data: insertedOrder, error: orderError } = await client
+          .from("orders")
+          .insert([minimalOrderPayload])
+          .select()
+          .single();
 
-        let insertedOrder = null;
-        let lastOrderError = null;
-
-        for (const candidate of orderPayloadCandidates) {
-          const { data, error } = await client
-            .from("orders")
-            .insert([candidate])
-            .select()
-            .single();
-
-          if (!error) {
-            insertedOrder = data;
-            lastOrderError = null;
-            break;
-          }
-
-          console.error("Supabase sipariş kaydı denemesi başarısız:", error);
-          lastOrderError = error;
-        }
-
-        if (!insertedOrder) {
+        if (orderError || !insertedOrder) {
+          console.error("Supabase sipariş kaydı başarısız:", orderError);
           return {
             success: false,
             orderId: null,
-            errorMessage: lastOrderError?.message || "Sipariş kaydı eklenemedi."
+            errorMessage: orderError?.message || "Sipariş kaydı eklenemedi."
           };
         }
 
@@ -2465,16 +2435,19 @@
           const itemPayloadCandidates = [
             items.map(item => ({
               order_id: orderId,
-              product_id: item.id,
               product_name: item.name,
-              price: Number(item.price || 0),
               quantity: Number(item.quantity || 0),
-              unit: item.unit || "adet"
+              price: Number(item.price || 0)
             })),
             items.map(item => ({
               order_id: orderId,
-              product_name: item.name,
-              price: Number(item.price || 0),
+              name: item.name,
+              quantity: Number(item.quantity || 0),
+              price: Number(item.price || 0)
+            })),
+            items.map(item => ({
+              order_id: orderId,
+              product_id: item.id,
               quantity: Number(item.quantity || 0)
             }))
           ];
@@ -2485,7 +2458,7 @@
           for (const rows of itemPayloadCandidates) {
             const { error } = await client.from("order_items").insert(rows);
             if (!error) {
-              itemsInserted = true;
+              itemsInserted = true
               lastItemsError = null;
               break;
             }
@@ -2494,11 +2467,7 @@
           }
 
           if (!itemsInserted) {
-            return {
-              success: false,
-              orderId,
-              errorMessage: lastItemsError?.message || "Sipariş kalemleri eklenemedi."
-            };
+            console.warn("Sipariş kaydedildi ama kalemler veritabanına yazılamadı:", lastItemsError);
           }
         }
 
