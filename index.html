@@ -2281,7 +2281,7 @@ const WHATSAPP_NUMBER = "905518857099";
       const buttonEl = document.getElementById("whatsapp-send-btn");
       if (!modal || !summaryEl || !buttonEl) return;
 
-      const rawNumber = (APP_CONFIG.storeWhatsappNumber || "").replace(/\D/g, "");
+      const cleanNumber = (APP_CONFIG.storeWhatsappNumber || "").replace(/\D/g, "");
       const itemText = (orderRecord.items || [])
         .map(item => `• ${item.name} - ${formatQuantity(item.quantity, item.unit || "adet")} x ${formatMoney(item.price)}`)
         .join("<br>");
@@ -2290,13 +2290,14 @@ const WHATSAPP_NUMBER = "905518857099";
         <strong>Müşteri:</strong> ${orderRecord.customerName || "-"}<br>
         <strong>Telefon:</strong> ${orderRecord.phone || "-"}<br>
         <strong>Adres:</strong> ${orderRecord.address || "-"}<br>
+        <strong>Ödeme:</strong> ${orderRecord.paymentMethod || "-"}<br>
         <strong>Toplam:</strong> ${formatMoney(orderRecord.totalAmount || 0)}<br><br>
         <strong>Ürünler:</strong><br>${itemText || "Ürün bilgisi yok"}
       `;
 
-      if (rawNumber) {
+      if (cleanNumber) {
         const text = encodeURIComponent(buildWhatsappOrderMessage(orderRecord));
-        buttonEl.href = `https://wa.me/${rawNumber}?text=${text}`;
+        buttonEl.href = `https://wa.me/${cleanNumber}?text=${text}`;
         buttonEl.classList.remove("hidden");
       } else {
         buttonEl.href = "#";
@@ -2305,7 +2306,6 @@ const WHATSAPP_NUMBER = "905518857099";
 
       modal.classList.add("show");
     }
-
 
     function buildWhatsappOrderMessage(orderRecord) {
       const lines = [];
@@ -2326,18 +2326,13 @@ const WHATSAPP_NUMBER = "905518857099";
       return lines.join("\n");
     }
 
-    function openWhatsappForOrder(orderRecord, popupRef = null) {
+    function openWhatsappForOrder(orderRecord) {
       const rawNumber = APP_CONFIG.storeWhatsappNumber || "";
       const cleanNumber = rawNumber.replace(/\D/g, "");
       if (!cleanNumber) return false;
       const text = encodeURIComponent(buildWhatsappOrderMessage(orderRecord));
-      const targetUrl = `https://wa.me/${cleanNumber}?text=${text}`;
-      if (popupRef && !popupRef.closed) {
-        popupRef.location.href = targetUrl;
-        return true;
-      }
-      const opened = window.open(targetUrl, "_blank");
-      return !!opened;
+      window.open(`https://wa.me/${cleanNumber}?text=${text}`, "_blank");
+      return true;
     }
 
     function normalizeDbProduct(product) {
@@ -3312,7 +3307,6 @@ function renderCart() {
     }
 
     async function completeOrder() {
-      let whatsappPopup = null;
       const name = document.getElementById("customer-name").value.trim();
       const phone = document.getElementById("customer-phone").value.trim();
       const address = document.getElementById("customer-address").value.trim();
@@ -3326,11 +3320,6 @@ function renderCart() {
       if (!name || !phone || !address) return alert("Lütfen müşteri bilgilerini doldurun.");
       if (!paymentMethod) return alert("Lütfen ödeme yöntemi seçin.");
       if ((paymentMethod === "Kredi Kartı" || paymentMethod === "Online Ödeme") && (!cardName || !cardNumber || !cardExpiry || !cardCvv)) return alert("Lütfen kart bilgilerini doldurun.");
-
-      const rawWhatsappNumber = (APP_CONFIG.storeWhatsappNumber || "").replace(/\D/g, "");
-      if (rawWhatsappNumber) {
-        whatsappPopup = window.open("about:blank", "_blank");
-      }
 
       const products = getProducts();
       for (const cartItem of cart) {
@@ -3405,12 +3394,15 @@ function renderCart() {
         }
       }
 
-      const whatsappOpened = openWhatsappForOrder(orderRecord, whatsappPopup);
-      let successMessage = backendResult.success ? "Siparişiniz alındı." : ("Siparişiniz yerel olarak kaydedildi. Veritabanı hatası: " + (backendResult.errorMessage || "Bilinmeyen hata"));
-      if (!backendResult.success) {
-        alert(successMessage);
-      } else {
+      if (backendResult.success) {
         showWhatsappSuccessModal(orderRecord);
+      } else {
+        const whatsappOpened = openWhatsappForOrder(orderRecord);
+        let successMessage = "Siparişiniz yerel olarak kaydedildi. Veritabanı hatası: " + (backendResult.errorMessage || "Bilinmeyen hata");
+        if (whatsappOpened) {
+          successMessage += " WhatsApp sipariş ekranı da yeni sekmede açıldı.";
+        }
+        alert(successMessage);
       }
       cart = [];
       appliedCoupon = null;
@@ -4240,7 +4232,7 @@ async function completeCartCheckout() {
       <div id="whatsapp-order-summary" class="whatsapp-order-summary"></div>
       <div class="whatsapp-success-actions">
         <a id="whatsapp-send-btn" class="auth-submit" href="#" target="_blank" rel="noopener noreferrer">WhatsApp ile Gönder</a>
-        <button class="secondary-btn" onclick="closeWhatsappSuccessModal()">Kapat</button>
+        <button type="button" class="secondary-btn" onclick="closeWhatsappSuccessModal()">Kapat</button>
       </div>
     </div>
   </div>
