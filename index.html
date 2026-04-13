@@ -480,6 +480,21 @@
       font-weight:900
     }
 
+  
+    .image-wrap{position:relative}
+    .corner-stock-badge{
+      position:absolute;
+      left:10px;
+      bottom:10px;
+      padding:7px 10px;
+      border-radius:999px;
+      background:rgba(198,40,40,.94);
+      color:#fff;
+      font-size:12px;
+      font-weight:900;
+      box-shadow:0 8px 18px rgba(198,40,40,.22)
+    }
+
   </style>
 </head>
 <body>
@@ -534,8 +549,6 @@
       </div>
       <div class="search-hint">Ürünleri hızlı bulmak için arama yapabilir veya aşağıdan kategori seçebilirsin.</div>
     </div>
-
-    <div id="low-stock-box"></div>
 
     <div class="main-banner">
       <div id="slider-track" class="slider-track"></div>
@@ -797,16 +810,6 @@
       if(slideTimer) clearInterval(slideTimer);
       slideTimer = setInterval(()=>{ currentSlide = (currentSlide + 1) % sliderItems.length; updateSlider(); }, 4500);
     }
-
-
-    function renderLowStockWarnings(){
-      const box = document.getElementById('low-stock-box');
-      if(!box) return;
-      const lows = products.filter(p => Number(p.stock_qty || 0) > 0 && Number(p.stock_qty || 0) <= LOW_STOCK_THRESHOLD);
-      if(!lows.length){
-        box.innerHTML = '';
-        return;
-      }
       box.innerHTML = `
         <div class="low-stock-banner">
           Düşük stok uyarısı: bazı ürünler azaldı.
@@ -903,12 +906,16 @@
       box.innerHTML = filtered.map(p => {
         const stockQty = Number(p.stock_qty || 0);
         const hasStock = stockQty > 0;
-        const stockText = !hasStock ? 'Stok Yok' : stockQty <= LOW_STOCK_THRESHOLD ? `Son ${stockQty.toFixed(0)} ürün` : `Stok: ${stockQty.toFixed(0)} adet`;
+        const stockText = !hasStock ? 'Stok Yok' : stockQty <= LOW_STOCK_THRESHOLD ? `Stok: ${stockQty.toFixed(0)} adet` : `Stok: ${stockQty.toFixed(0)} adet`;
         const stockClass = !hasStock ? 'out-stock' : stockQty <= LOW_STOCK_THRESHOLD ? 'low-stock' : 'stock';
+        const cornerBadge = (hasStock && stockQty <= 3) ? `<span class="corner-stock-badge">Son ${stockQty.toFixed(0)} ürün</span>` : '';
         return `
         <div class="card">
           <div class="promo-badge">${promoBadge(p)}</div>
-          <img class="product-image" src="${productImageByCategory(p.category)}" alt="${p.name}">
+          <div class="image-wrap">
+            <img class="product-image" src="${productImageByCategory(p.category)}" alt="${p.name}">
+            ${cornerBadge}
+          </div>
           <div class="badge">${categoryIcon(p.category)} ${p.category || 'Diğer'}</div>
           <div class="name">${p.name || '-'}</div>
           <div class="price">${money(p.price)}</div>
@@ -941,7 +948,6 @@
       }
       renderCart();
       renderProducts();
-      renderLowStockWarnings();
     }
 
     function changeQty(id, delta){
@@ -1138,7 +1144,6 @@
         renderCategoryBar();
         renderProducts();
         renderCart();
-        renderLowStockWarnings();
       }catch(err){
         setStatus("Sistem hatası: " + (err?.message || err), 'err');
         document.getElementById('products').innerHTML = '<div class="empty" style="grid-column:1/-1">Sistem hatası oluştu.</div>';
@@ -1510,19 +1515,22 @@
     }
 
     async function updateOrderStatus(orderId){
-      const rawStatus = document.getElementById('status-' + orderId).value;
+      const select = document.getElementById('status-' + orderId);
+      const rawStatus = select ? select.value : 'Yeni';
       const status = normalizeStatusValue(rawStatus);
 
-      const { error } = await client
+      const { data, error } = await client
         .from('orders')
         .update({ status: status })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select();
 
       if(error){
         alert('Durum güncellenemedi: ' + error.message);
         return;
       }
-      loadAdminOrders();
+      if(select) select.value = status;
+      await loadAdminOrders();
     }
 
 
@@ -1562,6 +1570,26 @@
           <div class="muted" style="margin-top:8px">Toplam: ${money(order.total_amount || order.total || 0)}</div>
         </div>
       `).join('');
+    }
+
+    async function cancelOrder(orderId){
+      const ok = confirm('Bu siparişi iptal etmek istediğine emin misin?');
+      if(!ok) return;
+
+      const { data, error } = await client
+        .from('orders')
+        .update({ status: 'İptal' })
+        .eq('id', orderId)
+        .select();
+
+      if(error){
+        alert('Sipariş iptal edilemedi: ' + error.message);
+        return;
+      }
+
+      const select = document.getElementById('status-' + orderId);
+      if(select) select.value = 'İptal';
+      await loadAdminOrders();
     }
 
     renderSlider();
