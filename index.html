@@ -154,6 +154,41 @@
     }
     .muted{color:var(--muted);font-size:13px}
     .stock{display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(57,168,82,.12);color:var(--success);font-size:12px;font-weight:900;width:max-content}
+
+    .product-qty-box{
+      margin-top:8px;
+      min-height:48px;
+      max-height:48px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:var(--soft);
+      padding:8px 10px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .product-qty-label{
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.3px;
+      line-height:1.1;
+      margin-bottom:4px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .product-qty-value{
+      font-size:15px;
+      font-weight:900;
+      color:var(--navy);
+      line-height:1.1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
     .drawer{
       position:fixed;right:-420px;top:0;width:390px;height:100%;background:#fff;border-left:1px solid var(--border);
       box-shadow:-10px 0 30px rgba(0,0,0,.18);transition:.25s;padding:18px;overflow:auto;z-index:90
@@ -383,10 +418,16 @@ function setOrderButtonLoading(loading){
   btn.textContent = loading ? "Sipariş Gönderiliyor..." : "Sipariş Ver";
 }
 
+function getCartItemQuantity(productId){
+  const item = cart.find(x => x.id === productId);
+  return item ? qtyText(item) : "Henüz seçilmedi";
+}
+
 function renderProducts(){
   const box = document.getElementById("products");
   box.innerHTML = "";
   products.forEach((p, index) => {
+    const selectedQty = getCartItemQuantity(p.id);
     box.innerHTML += `
       <div class="card">
         <div class="badge">${p.unit === "kg" ? "Kiloluk ürün" : "Adetli ürün"}</div>
@@ -394,6 +435,10 @@ function renderProducts(){
         <div class="price">${money(p.price)}</div>
         <div class="muted">Birim: ${p.unit}</div>
         <div class="stock">Stokta var</div>
+        <div class="product-qty-box">
+          <div class="product-qty-label">Seçilen miktar</div>
+          <div class="product-qty-value" title="${selectedQty}">${selectedQty}</div>
+        </div>
         <button class="btn primary" style="margin-top:auto" onclick="addToCart(${index})">Sepete Ekle</button>
       </div>
     `;
@@ -410,6 +455,7 @@ function addToCart(index){
     cart.push({ ...product, quantity: step });
   }
   renderCart();
+  renderProducts();
 }
 
 function changeQty(id, delta){
@@ -421,6 +467,7 @@ function changeQty(id, delta){
     cart = cart.filter(x => x.id !== id);
   }
   renderCart();
+  renderProducts();
 }
 
 function renderCart(){
