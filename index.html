@@ -669,15 +669,11 @@
 </div>
 
 <div class="upload-panel">
-  <h3 style="margin:0 0 10px;color:var(--navy)">Excel + Görsel ile Toplu Ürün Yükleme</h3>
-  <div class="upload-grid">
+  <h3 style="margin:0 0 10px;color:var(--navy)">Tek Excel ile Toplu Ürün Yükleme</h3>
+  <div class="upload-grid single-excel-upload">
     <div>
       <label class="muted">Excel / CSV Dosyası</label>
       <input id="excel-file" type="file" accept=".xlsx,.xls,.csv">
-    </div>
-    <div>
-      <label class="muted">Görseller</label>
-      <input id="image-files" type="file" accept=".jpg,.jpeg,.png,.webp" multiple>
     </div>
     <div>
       <button class="btn secondary" onclick="previewExcelUpload()">Önizleme Yap</button>
@@ -687,8 +683,8 @@
     </div>
   </div>
   <div class="upload-help">
-    Excel başlıkları: <strong>barcode, name, price, category, stock_qty, unit, is_active</strong><br>
-    Görsel dosya adı barkod ile aynı olmalı. Örnek: <strong>8691234567890.jpg</strong>
+    Excel başlıkları: <strong>barcode, name, price, category, stock_qty, unit, is_active, image_url</strong><br>
+    Görsel URL aynı Excel satırından okunur. Ayrı görsel seçmeye gerek yok.
   </div>
   <div id="upload-log" class="upload-log">Henüz yükleme yapılmadı.</div>
 </div>
@@ -1685,11 +1681,12 @@ function mapUploadRows(rawRows){
   return rawRows.map(row => ({
     barcode: normalizeUploadBarcode(row.barcode || row.BARCODE || row.Barkod || row.barkod),
     name: normalizeUploadText(row.name || row.NAME || row['Ürün Adı'] || row['Ürün'] || row.urun_adi || row.product_name),
-    price: normalizeUploadNumber(row.price || row.PRICE || row.fiyat),
+    price: normalizeUploadNumber(row.price || row.PRICE || row.fiyat || row['satış fiyatı'] || row.satis_fiyati),
     category: normalizeUploadText(row.category || row.CATEGORY || row.kategori),
     stock_qty: normalizeUploadNumber(row.stock_qty || row.STOCK_QTY || row.stok || row.stock),
     unit: String(row.unit || row.UNIT || row.birim || 'adet').toLowerCase().includes('kg') ? 'kg' : 'adet',
-    is_active: normalizeUploadBool(row.is_active || row.IS_ACTIVE || row.aktif || true)
+    is_active: normalizeUploadBool(row.is_active || row.IS_ACTIVE || row.aktif || true),
+    image_url: normalizeUploadText(row.image_url || row.IMAGE_URL || row['görsel url'] || row['gorsel url'] || row.gorsel_url || row['görsel_url'])
   })).filter(row => row.barcode && row.name);
 }
 
@@ -1705,7 +1702,7 @@ async function previewExcelUpload(){
     }
 
     const previewText = uploadPreviewRows.slice(0, 10).map((row, i) =>
-      `${i + 1}. ${row.barcode} | ${row.name} | ${row.price} | ${row.category} | ${row.stock_qty} | ${row.unit}`
+      `${i + 1}. ${row.barcode} | ${row.name} | ${row.price} | ${row.category} | ${row.stock_qty} | ${row.unit} | ${row.image_url || 'görsel yok'}`
     ).join('\n');
 
     setUploadLog(previewText + `\n\nToplam okunacak ürün: ${uploadPreviewRows.length}`);
@@ -1717,7 +1714,6 @@ async function previewExcelUpload(){
 async function uploadExcelProducts(){
   try{
     const excelFile = document.getElementById('excel-file')?.files?.[0];
-    const imageFiles = Array.from(document.getElementById('image-files')?.files || []);
 
     if(!excelFile){
       setUploadLog('Önce Excel dosyası seç.');
@@ -1734,40 +1730,11 @@ async function uploadExcelProducts(){
       return;
     }
 
-    const imageMap = {};
-    imageFiles.forEach(file => {
-      const idx = file.name.lastIndexOf('.');
-      const barcode = normalizeUploadBarcode(idx > -1 ? file.name.slice(0, idx) : file.name);
-      if(barcode) imageMap[barcode] = file;
-    });
-
-    let uploadedImageCount = 0;
     const rowsToUpsert = [];
 
     setUploadLog('Yükleme başladı...');
 
     for(const row of uploadPreviewRows){
-      let imageUrl = '';
-      const img = imageMap[row.barcode];
-
-      if(img){
-        const ext = String(img.name.split('.').pop() || 'jpg').toLowerCase();
-        const filePath = `${row.barcode}.${ext}`;
-
-        const { error: uploadError } = await client
-          .storage
-          .from('product-images')
-          .upload(filePath, img, { cacheControl:'3600', upsert:true });
-
-        if(uploadError){
-          console.error('Görsel yükleme hatası:', row.barcode, uploadError.message);
-        } else {
-          const { data: publicData } = client.storage.from('product-images').getPublicUrl(filePath);
-          imageUrl = publicData?.publicUrl || '';
-          uploadedImageCount++;
-        }
-      }
-
       rowsToUpsert.push({
         barcode: row.barcode,
         name: row.name,
@@ -1777,7 +1744,7 @@ async function uploadExcelProducts(){
         stock_qty: row.stock_qty,
         unit: row.unit,
         is_active: row.is_active,
-        image_url: imageUrl || null
+        image_url: row.image_url || null
       });
     }
 
@@ -1790,7 +1757,8 @@ async function uploadExcelProducts(){
       return;
     }
 
-    setUploadLog(`Tamamlandı. ${rowsToUpsert.length} ürün işlendi. ${uploadedImageCount} görsel yüklendi.`);
+    const imageUrlCount = rowsToUpsert.filter(row => row.image_url).length;
+    setUploadLog(`Tamamlandı. ${rowsToUpsert.length} ürün işlendi. ${imageUrlCount} satırda görsel URL bulundu.`);
     await loadAdminProducts();
     await loadProducts();
   }catch(err){
