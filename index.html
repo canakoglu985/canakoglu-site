@@ -382,6 +382,59 @@
       .admin-login{grid-template-columns:1fr}
     }
 
+  
+    .section-highlight{
+      background:linear-gradient(135deg,rgba(29,70,120,.06),rgba(244,154,39,.10));
+      border:1px solid rgba(244,154,39,.18);
+      border-radius:20px;
+      padding:16px 18px;
+      margin-bottom:16px;
+    }
+    .section-highlight strong{
+      display:block;
+      color:var(--navy);
+      font-size:17px;
+      margin-bottom:6px;
+    }
+    .section-highlight span{
+      color:var(--muted);
+      line-height:1.6;
+      font-size:14px;
+    }
+    .result-count{
+      margin-top:12px;
+      color:var(--navy);
+      font-size:14px;
+      font-weight:800;
+    }
+    .admin-launch{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      background:var(--gradient);
+      color:#fff;
+      border-radius:22px;
+      padding:18px 20px;
+      margin-bottom:18px;
+      box-shadow:var(--shadow);
+    }
+    .admin-launch h3{
+      margin:0 0 6px;
+      font-size:22px;
+    }
+    .admin-launch p{
+      margin:0;
+      color:rgba(255,255,255,.92);
+      line-height:1.6;
+    }
+    .admin-launch .pill{
+      background:rgba(255,255,255,.14);
+      color:#fff;
+      border:1px solid rgba(255,255,255,.20);
+    }
+
   </style>
 </head>
 <body>
@@ -495,10 +548,15 @@
           <p>Daha çok ürün, kategori filtreleri ve hızlı arama eklendi</p>
         </div>
       </div>
+      <div class="section-highlight">
+        <strong>Ürün arama ve kategori alanı aktif</strong>
+        <span>Buradan ürün adıyla arama yapabilir, kategori seçip ürünleri filtreleyebilirsin. Böylece market görünümü daha düzenli ve profesyonel olur.</span>
+        <div id="result-count" class="result-count">Ürünler yükleniyor...</div>
+      </div>
       <div class="toolbar">
         <div class="searchbox">
           <span>🔎</span>
-          <input id="search-input" placeholder="Ürün ara..." oninput="handleSearch(this.value)" />
+          <input id="search-input" placeholder="Ürün ara... örnek: süt, çay, domates" oninput="handleSearch(this.value)" />
         </div>
         <div class="category-row" id="category-filters"></div>
       </div>
@@ -506,6 +564,16 @@
     </section>
 
     <section id="admin-section" class="section" style="margin-top:22px">
+      <div class="admin-launch">
+        <div>
+          <h3>Admin Paneli hazır</h3>
+          <p>Buradan siparişleri görebilir, arama yapabilir ve durum güncellemesi yapabilirsin.</p>
+        </div>
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <span class="pill">Giriş: admin@market.com</span>
+          <span class="pill">Şifre: 123456</span>
+        </div>
+      </div>
       <div class="section-head">
         <div>
           <h2>Admin Paneli</h2>
