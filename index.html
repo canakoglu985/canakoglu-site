@@ -310,6 +310,78 @@
       line-height:1.5;
     }
 
+  
+    .toolbar{
+      display:grid;
+      grid-template-columns:1.1fr auto;
+      gap:14px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .searchbox{
+      display:flex;align-items:center;gap:10px;
+      background:#fff;border:1px solid var(--border);border-radius:18px;padding:12px 14px;
+      box-shadow:var(--shadow-soft)
+    }
+    .searchbox input{
+      border:none;outline:none;padding:0;background:transparent
+    }
+    .category-row{
+      display:flex;gap:10px;flex-wrap:wrap
+    }
+    .chip-btn{
+      border:none;border-radius:999px;padding:10px 14px;font-weight:800;cursor:pointer;
+      background:#edf4fb;color:var(--navy);border:1px solid var(--border)
+    }
+    .chip-btn.active{background:var(--orange-gradient);color:#fff;border-color:transparent;box-shadow:0 10px 22px rgba(244,154,39,.2)}
+    .grid-empty{
+      padding:22px;border:1px dashed var(--border);border-radius:20px;color:var(--muted);background:#fbfcfe
+    }
+    .category-tag{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:7px 11px;border-radius:999px;background:#edf4fb;color:var(--navy);
+      font-size:12px;font-weight:900;width:max-content;border:1px solid var(--border)
+    }
+    .admin-login{
+      display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:10px
+    }
+    .admin-wrap{display:none}
+    .admin-wrap.show{display:block}
+    .admin-topbar{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px
+    }
+    .admin-grid{display:grid;gap:14px}
+    .admin-card{
+      background:linear-gradient(180deg,#fff,#f8fafd);
+      border:1px solid var(--border);border-radius:22px;padding:18px;box-shadow:var(--shadow-soft)
+    }
+    .admin-meta{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px
+    }
+    .admin-meta .mini{
+      background:#f7f9fc;border:1px solid var(--border);border-radius:16px;padding:12px
+    }
+    .status-select{
+      min-width:180px;background:#fff7eb;border:1px solid rgba(244,154,39,.25)
+    }
+    .order-items-list{
+      margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:16px;background:#f7f9fc;line-height:1.7
+    }
+    .admin-note{
+      color:var(--muted);font-size:14px;line-height:1.6;margin-top:10px
+    }
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:900
+    }
+    .pill.hazirlaniyor{background:#fff3df;color:#a55a00}
+    .pill.yolda{background:#eaf3ff;color:#245ba7}
+    .pill.teslim{background:#eaf7ed;color:#267c3c}
+    .pill.iptal{background:#ffe8e8;color:#b93636}
+    @media (max-width:900px){
+      .toolbar{grid-template-columns:1fr}
+      .admin-login{grid-template-columns:1fr}
+    }
+
   </style>
 </head>
 <body>
@@ -401,7 +473,7 @@
         <p>Bu sürümde çalışan sistemi koruduk: ürün ekleme, sepet, sipariş kaydı ve görünür WhatsApp butonu. Şimdi görünümü de market sitesine çevirdik.</p>
         <div class="hero-actions">
           <button class="btn primary" onclick="document.getElementById('products-section').scrollIntoView({behavior:'smooth'})">Alışverişe Başla</button>
-          <button class="btn secondary" onclick="toggleCart()">Sepeti Aç</button>
+          <button class="btn secondary" onclick="toggleCart()">Sepetimi Aç</button>
         </div>
       </div>
       <div class="mini-stack">
@@ -420,16 +492,58 @@
       <div class="section-head">
         <div>
           <h2>Ürünler</h2>
-          <p>Eski görünüme yakın düzenlenmiş ürün kartları</p>
+          <p>Daha çok ürün, kategori filtreleri ve hızlı arama eklendi</p>
         </div>
       </div>
+      <div class="toolbar">
+        <div class="searchbox">
+          <span>🔎</span>
+          <input id="search-input" placeholder="Ürün ara..." oninput="handleSearch(this.value)" />
+        </div>
+        <div class="category-row" id="category-filters"></div>
+      </div>
       <div id="products" class="grid"></div>
+    </section>
+
+    <section id="admin-section" class="section" style="margin-top:22px">
+      <div class="section-head">
+        <div>
+          <h2>Admin Paneli</h2>
+          <p>Siparişleri görüntüle, durum güncelle ve yeni kayıtları yenile</p>
+        </div>
+      </div>
+
+      <div id="admin-login-box" class="admin-login">
+        <input id="admin-email" placeholder="Admin e-posta" value="admin@market.com" />
+        <input id="admin-password" type="password" placeholder="Şifre" value="123456" />
+        <input id="admin-search" placeholder="Siparişlerde isim / telefon ara" oninput="renderAdminOrders()" />
+        <button class="btn primary" onclick="adminLogin()">Admin Giriş</button>
+      </div>
+
+      <div id="admin-wrap" class="admin-wrap">
+        <div class="admin-topbar">
+          <div class="row" style="gap:10px;flex-wrap:wrap">
+            <span class="pill hazirlaniyor">Admin aktif</span>
+            <span class="muted">Son siparişler Supabase üzerinden okunur.</span>
+          </div>
+          <div class="row" style="gap:10px;flex-wrap:wrap">
+            <button class="btn secondary" onclick="loadAdminOrders()">Yenile</button>
+            <button class="btn secondary" onclick="adminLogout()">Çıkış</button>
+          </div>
+        </div>
+        <div id="admin-orders" class="admin-grid"></div>
+        <div id="admin-empty" class="grid-empty" style="display:none">Henüz gösterilecek sipariş yok.</div>
+      </div>
+
+      <div class="admin-note">
+        Giriş bilgisi şu an geçici olarak hazır bırakıldı: <strong>admin@market.com</strong> / <strong>123456</strong>
+      </div>
     </section>
   </div>
 
   <aside id="cart-drawer" class="drawer">
     <div class="row">
-      <h2 style="margin:0;color:var(--navy)">Sepet</h2>
+      <h2 style="margin:0;color:var(--navy)">Sepetim</h2>
       <button class="btn secondary" onclick="toggleCart()">Kapat</button>
     </div>
     <div id="cart-items" style="margin-top:12px"></div>
@@ -467,18 +581,51 @@ const WHATSAPP_NUMBER = "905518857099";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const products = [
-  { id: 1, name: "Ekmek", price: 12, unit: "adet" },
-  { id: 2, name: "Yumurta", price: 50, unit: "adet" },
-  { id: 3, name: "Çay", price: 195, unit: "adet" },
-  { id: 4, name: "Domates", price: 39.9, unit: "kg" },
-  { id: 5, name: "Salatalık", price: 29.9, unit: "kg" },
-  { id: 6, name: "Pirinç", price: 72.5, unit: "kg" }
+  { id: 1, name: "Ekmek", price: 12, unit: "adet", category: "Temel Gıda" },
+  { id: 2, name: "Yumurta 15'li", price: 50, unit: "adet", category: "Kahvaltılık" },
+  { id: 3, name: "Çay 1 KG", price: 195, unit: "adet", category: "İçecek" },
+  { id: 4, name: "Domates", price: 39.9, unit: "kg", category: "Sebze Meyve" },
+  { id: 5, name: "Salatalık", price: 29.9, unit: "kg", category: "Sebze Meyve" },
+  { id: 6, name: "Pirinç", price: 72.5, unit: "kg", category: "Temel Gıda" },
+  { id: 7, name: "Makarna", price: 24.5, unit: "adet", category: "Temel Gıda" },
+  { id: 8, name: "Ayçiçek Yağı 1L", price: 89.9, unit: "adet", category: "Temel Gıda" },
+  { id: 9, name: "Toz Şeker 1 KG", price: 44.9, unit: "adet", category: "Temel Gıda" },
+  { id: 10, name: "Un 1 KG", price: 29.9, unit: "adet", category: "Temel Gıda" },
+  { id: 11, name: "Süt 1L", price: 32.5, unit: "adet", category: "Süt Ürünleri" },
+  { id: 12, name: "Yoğurt 1 KG", price: 59.9, unit: "adet", category: "Süt Ürünleri" },
+  { id: 13, name: "Beyaz Peynir", price: 149.9, unit: "kg", category: "Süt Ürünleri" },
+  { id: 14, name: "Kaşar Peyniri", price: 219.9, unit: "kg", category: "Süt Ürünleri" },
+  { id: 15, name: "Zeytin", price: 179.9, unit: "kg", category: "Kahvaltılık" },
+  { id: 16, name: "Bal 850 GR", price: 169.9, unit: "adet", category: "Kahvaltılık" },
+  { id: 17, name: "Reçel", price: 74.9, unit: "adet", category: "Kahvaltılık" },
+  { id: 18, name: "Kola 1L", price: 39.9, unit: "adet", category: "İçecek" },
+  { id: 19, name: "Meyve Suyu", price: 27.5, unit: "adet", category: "İçecek" },
+  { id: 20, name: "Su 1.5L", price: 9.5, unit: "adet", category: "İçecek" },
+  { id: 21, name: "Maden Suyu 6'lı", price: 38.9, unit: "adet", category: "İçecek" },
+  { id: 22, name: "Cips", price: 31.5, unit: "adet", category: "Atıştırmalık" },
+  { id: 23, name: "Bisküvi", price: 18.9, unit: "adet", category: "Atıştırmalık" },
+  { id: 24, name: "Çikolata", price: 24.9, unit: "adet", category: "Atıştırmalık" },
+  { id: 25, name: "Kuruyemiş", price: 289.9, unit: "kg", category: "Atıştırmalık" },
+  { id: 26, name: "Bulaşık Deterjanı", price: 64.9, unit: "adet", category: "Temizlik" },
+  { id: 27, name: "Çamaşır Suyu", price: 49.9, unit: "adet", category: "Temizlik" },
+  { id: 28, name: "Kağıt Havlu", price: 79.9, unit: "adet", category: "Temizlik" },
+  { id: 29, name: "Tuvalet Kağıdı", price: 139.9, unit: "adet", category: "Temizlik" },
+  { id: 30, name: "Elma", price: 49.9, unit: "kg", category: "Sebze Meyve" },
+  { id: 31, name: "Muz", price: 79.9, unit: "kg", category: "Sebze Meyve" },
+  { id: 32, name: "Patates", price: 24.9, unit: "kg", category: "Sebze Meyve" },
+  { id: 33, name: "Soğan", price: 19.9, unit: "kg", category: "Sebze Meyve" },
+  { id: 34, name: "Tavuk Bonfile", price: 189.9, unit: "kg", category: "Kasap" },
+  { id: 35, name: "Kıyma", price: 429.9, unit: "kg", category: "Kasap" }
 ];
 
 let cart = [];
 let isSubmitting = false;
 let currentBannerSlide = 0;
 let bannerTimer = null;
+let selectedCategory = "Hepsi";
+let searchTerm = "";
+let adminLoggedIn = false;
+let adminOrders = [];
 
 function money(v){ return Number(v || 0).toFixed(2) + " TL"; }
 function qtyText(item){ return item.unit === "kg" ? Number(item.quantity).toFixed(2) + " kg" : Number(item.quantity) + " adet"; }
@@ -546,14 +693,160 @@ function restartBannerAutoPlay(){
   startBannerAutoPlay();
 }
 
+
+function getCategories(){
+  return ["Hepsi", ...new Set(products.map(p => p.category))];
+}
+
+function getVisibleProducts(){
+  return products.filter(p => {
+    const categoryOk = selectedCategory === "Hepsi" || p.category === selectedCategory;
+    const searchOk = !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.category.toLowerCase().includes(searchTerm.toLowerCase());
+    return categoryOk && searchOk;
+  });
+}
+
+function renderCategoryFilters(){
+  const box = document.getElementById("category-filters");
+  if(!box) return;
+  box.innerHTML = getCategories().map(cat => `
+    <button class="chip-btn ${cat === selectedCategory ? "active" : ""}" onclick="setCategory('${cat.replace("'", "\'")}')">${cat}</button>
+  `).join("");
+}
+
+function setCategory(category){
+  selectedCategory = category;
+  renderCategoryFilters();
+  renderProducts();
+}
+
+function handleSearch(value){
+  searchTerm = String(value || "").trim();
+  renderProducts();
+}
+
+function getStatusClass(status){
+  const value = String(status || "").toLowerCase();
+  if(value.includes("yolda")) return "yolda";
+  if(value.includes("teslim")) return "teslim";
+  if(value.includes("iptal")) return "iptal";
+  return "hazirlaniyor";
+}
+
+async function adminLogin(){
+  const email = document.getElementById("admin-email").value.trim();
+  const password = document.getElementById("admin-password").value.trim();
+  if(email !== "admin@market.com" || password !== "123456"){
+    alert("Admin bilgisi yanlış.");
+    return;
+  }
+  adminLoggedIn = true;
+  document.getElementById("admin-wrap").classList.add("show");
+  document.getElementById("admin-login-box").style.display = "none";
+  await loadAdminOrders();
+}
+
+function adminLogout(){
+  adminLoggedIn = false;
+  adminOrders = [];
+  document.getElementById("admin-wrap").classList.remove("show");
+  document.getElementById("admin-login-box").style.display = "grid";
+  document.getElementById("admin-orders").innerHTML = "";
+}
+
+async function loadAdminOrders(){
+  if(!adminLoggedIn) return;
+  const box = document.getElementById("admin-orders");
+  if(box) box.innerHTML = '<div class="grid-empty">Siparişler yükleniyor...</div>';
+  try{
+    const { data, error } = await supabaseClient
+      .from("orders")
+      .select("id, customer_name, phone, address, payment_method, status, total, total_amount, created_at, order_items(product_name, price, quantity, unit)")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if(error) throw error;
+    adminOrders = data || [];
+    renderAdminOrders();
+  }catch(err){
+    if(box) box.innerHTML = '<div class="grid-empty">Siparişler alınamadı: ' + escapeHtml(err.message || "Bilinmeyen hata") + '</div>';
+  }
+}
+
+function renderAdminOrders(){
+  const box = document.getElementById("admin-orders");
+  const empty = document.getElementById("admin-empty");
+  if(!box || !empty) return;
+  const q = (document.getElementById("admin-search")?.value || "").trim().toLowerCase();
+  const filtered = adminOrders.filter(order => {
+    if(!q) return true;
+    return String(order.customer_name || "").toLowerCase().includes(q) ||
+           String(order.phone || "").toLowerCase().includes(q) ||
+           String(order.address || "").toLowerCase().includes(q);
+  });
+  box.innerHTML = "";
+  empty.style.display = filtered.length ? "none" : "block";
+  filtered.forEach(order => {
+    const total = Number(order.total_amount || order.total || 0);
+    const items = Array.isArray(order.order_items) ? order.order_items : [];
+    box.innerHTML += `
+      <div class="admin-card">
+        <div class="row" style="align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:20px;font-weight:900;color:var(--navy)">Sipariş #${order.id}</div>
+            <div class="muted">${new Date(order.created_at).toLocaleString("tr-TR")}</div>
+          </div>
+          <div class="row" style="gap:10px;flex-wrap:wrap">
+            <span class="pill ${getStatusClass(order.status)}">${escapeHtml(order.status || "Hazırlanıyor")}</span>
+            <select class="status-select" onchange="updateOrderStatus(${order.id}, this.value)">
+              ${["Hazırlanıyor","Yolda","Teslim Edildi","İptal"].map(status => `<option value="${status}" ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-meta">
+          <div class="mini"><strong>Müşteri</strong><div>${escapeHtml(order.customer_name || "Misafir")}</div></div>
+          <div class="mini"><strong>Telefon</strong><div>${escapeHtml(order.phone || "-")}</div></div>
+          <div class="mini"><strong>Ödeme</strong><div>${escapeHtml(order.payment_method || "-")}</div></div>
+          <div class="mini"><strong>Toplam</strong><div>${money(total)}</div></div>
+        </div>
+
+        <div class="order-items-list">
+          <strong>Adres:</strong> ${escapeHtml(order.address || "-")}<br><br>
+          <strong>Ürünler:</strong><br>
+          ${items.length ? items.map(item => `• ${escapeHtml(item.product_name)} - ${item.unit === "kg" ? Number(item.quantity).toFixed(2) + " kg" : Number(item.quantity) + " adet"} - ${money(Number(item.price || 0) * Number(item.quantity || 0))}`).join("<br>") : "Ürün bilgisi yok"}
+        </div>
+      </div>
+    `;
+  });
+}
+
+async function updateOrderStatus(orderId, status){
+  try{
+    const { error } = await supabaseClient.from("orders").update({ status }).eq("id", orderId);
+    if(error) throw error;
+    const item = adminOrders.find(x => x.id === orderId);
+    if(item) item.status = status;
+    renderAdminOrders();
+  }catch(err){
+    alert("Durum güncellenemedi: " + (err.message || "Bilinmeyen hata"));
+  }
+}
+
+
 function renderProducts(){
   const box = document.getElementById("products");
+  const visibleProducts = getVisibleProducts();
   box.innerHTML = "";
-  products.forEach((p, index) => {
+  if(!visibleProducts.length){
+    box.innerHTML = '<div class="grid-empty">Aramaya veya seçili kategoriye uygun ürün bulunamadı.</div>';
+    return;
+  }
+  visibleProducts.forEach((p) => {
     const selectedQty = getCartItemQuantity(p.id);
     box.innerHTML += `
       <div class="card">
         <div class="badge">${p.unit === "kg" ? "Kiloluk ürün" : "Adetli ürün"}</div>
+        <div class="category-tag">${p.category}</div>
         <div class="name">${p.name}</div>
         <div class="price">${money(p.price)}</div>
         <div class="muted">Birim: ${p.unit}</div>
@@ -562,14 +855,15 @@ function renderProducts(){
           <div class="product-qty-label">Seçilen miktar</div>
           <div class="product-qty-value" title="${selectedQty}">${selectedQty}</div>
         </div>
-        <button class="btn primary" style="margin-top:auto" onclick="addToCart(${index})">Sepete Ekle</button>
+        <button class="btn primary" style="margin-top:auto" onclick="addToCart(${p.id})">Sepete Ekle</button>
       </div>
     `;
   });
 }
 
-function addToCart(index){
-  const product = products[index];
+function addToCart(productId){
+  const product = products.find(x => x.id === productId);
+  if(!product) return;
   const found = cart.find(x => x.id === product.id);
   const step = product.unit === "kg" ? 0.10 : 1;
   if(found){
@@ -622,6 +916,7 @@ function renderCart(){
   const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   count.textContent = "(" + (totalCount % 1 === 0 ? totalCount : totalCount.toFixed(2)) + ")";
   totalBox.textContent = money(total);
+  updateCartButton();
 }
 
 function toggleCart(){
@@ -742,6 +1037,7 @@ async function placeOrder(){
     document.getElementById("customer-address").value = "";
     document.getElementById("payment-method").selectedIndex = 0;
     if(document.getElementById("cart-drawer").classList.contains("open")) toggleCart();
+    if(adminLoggedIn) loadAdminOrders();
   }catch(err){
     alert(err?.message || "Beklenmeyen bir hata oluştu.");
   }finally{
@@ -750,6 +1046,7 @@ async function placeOrder(){
   }
 }
 
+renderCategoryFilters();
 renderProducts();
 renderCart();
 updateBannerSlider();
