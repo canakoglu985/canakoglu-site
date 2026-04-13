@@ -1,42 +1,360 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Market</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Çanakoğlu Market</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#eef3f9; --card:#fff; --text:#17324f; --muted:#6f8196; --primary:#f49a27;
+      --navy:#1d4678; --border:#dbe6f1; --shadow:0 12px 30px rgba(18,50,85,.10);
+      --soft: #f7f9fc; --ok:#2e9e52; --err:#c62828;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{background:#1d4678;color:#fff;padding:16px 20px;position:sticky;top:0;z-index:20}
+    .header-inner,.wrap{max-width:1280px;margin:0 auto}
+    .header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:44px;height:44px;border-radius:50%;background:#fff;color:#1d4678;display:flex;align-items:center;justify-content:center;font-weight:900}
+    .title{font-size:20px;font-weight:900}
+    .sub{font-size:12px;opacity:.9}
+    .cartbtn{background:#f49a27;color:#fff;border:none;border-radius:18px;padding:14px 22px;font-size:18px;font-weight:900;box-shadow:0 12px 24px rgba(244,154,39,.25);cursor:pointer}
+    .wrap{padding:20px}
+    .hero{display:grid;grid-template-columns:1.3fr .9fr;gap:18px;margin-bottom:18px}
+    .hero-main,.hero-side{background:linear-gradient(135deg,#1d4678,#255b94);color:#fff;border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+    .hero-side{background:#fff;color:var(--text)}
+    .hero-main h1{margin:0 0 10px;font-size:30px}
+    .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+    .chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.18);padding:8px 12px;border-radius:999px;font-size:12px;font-weight:800}
+    .section{background:#fff;border:1px solid var(--border);border-radius:24px;padding:18px;box-shadow:0 8px 18px rgba(18,50,85,.07);margin-bottom:18px}
+    .section h2{margin:0 0 8px}
+    .status{padding:14px 16px;border-radius:16px;border:1px solid var(--border);background:#fff8ef;margin:10px 0 14px;font-weight:700}
+    .status.ok{background:#f0fff4;color:var(--ok);border-color:#bce5c8}
+    .status.err{background:#fff1f1;color:var(--err);border-color:#efc0c0;white-space:pre-wrap}
+    .searchbar{display:flex;gap:10px;align-items:center;border:1px solid var(--border);border-radius:16px;padding:12px 14px;background:#fff}
+    .searchbar input{border:none;outline:none;width:100%;font-size:15px}
+    .filters{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+    .filters button{border:1px solid var(--border);background:#fff;border-radius:999px;padding:10px 14px;cursor:pointer;font-weight:800;color:var(--navy)}
+    .filters button.active{background:#f49a27;color:#fff;border-color:#f49a27}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .card{background:#fff;border:1px solid var(--border);border-radius:22px;padding:16px;box-shadow:0 8px 18px rgba(18,50,85,.07);display:flex;flex-direction:column;gap:10px}
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border-radius:999px;background:#fff5e7;color:#c97507;font-size:12px;font-weight:900;width:max-content}
+    .name{font-size:18px;font-weight:800;color:var(--navy);min-height:48px}
+    .price{font-size:28px;font-weight:900;color:#16375e}
+    .muted{font-size:13px;color:var(--muted)}
+    .qtyinfo{min-height:20px;font-size:13px;font-weight:800;color:#375a7f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .add{margin-top:auto;background:#f49a27;color:#fff;border:none;border-radius:14px;padding:12px;font-weight:900;cursor:pointer}
+    .drawer{position:fixed;right:-420px;top:0;width:390px;height:100%;background:#fff;border-left:1px solid var(--border);box-shadow:-10px 0 30px rgba(0,0,0,.18);transition:.25s;padding:18px;overflow:auto;z-index:50}
+    .drawer.open{right:0}
+    .row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .item{padding:14px 0;border-bottom:1px solid var(--border)}
+    .qty{display:flex;align-items:center;gap:8px;margin-top:8px}
+    .qty button{width:34px;height:34px;padding:0;border-radius:10px;border:none;background:#edf4fb;color:#1d4678;font-weight:900;cursor:pointer}
+    .totalbox{margin-top:16px;font-size:24px;font-weight:900;color:#1d4678;padding:14px;border-radius:18px;background:#f7f9fc}
+    .form{display:grid;gap:10px;margin-top:16px}
+    input,textarea,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;font:inherit;background:#fff}
+    .primary{background:#f49a27;color:#fff;border:none;border-radius:14px;padding:12px;font-weight:900;cursor:pointer}
+    .secondary{background:#edf4fb;color:#1d4678;border:1px solid var(--border);border-radius:14px;padding:12px;font-weight:900;cursor:pointer}
+    .empty{padding:28px;text-align:center;color:var(--muted)}
+    @media (max-width:980px){.hero{grid-template-columns:1fr}.drawer{width:100%}}
+  </style>
 </head>
-
 <body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="logo">CM</div>
+        <div>
+          <div class="title">Çanakoğlu Market</div>
+          <div class="sub">Gerçek ürünler • Supabase canlı bağlantı</div>
+        </div>
+      </div>
+      <button class="cartbtn" onclick="toggleCart()">🛒 Sepetim <span id="cart-count">0</span></button>
+    </div>
+  </header>
 
-<h2>Ürünler</h2>
-<div id="list"></div>
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-main">
+        <div class="chips">
+          <div class="chip">Aynı gün teslimat</div>
+          <div class="chip">Güvenli sipariş</div>
+        </div>
+        <h1>Çanakoğlu Market ile sipariş artık daha hızlı.</h1>
+        <p>Bu sürüm doğrudan Supabase içindeki <b>products</b> tablosundan ürün çeker. Hata olursa ekranda açık açık yazar.</p>
+        <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="primary" onclick="document.getElementById('products-section').scrollIntoView({behavior:'smooth'})">Alışverişe Başla</button>
+          <button class="secondary" onclick="toggleCart()">Sepetimi Aç</button>
+        </div>
+      </div>
+      <div class="hero-side">
+        <h3 style="margin-top:0">Canlı durum</h3>
+        <div id="status-box" class="status">Bağlantı hazırlanıyor...</div>
+        <div class="muted">Ürünler gelmezse burada neden gelmediği yazacak.</div>
+      </div>
+    </div>
+
+    <div id="products-section" class="section">
+      <h2>Ürünler</h2>
+      <div class="muted">Akınsoft'tan yüklenen ürünler burada görünür.</div>
+      <div class="searchbar" style="margin-top:14px">
+        <span>🔎</span>
+        <input id="search-input" type="text" placeholder="Ürün ara..." oninput="handleSearch(this.value)">
+      </div>
+      <div id="filters" class="filters"></div>
+      <div id="products" class="grid"></div>
+    </div>
+  </div>
+
+  <aside id="cart-drawer" class="drawer">
+    <div class="row">
+      <h2 style="margin:0">Sepetim</h2>
+      <button class="secondary" onclick="toggleCart()">Kapat</button>
+    </div>
+    <div id="cart-items"></div>
+    <div id="cart-empty" class="empty">Sepetin şu an boş.</div>
+    <div id="cart-total" class="totalbox" style="display:none">Toplam: 0.00 TL</div>
+
+    <div class="form">
+      <input id="customer-name" placeholder="Ad Soyad">
+      <input id="customer-phone" placeholder="Telefon">
+      <textarea id="customer-address" placeholder="Adres"></textarea>
+      <select id="payment-method">
+        <option value="Kapıda Nakit">Kapıda Nakit</option>
+        <option value="Kapıda Kart">Kapıda Kart</option>
+      </select>
+      <button class="primary" onclick="placeOrder()">Sipariş Ver</button>
+    </div>
+  </aside>
 
 <script>
-const supabaseUrl = "https://jpguymicdiujhutnycvl.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
-const client = supabase.createClient(supabaseUrl, supabaseKey);
+  const supabaseUrl = "https://jpguymicdiujhutnycvl.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
+  const client = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-async function load() {
-  const { data, error } = await client.from('products').select('*');
+  let products = [];
+  let cart = [];
+  let activeCategory = 'Hepsi';
+  let searchTerm = '';
 
-  if (error) {
-    document.body.innerHTML = "HATA: " + error.message;
-    return;
+  function money(v){ return Number(v || 0).toFixed(2) + " TL"; }
+  function qtyText(item){ return item.unit === "kg" ? Number(item.quantity).toFixed(2) + " kg" : Number(item.quantity) + " adet"; }
+  function setStatus(message, type=''){
+    const box = document.getElementById('status-box');
+    box.className = 'status' + (type ? ' ' + type : '');
+    box.textContent = message;
   }
 
-  let html = "";
+  function toggleCart(){
+    document.getElementById('cart-drawer').classList.toggle('open');
+  }
 
-  data.forEach(p => {
-    html += `<div>
-      <b>${p.name}</b> - ${p.price} TL
-    </div>`;
-  });
+  function getCategories(){
+    return ['Hepsi', ...new Set(products.map(p => p.category || 'Diğer'))];
+  }
 
-  document.getElementById("list").innerHTML = html;
-}
+  function renderFilters(){
+    const box = document.getElementById('filters');
+    box.innerHTML = getCategories().map(cat => `
+      <button class="${cat === activeCategory ? 'active' : ''}" onclick="setCategory('${String(cat).replace(/'/g, "\\'")}')">${cat}</button>
+    `).join('');
+  }
 
-load();
+  function setCategory(cat){
+    activeCategory = cat;
+    renderFilters();
+    renderProducts();
+  }
+
+  function handleSearch(v){
+    searchTerm = String(v || '').toLowerCase().trim();
+    renderProducts();
+  }
+
+  function getProductQty(productId){
+    const item = cart.find(x => x.id === productId);
+    return item ? qtyText(item) : "Henüz eklenmedi";
+  }
+
+  function renderProducts(){
+    const box = document.getElementById('products');
+    const filtered = products.filter(p => {
+      const categoryOk = activeCategory === 'Hepsi' || (p.category || 'Diğer') === activeCategory;
+      const searchOk = !searchTerm || (p.name || '').toLowerCase().includes(searchTerm) || String(p.category || '').toLowerCase().includes(searchTerm);
+      return categoryOk && searchOk;
+    });
+
+    if(!filtered.length){
+      box.innerHTML = '<div class="empty" style="grid-column:1/-1">Gösterilecek ürün bulunamadı.</div>';
+      return;
+    }
+
+    box.innerHTML = filtered.map(p => `
+      <div class="card">
+        <div class="badge">${p.category || 'Diğer'}</div>
+        <div class="name">${p.name || '-'}</div>
+        <div class="price">${money(p.price)}</div>
+        <div class="muted">Birim: ${p.unit || 'adet'} ${p.barcode ? '• Barkod: ' + p.barcode : ''}</div>
+        <div class="qtyinfo">Seçilen miktar: ${getProductQty(p.id)}</div>
+        <button class="add" onclick="addToCart('${String(p.id).replace(/'/g, "\\'")}')">Sepete Ekle</button>
+      </div>
+    `).join('');
+  }
+
+  function addToCart(id){
+    const product = products.find(x => String(x.id) === String(id));
+    if(!product) return;
+    const step = product.unit === "kg" ? 0.10 : 1;
+    const found = cart.find(x => String(x.id) === String(product.id));
+    if(found){
+      found.quantity = Number((found.quantity + step).toFixed(2));
+    } else {
+      cart.push({ ...product, quantity: step });
+    }
+    renderCart();
+    renderProducts();
+  }
+
+  function changeQty(id, delta){
+    const item = cart.find(x => String(x.id) === String(id));
+    if(!item) return;
+    const step = item.unit === "kg" ? 0.10 : 1;
+    item.quantity = Number((item.quantity + delta * step).toFixed(2));
+    if(item.quantity <= 0){
+      cart = cart.filter(x => String(x.id) !== String(id));
+    }
+    renderCart();
+    renderProducts();
+  }
+
+  function renderCart(){
+    const itemsBox = document.getElementById("cart-items");
+    const empty = document.getElementById("cart-empty");
+    const count = document.getElementById("cart-count");
+    const totalBox = document.getElementById("cart-total");
+
+    let total = 0;
+    let totalCount = 0;
+    itemsBox.innerHTML = "";
+
+    cart.forEach(item => {
+      total += Number(item.price || 0) * Number(item.quantity || 0);
+      totalCount += 1;
+      itemsBox.innerHTML += `
+        <div class="item">
+          <div class="row">
+            <strong>${item.name}</strong>
+            <span>${money(item.price)}</span>
+          </div>
+          <div class="muted">${qtyText(item)}</div>
+          <div class="qty">
+            <button onclick="changeQty('${String(item.id).replace(/'/g, "\\'")}', -1)">-</button>
+            <button onclick="changeQty('${String(item.id).replace(/'/g, "\\'")}', 1)">+</button>
+          </div>
+        </div>
+      `;
+    });
+
+    count.textContent = totalCount;
+    empty.style.display = cart.length ? "none" : "block";
+    totalBox.style.display = cart.length ? "block" : "none";
+    totalBox.textContent = "Toplam: " + money(total);
+  }
+
+  async function placeOrder(){
+    if(!cart.length){
+      alert("Sepet boş.");
+      return;
+    }
+    const customer_name = document.getElementById('customer-name').value.trim();
+    const phone = document.getElementById('customer-phone').value.trim();
+    const address = document.getElementById('customer-address').value.trim();
+    const payment_method = document.getElementById('payment-method').value;
+
+    if(!customer_name || !phone || !address){
+      alert("Ad soyad, telefon ve adres gerekli.");
+      return;
+    }
+
+    const total_amount = cart.reduce((sum, item) => sum + (Number(item.price||0) * Number(item.quantity||0)), 0);
+
+    const orderPayload = {
+      customer_name, phone, address, payment_method,
+      status: 'Yeni',
+      total: total_amount,
+      total_amount
+    };
+
+    const { data: orderData, error: orderError } = await client.from('orders').insert(orderPayload).select().single();
+    if(orderError){
+      alert("Sipariş kaydı hatası: " + orderError.message);
+      return;
+    }
+
+    const itemsPayload = cart.map(item => ({
+      order_id: orderData.id,
+      product_name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      unit: item.unit
+    }));
+
+    const { error: itemError } = await client.from('order_items').insert(itemsPayload);
+    if(itemError){
+      alert("Sipariş ürünleri kaydedilemedi: " + itemError.message);
+      return;
+    }
+
+    alert("Sipariş başarıyla kaydedildi.");
+    cart = [];
+    renderCart();
+    renderProducts();
+    document.getElementById('customer-name').value = '';
+    document.getElementById('customer-phone').value = '';
+    document.getElementById('customer-address').value = '';
+  }
+
+  async function loadProducts(){
+    setStatus("Ürünler yükleniyor...");
+    try{
+      const { data, error } = await client
+        .from('products')
+        .select('id, barcode, stock_code, name, brand, category, subcategory, unit, price, stock_qty, tax_rate, warehouse, is_active')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+
+      if(error){
+        setStatus("Supabase ürün hatası:\n" + error.message, 'err');
+        document.getElementById('products').innerHTML = '<div class="empty" style="grid-column:1/-1">Ürün alınamadı.</div>';
+        return;
+      }
+
+      if(!data || !data.length){
+        setStatus("Bağlantı kuruldu ama products tablosunda aktif ürün bulunamadı.", 'err');
+        document.getElementById('products').innerHTML = '<div class="empty" style="grid-column:1/-1">Ürün bulunamadı.</div>';
+        return;
+      }
+
+      products = data.map(p => ({
+        ...p,
+        id: p.barcode || p.stock_code || p.id,
+        unit: String(p.unit || '').toLowerCase().includes('kg') ? 'kg' : 'adet',
+        category: p.subcategory || p.category || 'Diğer'
+      }));
+
+      setStatus("Bağlantı başarılı. " + products.length + " ürün yüklendi.", 'ok');
+      renderFilters();
+      renderProducts();
+      renderCart();
+    }catch(err){
+      setStatus("Beklenmeyen hata:\n" + (err?.message || err), 'err');
+      document.getElementById('products').innerHTML = '<div class="empty" style="grid-column:1/-1">Sistem hatası oluştu.</div>';
+    }
+  }
+
+  loadProducts();
 </script>
-
 </body>
 </html>
