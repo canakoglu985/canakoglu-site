@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Çanakoğlu Market</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     :root{
       --bg:#eef3f9;
@@ -461,6 +462,38 @@
       display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(244,154,39,.14);
       color:#c97507;font-size:12px;font-weight:900;width:max-content
     }
+  
+.upload-panel{
+  background:linear-gradient(180deg,#fff,#f8fbff);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+  box-shadow:var(--shadow-soft);
+  margin:0 0 16px
+}
+.upload-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:10px;
+  align-items:end
+}
+.upload-help{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.6;
+  margin-top:8px
+}
+.upload-log{
+  margin-top:12px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:#fbfcfe;
+  white-space:pre-wrap;
+  font-size:13px;
+  color:var(--navy)
+}
+
   </style>
 </head>
 <body>
@@ -633,9 +666,34 @@
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn secondary" onclick="loadAdminProducts()">Ürünleri Yenile</button>
             </div>
-          </div>
+</div>
 
-          <div class="admin-panel" style="margin:0 0 16px;padding:16px">
+<div class="upload-panel">
+  <h3 style="margin:0 0 10px;color:var(--navy)">Excel + Görsel ile Toplu Ürün Yükleme</h3>
+  <div class="upload-grid">
+    <div>
+      <label class="muted">Excel / CSV Dosyası</label>
+      <input id="excel-file" type="file" accept=".xlsx,.xls,.csv">
+    </div>
+    <div>
+      <label class="muted">Görseller</label>
+      <input id="image-files" type="file" accept=".jpg,.jpeg,.png,.webp" multiple>
+    </div>
+    <div>
+      <button class="btn secondary" onclick="previewExcelUpload()">Önizleme Yap</button>
+    </div>
+    <div>
+      <button class="btn primary" onclick="uploadExcelProducts()">Yüklemeyi Başlat</button>
+    </div>
+  </div>
+  <div class="upload-help">
+    Excel başlıkları: <strong>barcode, name, price, category, stock_qty, unit, is_active</strong><br>
+    Görsel dosya adı barkod ile aynı olmalı. Örnek: <strong>8691234567890.jpg</strong>
+  </div>
+  <div id="upload-log" class="upload-log">Henüz yükleme yapılmadı.</div>
+</div>
+
+<div class="admin-panel" style="margin:0 0 16px;padding:16px">
             <h3 style="margin:0 0 10px;color:var(--navy)">Yeni Ürün Ekle</h3>
             <div class="product-admin-form">
               <input id="new-barcode" placeholder="Barkod">
@@ -652,6 +710,7 @@
               <input id="new-stock-qty" type="number" step="0.01" placeholder="Stok">
               <input id="new-tax-rate" type="number" step="0.01" placeholder="KDV">
               <input id="new-warehouse" placeholder="Depo">
+              <input id="new-image-url" placeholder="Görsel URL">
               <select id="new-is-active">
                 <option value="true">Aktif</option>
                 <option value="false">Pasif</option>
@@ -867,7 +926,7 @@
         return `
         <div class="card">
           <div class="promo-badge">${promoBadge(p)}</div>
-          <div class="image-wrap"><img class="product-image" src="${productImageByCategory(p.category)}" alt="${p.name}">${(hasStock && Number(p.stock_qty || 0) <= 3) ? `<span class="corner-stock-badge">Son ${Number(p.stock_qty || 0).toFixed(0)} ürün</span>` : ""}</div>
+          <div class="image-wrap"><img class="product-image" src="${p.image_url || productImageByCategory(p.category)}" alt="${p.name}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80'">${(hasStock && Number(p.stock_qty || 0) <= 3) ? `<span class="corner-stock-badge">Son ${Number(p.stock_qty || 0).toFixed(0)} ürün</span>` : ""}</div>
           <div class="badge">${categoryIcon(p.category)} ${p.category || 'Diğer'}</div>
           <div class="name">${p.name || '-'}</div>
           <div class="price">${money(p.price)}</div>
@@ -1069,7 +1128,7 @@
       try{
         const { data, error } = await client
           .from('products')
-          .select('id, barcode, stock_code, name, brand, category, subcategory, unit, price, stock_qty, tax_rate, warehouse, is_active')
+          .select('id, barcode, stock_code, name, brand, category, subcategory, unit, price, stock_qty, tax_rate, warehouse, is_active, image_url')
           .eq('is_active', true)
           .order('name', { ascending: true });
 
@@ -1144,6 +1203,7 @@
             <input id="prod-stock-${i}" type="number" step="0.01" value="${Number(p.stock_qty || 0)}" placeholder="Stok">
             <input id="prod-tax-${i}" type="number" step="0.01" value="${Number(p.tax_rate || 0)}" placeholder="KDV">
             <input id="prod-warehouse-${i}" value="${p.warehouse || ''}" placeholder="Depo">
+            <input id="prod-image-${i}" value="${p.image_url || ''}" placeholder="Görsel URL">
             <select id="prod-active-${i}">
               <option value="true" ${p.is_active ? 'selected' : ''}>Aktif</option>
               <option value="false" ${!p.is_active ? 'selected' : ''}>Pasif</option>
@@ -1188,6 +1248,7 @@
         stock_qty: Number(document.getElementById(`prod-stock-${index}`).value || 0),
         tax_rate: Number(document.getElementById(`prod-tax-${index}`).value || 0),
         warehouse: document.getElementById(`prod-warehouse-${index}`).value.trim(),
+        image_url: document.getElementById(`prod-image-${index}`).value.trim(),
         is_active: document.getElementById(`prod-active-${index}`).value === 'true'
       };
 
@@ -1221,6 +1282,7 @@
         stock_qty: Number(document.getElementById('new-stock-qty').value || 0),
         tax_rate: Number(document.getElementById('new-tax-rate').value || 0),
         warehouse: document.getElementById('new-warehouse').value.trim(),
+        image_url: document.getElementById('new-image-url').value.trim(),
         is_active: document.getElementById('new-is-active').value === 'true'
       };
 
@@ -1236,11 +1298,12 @@
       }
 
       alert('Yeni ürün eklendi.');
-      ['new-barcode','new-stock-code','new-name','new-category','new-subcategory','new-price','new-stock-qty','new-tax-rate','new-warehouse'].forEach(id => {
+      ['new-barcode','new-stock-code','new-name','new-category','new-subcategory','new-price','new-stock-qty','new-tax-rate','new-warehouse','new-image-url'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.value = '';
       });
       document.getElementById('new-brand').value = 'SÜTAŞ';
+      document.getElementById('new-image-url').value = '';
       document.getElementById('new-unit').value = 'adet';
       document.getElementById('new-is-active').value = 'true';
 
@@ -1562,6 +1625,178 @@
         </div>
       `).join('');
     }
+
+
+let uploadPreviewRows = [];
+
+function setUploadLog(message){
+  const el = document.getElementById('upload-log');
+  if(el) el.textContent = message;
+}
+
+function normalizeUploadText(val){
+  return String(val ?? '').trim();
+}
+
+function normalizeUploadBarcode(val){
+  return String(val ?? '').trim().replace(/\s+/g,'');
+}
+
+function normalizeUploadNumber(val, fallback = 0){
+  if(val === null || val === undefined || val === '') return fallback;
+  const n = Number(String(val).replace(',', '.'));
+  return Number.isNaN(n) ? fallback : n;
+}
+
+function normalizeUploadBool(val){
+  const raw = val ?? '';
+  if(raw === true || raw === false) return raw;
+  const v = String(raw).trim().toLowerCase();
+  if(['false','0','hayir','hayır','pasif'].includes(v)) return false;
+  return true;
+}
+
+async function readExcelRowsFromFile(file){
+  if(!file) throw new Error('Excel dosyası seçilmedi.');
+  const ext = String(file.name || '').toLowerCase();
+
+  if(ext.endsWith('.csv')){
+    const raw = await file.text();
+    const lines = raw.split(/\r?\n/).filter(Boolean);
+    if(!lines.length) return [];
+    const splitter = lines[0].includes(';') ? ';' : ',';
+    const headers = lines[0].split(splitter).map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const cols = line.split(splitter);
+      const row = {};
+      headers.forEach((h, i) => row[h] = cols[i] ?? '');
+      return row;
+    });
+  }
+
+  if(typeof XLSX === 'undefined') throw new Error('Excel kütüphanesi yüklenemedi.');
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type:'array' });
+  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(firstSheet, { defval:'' });
+}
+
+function mapUploadRows(rawRows){
+  return rawRows.map(row => ({
+    barcode: normalizeUploadBarcode(row.barcode || row.BARCODE || row.Barkod || row.barkod),
+    name: normalizeUploadText(row.name || row.NAME || row['Ürün Adı'] || row['Ürün'] || row.urun_adi || row.product_name),
+    price: normalizeUploadNumber(row.price || row.PRICE || row.fiyat),
+    category: normalizeUploadText(row.category || row.CATEGORY || row.kategori),
+    stock_qty: normalizeUploadNumber(row.stock_qty || row.STOCK_QTY || row.stok || row.stock),
+    unit: String(row.unit || row.UNIT || row.birim || 'adet').toLowerCase().includes('kg') ? 'kg' : 'adet',
+    is_active: normalizeUploadBool(row.is_active || row.IS_ACTIVE || row.aktif || true)
+  })).filter(row => row.barcode && row.name);
+}
+
+async function previewExcelUpload(){
+  try{
+    const file = document.getElementById('excel-file')?.files?.[0];
+    const rawRows = await readExcelRowsFromFile(file);
+    uploadPreviewRows = mapUploadRows(rawRows);
+
+    if(!uploadPreviewRows.length){
+      setUploadLog('Geçerli ürün satırı bulunamadı.');
+      return;
+    }
+
+    const previewText = uploadPreviewRows.slice(0, 10).map((row, i) =>
+      `${i + 1}. ${row.barcode} | ${row.name} | ${row.price} | ${row.category} | ${row.stock_qty} | ${row.unit}`
+    ).join('\n');
+
+    setUploadLog(previewText + `\n\nToplam okunacak ürün: ${uploadPreviewRows.length}`);
+  }catch(err){
+    setUploadLog('Önizleme hatası: ' + (err?.message || err));
+  }
+}
+
+async function uploadExcelProducts(){
+  try{
+    const excelFile = document.getElementById('excel-file')?.files?.[0];
+    const imageFiles = Array.from(document.getElementById('image-files')?.files || []);
+
+    if(!excelFile){
+      setUploadLog('Önce Excel dosyası seç.');
+      return;
+    }
+
+    if(!uploadPreviewRows.length){
+      const rawRows = await readExcelRowsFromFile(excelFile);
+      uploadPreviewRows = mapUploadRows(rawRows);
+    }
+
+    if(!uploadPreviewRows.length){
+      setUploadLog('Yüklenecek geçerli ürün bulunamadı.');
+      return;
+    }
+
+    const imageMap = {};
+    imageFiles.forEach(file => {
+      const idx = file.name.lastIndexOf('.');
+      const barcode = normalizeUploadBarcode(idx > -1 ? file.name.slice(0, idx) : file.name);
+      if(barcode) imageMap[barcode] = file;
+    });
+
+    let uploadedImageCount = 0;
+    const rowsToUpsert = [];
+
+    setUploadLog('Yükleme başladı...');
+
+    for(const row of uploadPreviewRows){
+      let imageUrl = '';
+      const img = imageMap[row.barcode];
+
+      if(img){
+        const ext = String(img.name.split('.').pop() || 'jpg').toLowerCase();
+        const filePath = `${row.barcode}.${ext}`;
+
+        const { error: uploadError } = await client
+          .storage
+          .from('product-images')
+          .upload(filePath, img, { cacheControl:'3600', upsert:true });
+
+        if(uploadError){
+          console.error('Görsel yükleme hatası:', row.barcode, uploadError.message);
+        } else {
+          const { data: publicData } = client.storage.from('product-images').getPublicUrl(filePath);
+          imageUrl = publicData?.publicUrl || '';
+          uploadedImageCount++;
+        }
+      }
+
+      rowsToUpsert.push({
+        barcode: row.barcode,
+        name: row.name,
+        category: row.category,
+        subcategory: row.category,
+        price: row.price,
+        stock_qty: row.stock_qty,
+        unit: row.unit,
+        is_active: row.is_active,
+        image_url: imageUrl || null
+      });
+    }
+
+    const { error } = await client
+      .from('products')
+      .upsert(rowsToUpsert, { onConflict:'barcode' });
+
+    if(error){
+      setUploadLog('Ürün kaydı hatası: ' + error.message);
+      return;
+    }
+
+    setUploadLog(`Tamamlandı. ${rowsToUpsert.length} ürün işlendi. ${uploadedImageCount} görsel yüklendi.`);
+    await loadAdminProducts();
+    await loadProducts();
+  }catch(err){
+    setUploadLog('Genel hata: ' + (err?.message || err));
+  }
+}
 
     renderSlider();
     resetSlideTimer();
