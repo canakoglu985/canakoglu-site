@@ -62,6 +62,7 @@
       border:none;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer;
       text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px
     }
+    .btn:disabled{opacity:.7;cursor:not-allowed}
     .primary{background:var(--orange-gradient);color:#fff;box-shadow:0 10px 20px rgba(244,154,39,.2)}
     .secondary{background:#edf4fb;color:var(--navy);border:1px solid var(--border)}
     .danger{background:#b93636;color:#fff}
@@ -358,9 +359,29 @@ const products = [
 ];
 
 let cart = [];
+let isSubmitting = false;
 
 function money(v){ return Number(v || 0).toFixed(2) + " TL"; }
 function qtyText(item){ return item.unit === "kg" ? Number(item.quantity).toFixed(2) + " kg" : Number(item.quantity) + " adet"; }
+function escapeHtml(value){
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+function normalizePhone(value){
+  return String(value || "").replace(/\D+/g, "");
+}
+function setOrderButtonLoading(loading){
+  const btn = document.querySelector('#cart-drawer .form .btn.primary');
+  if(!btn) return;
+  btn.disabled = loading;
+  btn.style.opacity = loading ? "0.7" : "1";
+  btn.style.cursor = loading ? "not-allowed" : "pointer";
+  btn.textContent = loading ? "Sipariş Gönderiliyor..." : "Sipariş Ver";
+}
 
 function renderProducts(){
   const box = document.getElementById("products");
@@ -428,7 +449,8 @@ function renderCart(){
   });
 
   empty.style.display = cart.length ? "none" : "block";
-  count.textContent = "(" + cart.length + ")";
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  count.textContent = "(" + (totalCount % 1 === 0 ? totalCount : totalCount.toFixed(2)) + ")";
   totalBox.textContent = money(total);
 }
 
@@ -455,12 +477,12 @@ function showSuccess(order){
   const summary = document.getElementById("order-summary");
   const btn = document.getElementById("whatsapp-btn");
   summary.innerHTML = `
-    <strong>${order.customer_name}</strong><br>
-    Telefon: ${order.phone || "-"}<br>
-    Adres: ${order.address || "-"}<br>
-    Ödeme: ${order.payment_method}<br>
+    <strong>${escapeHtml(order.customer_name || "Misafir")}</strong><br>
+    Telefon: ${escapeHtml(order.phone || "-")}<br>
+    Adres: ${escapeHtml(order.address || "-")}<br>
+    Ödeme: ${escapeHtml(order.payment_method || "-")}<br>
     Toplam: ${money(order.total)}<br><br>
-    ${order.items.map(i => `• ${i.name} - ${qtyText(i)} - ${money(i.price * i.quantity)}`).join("<br>")}
+    ${order.items.map(i => `• ${escapeHtml(i.name)} - ${qtyText(i)} - ${money(i.price * i.quantity)}`).join("<br>")}
   `;
   btn.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsappMessage(order)}`;
   modal.classList.add("show");
@@ -471,16 +493,33 @@ function closeSuccessModal(){
 }
 
 async function placeOrder(){
+  if(isSubmitting) return;
+
   if(!cart.length){
     alert("Önce sepete ürün ekleyin.");
     return;
   }
 
   const customer_name = document.getElementById("customer-name").value.trim() || "Misafir";
-  const phone = document.getElementById("customer-phone").value.trim();
+  const phone = normalizePhone(document.getElementById("customer-phone").value.trim());
   const address = document.getElementById("customer-address").value.trim();
   const payment_method = document.getElementById("payment-method").value;
   const total = Number(cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2));
+
+  if(!phone){
+    alert("Telefon numarası girin.");
+    return;
+  }
+
+  if(!address){
+    alert("Adres girin.");
+    return;
+  }
+
+  if(!window.supabase?.createClient){
+    alert("Supabase bağlantısı yüklenemedi. Sayfayı yenileyip tekrar deneyin.");
+    return;
+  }
 
   const orderPayload = {
     customer_name,
@@ -494,6 +533,9 @@ async function placeOrder(){
   };
 
   try{
+    isSubmitting = true;
+    setOrderButtonLoading(true);
+
     const { data: insertedOrder, error: orderError } = await supabaseClient
       .from("orders")
       .insert([orderPayload])
@@ -501,23 +543,25 @@ async function placeOrder(){
       .single();
 
     if(orderError){
-      alert("Sipariş kaydı hatası: " + orderError.message);
-      return;
+      throw new Error("Sipariş kaydı hatası: " + orderError.message);
     }
 
     const orderId = insertedOrder?.id;
-    if(orderId){
-      const rows = cart.map(item => ({
-        order_id: orderId,
-        product_name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        unit: item.unit
-      }));
-      const { error: itemError } = await supabaseClient.from("order_items").insert(rows);
-      if(itemError){
-        alert("Sipariş kaydedildi ama ürün kalemleri yazılamadı: " + itemError.message);
-      }
+    if(!orderId){
+      throw new Error("Sipariş kaydedildi ama sipariş numarası alınamadı.");
+    }
+
+    const rows = cart.map(item => ({
+      order_id: orderId,
+      product_name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      unit: item.unit
+    }));
+
+    const { error: itemError } = await supabaseClient.from("order_items").insert(rows);
+    if(itemError){
+      throw new Error("Sipariş kaydedildi ama ürün kalemleri yazılamadı: " + itemError.message);
     }
 
     showSuccess({ ...orderPayload, items: [...cart] });
@@ -526,9 +570,13 @@ async function placeOrder(){
     document.getElementById("customer-name").value = "";
     document.getElementById("customer-phone").value = "";
     document.getElementById("customer-address").value = "";
+    document.getElementById("payment-method").selectedIndex = 0;
     if(document.getElementById("cart-drawer").classList.contains("open")) toggleCart();
   }catch(err){
-    alert("Beklenmeyen hata: " + (err?.message || err));
+    alert(err?.message || "Beklenmeyen bir hata oluştu.");
+  }finally{
+    isSubmitting = false;
+    setOrderButtonLoading(false);
   }
 }
 
