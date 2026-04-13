@@ -142,42 +142,63 @@
     }
 
     .wrap{padding:20px}
-    .hero-grid{display:grid;grid-template-columns:1.35fr .95fr;gap:18px;margin:0 0 22px}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.95fr);gap:18px;margin:0 0 22px;align-items:stretch}
     .hero-card,.mini-card{
-      border-radius:26px;overflow:hidden;position:relative;box-shadow:var(--shadow)
+      border-radius:28px;overflow:hidden;position:relative;box-shadow:var(--shadow)
     }
     .hero-card{
-      background:var(--gradient);color:#fff;padding:30px;min-height:240px
+      background:
+        linear-gradient(135deg,rgba(9,33,63,.96) 0%,rgba(22,55,94,.98) 52%,rgba(37,91,148,.95) 100%);
+      color:#fff;padding:34px;min-height:280px;border:1px solid rgba(255,255,255,.08)
     }
     .hero-card::before{
-      content:"";position:absolute;right:-40px;top:-25px;width:180px;height:180px;border-radius:50%;
-      background:rgba(244,154,39,.20)
+      content:"";position:absolute;right:-70px;top:-70px;width:220px;height:220px;border-radius:50%;
+      background:radial-gradient(circle, rgba(244,154,39,.30) 0%, rgba(244,154,39,.10) 55%, transparent 70%)
     }
     .hero-card::after{
-      content:"";position:absolute;left:-30px;bottom:-45px;width:150px;height:150px;border-radius:50%;
-      background:rgba(57,168,82,.12)
+      content:"";position:absolute;left:-80px;bottom:-90px;width:230px;height:230px;border-radius:50%;
+      background:radial-gradient(circle, rgba(255,255,255,.10) 0%, rgba(255,255,255,.03) 55%, transparent 72%)
     }
     .hero-card > *{position:relative;z-index:1}
-    .hero-card h1{margin:0 0 10px;font-size:36px}
-    .hero-card p{margin:0;color:rgba(255,255,255,.92);line-height:1.6;max-width:640px}
-    .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .hero-topline{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+    .hero-card h1{margin:0 0 12px;font-size:44px;line-height:1.08;max-width:720px;letter-spacing:-.8px}
+    .hero-card p{margin:0;color:rgba(255,255,255,.90);line-height:1.7;max-width:660px;font-size:16px}
+    .hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
     .hero-chip{
       display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;
-      background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);font-size:13px;font-weight:800
+      background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);font-size:13px;font-weight:800;
+      backdrop-filter:none
     }
+    .hero-points{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:24px}
+    .hero-point{
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:14px 16px
+    }
+    .hero-point .value{font-size:20px;font-weight:900;margin-bottom:4px}
+    .hero-point .label{font-size:12px;color:rgba(255,255,255,.84);font-weight:700;line-height:1.5}
     .mini-stack{display:grid;gap:18px}
     .mini-card{
-      background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(245,248,252,.96));
+      background:linear-gradient(180deg,#ffffff 0%,#f7fafe 100%);
       border:1px solid var(--border);padding:22px
     }
-    .mini-card h3{margin:0 0 8px;color:var(--navy)}
+    .mini-card h3{margin:0 0 8px;color:var(--navy);font-size:18px}
     .mini-card p{margin:0;color:var(--muted);line-height:1.6}
     .status{
       margin-top:12px;padding:14px 16px;border-radius:16px;border:1px solid var(--border);
-      background:#f7f9fc;color:var(--navy);font-weight:700
+      background:#f7f9fc;color:var(--navy);font-weight:800
     }
     .status.ok{background:#edf9f0;color:#1e7b36;border-color:#c6e7cf}
     .status.err{background:#fff3f3;color:var(--danger);border-color:#f0c9c9;white-space:pre-wrap}
+    .mini-info-grid{display:grid;gap:12px}
+    .mini-info{
+      display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:18px;
+      background:#fff;border:1px solid rgba(29,70,120,.08)
+    }
+    .mini-info .icon{
+      width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+      background:rgba(244,154,39,.12);font-size:18px;flex:0 0 40px
+    }
+    .mini-info strong{display:block;color:var(--navy);margin-bottom:4px}
+    .mini-info span{display:block;color:var(--muted);font-size:13px;line-height:1.55}
 
     .search-top{
       background:var(--card);
@@ -363,6 +384,8 @@
 
     @media (max-width:980px){
       .hero-grid{grid-template-columns:1fr}
+      .hero-card h1{font-size:36px}
+      .hero-points{grid-template-columns:1fr}
       .drawer{width:100%}
       .search-top{grid-template-columns:1fr}
       .search-hint{text-align:left}
@@ -650,25 +673,63 @@
   <div class="wrap">
     <div class="hero-grid">
       <div class="hero-card">
-        <div class="hero-chip">Canlı ürün listesi</div>
-        <div class="hero-chip">Hızlı sipariş</div>
-        <div class="hero-chip">Güncel market sistemi</div>
-        <h1>Çanakoğlu Online Market ile günlük ihtiyaçların kapında.</h1>
-        <p>Ürünler veritabanından canlı geliyor. Arama yap, kategori seç, sepete ekle ve siparişini kolayca tamamla.</p>
+        <div class="hero-topline">
+          <div class="hero-chip">Canlı ürün listesi</div>
+          <div class="hero-chip">Hızlı sipariş</div>
+          <div class="hero-chip">Aynı gün teslimat</div>
+        </div>
+        <h1>Çanakoğlu Online Market ile günlük ihtiyaçların tek ekranda.</h1>
+        <p>Tüm ürünleri canlı listeden gör, hızlıca sepete ekle ve siparişini birkaç adımda tamamla. Modern vitrin, net görünüm ve kolay kullanım ile market alışverişin artık daha rahat.</p>
         <div class="hero-actions">
           <button class="btn primary" onclick="document.getElementById('urunler').scrollIntoView({behavior:'smooth'})">Alışverişe Başla</button>
           <button class="btn secondary" onclick="toggleCart()">Sepetimi Aç</button>
+        </div>
+        <div class="hero-points">
+          <div class="hero-point">
+            <div class="value">Canlı Stok</div>
+            <div class="label">Ürünler doğrudan sistemden gelir, güncel stokla listelenir.</div>
+          </div>
+          <div class="hero-point">
+            <div class="value">Kolay Sipariş</div>
+            <div class="label">Arama, kategori ve sepet tek akışta çalışır.</div>
+          </div>
+          <div class="hero-point">
+            <div class="value">WhatsApp Destekli</div>
+            <div class="label">Sipariş kaydı ve markete hızlı iletim aynı sistemde.</div>
+          </div>
         </div>
       </div>
       <div class="mini-stack">
         <div class="mini-card">
           <h3>Canlı Durum</h3>
-          <p>Sistem bağlantısı ve ürün durumu aşağıda otomatik görünür.</p>
+          <p>Sistem bağlantısı ve aktif ürün durumu anlık olarak burada görünür.</p>
           <div id="status-box" class="status">Ürünler yükleniyor...</div>
         </div>
         <div class="mini-card">
-          <h3>Kolay Kullanım</h3>
-          <p>Arama, kategori, sepet ve sipariş tek ekranda. Gereksiz test alanları kaldırıldı, görünüm sadeleştirildi.</p>
+          <h3>Hızlı Bilgiler</h3>
+          <div class="mini-info-grid">
+            <div class="mini-info">
+              <div class="icon">🚚</div>
+              <div>
+                <strong>Hızlı Teslimat</strong>
+                <span>Yakın bölgelere pratik ve düzenli sipariş akışı.</span>
+              </div>
+            </div>
+            <div class="mini-info">
+              <div class="icon">🛒</div>
+              <div>
+                <strong>Kolay Sepet</strong>
+                <span>Adet ve kg ürünler için uygun miktar adımıyla çalışır.</span>
+              </div>
+            </div>
+            <div class="mini-info">
+              <div class="icon">📲</div>
+              <div>
+                <strong>Hızlı İletişim</strong>
+                <span>Market ile WhatsApp üzerinden sipariş paylaşımı hazırdır.</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
