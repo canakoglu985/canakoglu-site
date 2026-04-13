@@ -443,10 +443,28 @@
     }
 
   
-    .auth-note{
-      margin-top:10px;padding:12px 14px;border-radius:14px;background:#f7f9fc;border:1px solid var(--border);
-      color:var(--muted);font-size:13px;line-height:1.6
+    .top-tools{
+      display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;margin:0 0 18px
     }
+    .tool-chip{
+      display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;
+      background:#fff;border:1px solid var(--border);font-size:13px;font-weight:800;color:var(--navy)
+    }
+    .sort-select{min-width:190px}
+    .toggle-wrap{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px 12px}
+    .low-stock{display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(244,154,39,.14);color:#c97507;font-size:12px;font-weight:900;width:max-content}
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+    .successmodal{
+      position:fixed;inset:0;background:rgba(8,18,31,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:100
+    }
+    .successmodal.show{display:flex}
+    .successbox{
+      width:100%;max-width:560px;background:#fff;border-radius:24px;padding:24px;border:1px solid var(--border);box-shadow:var(--shadow)
+    }
+    .tracker-grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+    .tracker-results{margin-top:14px;display:grid;gap:12px}
+    .tracker-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow-soft)}
+    .mini-btn{padding:10px 12px;border-radius:12px}
 
   </style>
 </head>
@@ -498,7 +516,7 @@
     <div class="search-top">
       <div class="search-input-wrap">
         <span>🔎</span>
-        <input id="search-input-top" type="text" placeholder="Ürün ara... örn: süt, yoğurt, peynir" oninput="handleSearch(this.value)" />
+        <input id="search-input-top" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" name="market_product_search" placeholder="Ürün ara... örn: süt, yoğurt, peynir" oninput="handleSearch(this.value)" />
       </div>
       <div class="search-hint">Ürünleri hızlı bulmak için arama yapabilir veya aşağıdan kategori seçebilirsin.</div>
     </div>
@@ -519,9 +537,34 @@
         <div id="results-info" class="muted">Yükleniyor...</div>
       </div>
 
+      <div class="top-tools">
+        <div class="tool-chip" id="summary-chip">Canlı ürün listesi hazır</div>
+        <select id="sort-select" class="sort-select" onchange="setSort(this.value)">
+          <option value="name_asc">İsme Göre (A-Z)</option>
+          <option value="price_asc">Fiyata Göre (Ucuzdan)</option>
+          <option value="price_desc">Fiyata Göre (Pahalıdan)</option>
+          <option value="stock_desc">Stoka Göre</option>
+        </select>
+        <label class="toggle-wrap"><input type="checkbox" id="hide-out-stock" onchange="toggleHideOutStock(this.checked)"> Stok yokları gizle</label>
+      </div>
       <div id="category-bar" class="category-bar"></div>
       <div id="products" class="grid"></div>
     
+    
+    <div class="section" id="siparis-takip">
+      <div class="section-head">
+        <div>
+          <h2>Sipariş Takibi</h2>
+          <p>Telefon numaran ile son sipariş durumlarını görebilirsin.</p>
+        </div>
+      </div>
+      <div class="tracker-grid">
+        <input id="tracker-phone" placeholder="Telefon numaranı yaz">
+        <button class="btn primary mini-btn" onclick="trackOrders()">Siparişlerimi Göster</button>
+      </div>
+      <div id="tracker-results" class="tracker-results"></div>
+    </div>
+
     <div class="admin-panel" id="admin-panel">
       <div class="section-head">
         <div>
@@ -535,16 +578,13 @@
         <div class="admin-login">
           <div>
             <label class="muted">Admin E-posta</label>
-            <input id="admin-email" placeholder="Admin e-posta" />
+            <input id="admin-email" value="admin@market.com" autocomplete="off" autocapitalize="off" spellcheck="false" name="market_admin_email" autocomplete="off" autocapitalize="off" spellcheck="false" name="market_admin_email" />
           </div>
           <div>
             <label class="muted">Şifre</label>
-            <input id="admin-password" type="password" placeholder="Admin şifre" />
+            <input id="admin-password" type="password" value="123456" autocomplete="new-password" name="market_admin_password" autocomplete="new-password" name="market_admin_password" />
           </div>
           <button class="btn primary" onclick="adminLogin()">Admin Girişi</button>
-        </div>
-        <div class="auth-note">
-          Bu sürümde admin girişi Supabase Auth ile çalışır. Supabase içinde oluşturduğun admin e-posta ile giriş yapılırsa admin panel açılır.
         </div>
       </div>
 
@@ -590,7 +630,14 @@
                 <option value="İptal">İptal</option>
               </select>
             </div>
+            <select id="admin-date-filter" onchange="applyAdminFilters()">
+              <option value="Hepsi">Tüm Tarihler</option>
+              <option value="Bugün">Bugün</option>
+              <option value="Hafta">Bu Hafta</option>
+              <option value="Ay">Bu Ay</option>
+            </select>
             <button class="btn secondary" onclick="loadAdminOrders()">Yenile</button>
+            <button class="btn secondary" onclick="exportOrdersCsv()">CSV Dışa Aktar</button>
             <button class="btn secondary" onclick="adminLogout()">Çıkış</button>
           </div>
 
@@ -602,6 +649,23 @@
             <div class="muted">Ürünleri buradan yönetebilirsin.</div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn secondary" onclick="loadAdminProducts()">Ürünleri Yenile</button>
+              <button class="btn secondary" onclick="exportProductsCsv()">Ürünleri CSV Dışa Aktar</button>
+            </div>
+          </div>
+
+          <div class="admin-panel" style="margin:0 0 16px;padding:16px">
+            <h3 style="margin:0 0 10px;color:var(--navy)">Sistem Ayarları</h3>
+            <div class="settings-grid">
+              <div><label class="muted">Düşük Stok Eşiği</label><input id="set-low-stock" type="number" step="1"></div>
+              <div><label class="muted">Minimum Sipariş</label><input id="set-min-order" type="number" step="0.01"></div>
+              <div><label class="muted">Teslimat Ücreti</label><input id="set-delivery-fee" type="number" step="0.01"></div>
+              <div><label class="muted">Ücretsiz Teslimat Eşiği</label><input id="set-free-delivery" type="number" step="0.01"></div>
+              <div><label class="muted">Kupon Kodu</label><input id="set-coupon-code"></div>
+              <div><label class="muted">Kupon Tipi</label><select id="set-coupon-type"><option value="percent">% İndirim</option><option value="fixed">Sabit Tutar</option></select></div>
+              <div><label class="muted">Kupon Değeri</label><input id="set-coupon-value" type="number" step="0.01"></div>
+            </div>
+            <div class="product-admin-actions">
+              <button class="btn primary" onclick="saveSettings()">Ayarları Kaydet</button>
             </div>
           </div>
 
@@ -653,6 +717,11 @@
       <input id="customer-name" placeholder="Ad Soyad">
       <input id="customer-phone" placeholder="Telefon">
       <textarea id="customer-address" placeholder="Adres"></textarea>
+      <textarea id="order-note" placeholder="Sipariş notu (isteğe bağlı)"></textarea>
+      <div class="row">
+        <input id="coupon-code" placeholder="İndirim kodu">
+        <button class="btn secondary mini-btn" type="button" onclick="applyCoupon()">Kupon Uygula</button>
+      </div>
       <select id="payment-method">
         <option value="Kapıda Nakit">Kapıda Nakit</option>
         <option value="Kapıda Kart">Kapıda Kart</option>
@@ -662,11 +731,23 @@
     </div>
   </aside>
 
+  
+  <div id="success-modal" class="successmodal">
+    <div class="successbox">
+      <h2 style="margin-top:0;color:var(--navy)">Sipariş Alındı</h2>
+      <div id="success-content" class="muted" style="line-height:1.8"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn primary" onclick="closeSuccessModal()">Tamam</button>
+        <button class="btn secondary" onclick="toggleCart();closeSuccessModal()">Sepete Dön</button>
+      </div>
+    </div>
+  </div>
+
+
   <script>
     const supabaseUrl = "https://jpguymicdiujhutnycvl.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
     const client = window.supabase.createClient(supabaseUrl, supabaseKey);
-    const ADMIN_EMAIL = 'admin@market.com';
 
     const sliderItems = [
       {
@@ -692,9 +773,81 @@
     let cart = [];
     let activeCategory = 'Hepsi';
     let searchTerm = '';
+    let sortMode = localStorage.getItem('market_sort_mode') || 'name_asc';
+    let hideOutOfStock = localStorage.getItem('market_hide_out_stock') === 'true';
+    let couponState = { code: '', type: '', value: 0, amount: 0 };
+    let knownOrderCount = 0;
+    let settings = JSON.parse(localStorage.getItem('market_settings') || '{"lowStockThreshold":5,"minOrderAmount":0,"deliveryFee":0,"freeDeliveryThreshold":0,"couponCode":"INDIRIM10","couponType":"percent","couponValue":10}');
 
     function money(v){ return Number(v || 0).toFixed(2) + " TL"; }
     function qtyText(item){ return item.unit === "kg" ? Number(item.quantity).toFixed(2) + " kg" : Number(item.quantity) + " adet"; }
+    function normalizedPhone(value){
+      return String(value || '').replace(/\D+/g,'');
+    }
+    function getSubtotal(){
+      return cart.reduce((sum, item) => sum + (Number(item.price||0) * Number(item.quantity||0)), 0);
+    }
+    function getDeliveryFee(subtotal){
+      if(Number(settings.freeDeliveryThreshold || 0) > 0 && subtotal >= Number(settings.freeDeliveryThreshold || 0)) return 0;
+      return Number(settings.deliveryFee || 0);
+    }
+    function getDiscountAmount(subtotal){
+      if(!couponState.code || !couponState.value) return 0;
+      if(couponState.type === 'fixed') return Math.min(subtotal, Number(couponState.value || 0));
+      return subtotal * (Number(couponState.value || 0) / 100);
+    }
+    function getCartTotal(){
+      const subtotal = getSubtotal();
+      const discount = getDiscountAmount(subtotal);
+      const delivery = getDeliveryFee(subtotal);
+      return Math.max(0, subtotal - discount + delivery);
+    }
+    function applyCoupon(){
+      const entered = (document.getElementById('coupon-code').value || '').trim();
+      if(!entered){
+        alert('İndirim kodu yaz.');
+        return;
+      }
+      if(entered.toUpperCase() !== String(settings.couponCode || '').toUpperCase()){
+        couponState = { code:'', type:'', value:0, amount:0 };
+        alert('Kupon kodu geçersiz.');
+        renderCart();
+        return;
+      }
+      couponState = { code: entered, type: settings.couponType || 'percent', value: Number(settings.couponValue || 0), amount: 0 };
+      alert('Kupon uygulandı.');
+      renderCart();
+    }
+    function setSort(value){
+      sortMode = value;
+      localStorage.setItem('market_sort_mode', value);
+      renderProducts();
+    }
+    function toggleHideOutStock(checked){
+      hideOutOfStock = !!checked;
+      localStorage.setItem('market_hide_out_stock', String(hideOutOfStock));
+      renderProducts();
+    }
+    function sortProducts(list){
+      const arr = [...list];
+      if(sortMode === 'price_asc') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
+      else if(sortMode === 'price_desc') arr.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
+      else if(sortMode === 'stock_desc') arr.sort((a,b)=>Number(b.stock_qty||0)-Number(a.stock_qty||0));
+      else arr.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''), 'tr'));
+      return arr;
+    }
+    function closeSuccessModal(){
+      document.getElementById('success-modal').classList.remove('show');
+    }
+    function updateSummaryChip(){
+      const subtotal = getSubtotal();
+      const total = getCartTotal();
+      const parts = [`Minimum sipariş: ${money(settings.minOrderAmount || 0)}`];
+      if(couponState.code) parts.push(`Kupon aktif: ${couponState.code}`);
+      if(subtotal > 0) parts.push(`Sepet toplamı: ${money(total)}`);
+      document.getElementById('summary-chip').textContent = parts.join(' • ');
+    }
+
 
     function setStatus(message, type=''){
       const box = document.getElementById('status-box');
@@ -817,13 +970,17 @@
 
     function renderProducts(){
       const box = document.getElementById('products');
-      const filtered = products.filter(p => {
+      let filtered = products.filter(p => {
         const categoryOk = activeCategory === 'Hepsi' || (p.category || 'Diğer') === activeCategory;
         const searchOk = !searchTerm || String(p.name || '').toLowerCase().includes(searchTerm) || String(p.category || '').toLowerCase().includes(searchTerm);
-        return categoryOk && searchOk;
+        const stockOk = hideOutOfStock ? Number(p.stock_qty || 0) > 0 : true;
+        return categoryOk && searchOk && stockOk;
       });
 
+      filtered = sortProducts(filtered);
       document.getElementById('results-info').textContent = filtered.length + " ürün gösteriliyor";
+      document.getElementById('sort-select').value = sortMode;
+      document.getElementById('hide-out-stock').checked = hideOutOfStock;
 
       if(!filtered.length){
         box.innerHTML = '<div class="empty" style="grid-column:1/-1">Aramana uygun ürün bulunamadı.</div>';
@@ -831,9 +988,10 @@
       }
 
       box.innerHTML = filtered.map(p => {
-        const hasStock = Number(p.stock_qty || 0) > 0;
-        const stockText = hasStock ? `Stok: ${Number(p.stock_qty || 0).toFixed(0)} adet` : 'Stok Yok';
-        const stockClass = hasStock ? 'stock' : 'out-stock';
+        const stockQty = Number(p.stock_qty || 0);
+        const hasStock = stockQty > 0;
+        const stockText = !hasStock ? 'Stok Yok' : stockQty <= Number(settings.lowStockThreshold || 5) ? `Son ${stockQty.toFixed(0)} ürün` : `Stok: ${stockQty.toFixed(0)} adet`;
+        const stockClass = !hasStock ? 'out-stock' : stockQty <= Number(settings.lowStockThreshold || 5) ? 'low-stock' : 'stock';
         return `
         <div class="card">
           <div class="promo-badge">${promoBadge(p)}</div>
@@ -847,6 +1005,7 @@
           <button class="btn primary product-add-btn" style="margin-top:auto" onclick="addToCart('${String(p.id).replace(/'/g,"\'")}')" ${hasStock ? '' : 'disabled'}>${hasStock ? 'Sepete Ekle' : 'Stok Yok'}</button>
         </div>
       `}).join('');
+      updateSummaryChip();
     }
 
     function addToCart(id){
@@ -899,11 +1058,11 @@
       const cartBtn = document.getElementById("cart-btn");
 
       itemsBox.innerHTML = "";
-      let total = 0;
+      let subtotal = 0;
       let totalCount = 0;
 
       cart.forEach(item => {
-        total += Number(item.price || 0) * Number(item.quantity || 0);
+        subtotal += Number(item.price || 0) * Number(item.quantity || 0);
         totalCount += 1;
         itemsBox.innerHTML += `
           <div class="item">
@@ -913,21 +1072,31 @@
             </div>
             <div class="muted">${qtyText(item)}</div>
             <div class="qty">
-              <button class="btn secondary" onclick="changeQty('${String(item.id).replace(/'/g,"\\'")}', -1)">-</button>
-              <button class="btn secondary" onclick="changeQty('${String(item.id).replace(/'/g,"\\'")}', 1)">+</button>
+              <button class="btn secondary" onclick="changeQty('${String(item.id).replace(/'/g,"\'")}', -1)">-</button>
+              <button class="btn secondary" onclick="changeQty('${String(item.id).replace(/'/g,"\'")}', 1)">+</button>
             </div>
           </div>
         `;
       });
 
+      const discount = getDiscountAmount(subtotal);
+      const delivery = getDeliveryFee(subtotal);
+      const total = Math.max(0, subtotal - discount + delivery);
+
       count.textContent = totalCount;
       cartBtn.classList.toggle('has-items', totalCount > 0);
       empty.style.display = cart.length ? "none" : "block";
       totalBox.style.display = cart.length ? "block" : "none";
-      totalBox.textContent = "Toplam: " + money(total);
+      totalBox.innerHTML = `
+        <div>Ara Toplam: ${money(subtotal)}</div>
+        <div>İndirim: -${money(discount)}</div>
+        <div>Teslimat: ${money(delivery)}</div>
+        <div style="margin-top:6px;font-size:26px">Genel Toplam: ${money(total)}</div>
+      `;
+      updateSummaryChip();
     }
 
-    async function placeOrder(){
+    function placeOrder(){
       if(!cart.length){
         alert("Sepet boş.");
         return;
@@ -935,6 +1104,7 @@
       const customer_name = document.getElementById('customer-name').value.trim();
       const phone = document.getElementById('customer-phone').value.trim();
       const address = document.getElementById('customer-address').value.trim();
+      const note = document.getElementById('order-note').value.trim();
       const payment_method = document.getElementById('payment-method').value;
 
       if(!customer_name || !phone || !address){
@@ -942,54 +1112,76 @@
         return;
       }
 
-      const total_amount = cart.reduce((sum, item) => sum + (Number(item.price||0) * Number(item.quantity||0)), 0);
+      const subtotal = getSubtotal();
+      if(subtotal < Number(settings.minOrderAmount || 0)){
+        alert("Minimum sipariş tutarı: " + money(settings.minOrderAmount || 0));
+        return;
+      }
+
+      const total_amount = getCartTotal();
+      const delivery_fee = getDeliveryFee(subtotal);
+      const discount_amount = getDiscountAmount(subtotal);
 
       const orderPayload = {
         customer_name, phone, address, payment_method,
         status: 'Yeni',
         total: total_amount,
-        total_amount
+        total_amount,
+        note: note || null,
+        delivery_fee,
+        discount_amount
       };
 
-      const { data: orderData, error: orderError } = await client.from('orders').insert(orderPayload).select().single();
-      if(orderError){
-        alert("Sipariş kaydı hatası: " + orderError.message);
-        return;
-      }
+      client.from('orders').insert(orderPayload).select().single().then(async ({ data: orderData, error: orderError }) => {
+        if(orderError){
+          alert("Sipariş kaydı hatası: " + orderError.message);
+          return;
+        }
 
-      const itemsPayload = cart.map(item => ({
-        order_id: orderData.id,
-        product_name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        unit: item.unit
-      }));
+        const itemsPayload = cart.map(item => ({
+          order_id: orderData.id,
+          product_name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          unit: item.unit
+        }));
 
-      const { error: itemError } = await client.from('order_items').insert(itemsPayload);
-      if(itemError){
-        alert("Sipariş ürünleri kaydedilemedi: " + itemError.message);
-        return;
-      }
+        const { error: itemError } = await client.from('order_items').insert(itemsPayload);
+        if(itemError){
+          alert("Sipariş ürünleri kaydedilemedi: " + itemError.message);
+          return;
+        }
 
-      for (const item of cart) {
-        const sourceProduct = products.find(x => String(x.id) === String(item.id));
-        if(!sourceProduct) continue;
-        const newStock = Math.max(0, Number(sourceProduct.stock_qty || 0) - Number(item.quantity || 0));
-        await updateStockByBarcode(sourceProduct.barcode, newStock);
-        sourceProduct.stock_qty = newStock;
-      }
+        for (const item of cart) {
+          const sourceProduct = products.find(x => String(x.id) === String(item.id));
+          if(!sourceProduct) continue;
+          const newStock = Math.max(0, Number(sourceProduct.stock_qty || 0) - Number(item.quantity || 0));
+          await updateStockByBarcode(sourceProduct.barcode, newStock);
+          sourceProduct.stock_qty = newStock;
+        }
 
-      alert("Sipariş başarıyla kaydedildi.");
-      cart = [];
-      renderCart();
-      renderProducts();
-      document.getElementById('customer-name').value = '';
-      document.getElementById('customer-phone').value = '';
-      document.getElementById('customer-address').value = '';
-      document.getElementById('payment-method').value = 'Kapıda Nakit';
-      toggleCart();
+        document.getElementById('success-content').innerHTML = `
+          <strong>Sipariş Numaran:</strong> ${orderData.id}<br>
+          <strong>Toplam:</strong> ${money(total_amount)}<br>
+          <strong>Ödeme:</strong> ${payment_method}<br>
+          <strong>Durum:</strong> Yeni<br>
+          <strong>Not:</strong> ${note || '-'}
+        `;
+        document.getElementById('success-modal').classList.add('show');
+
+        cart = [];
+        couponState = { code: '', type: '', value: 0, amount: 0 };
+        renderCart();
+        renderProducts();
+        document.getElementById('customer-name').value = '';
+        document.getElementById('customer-phone').value = '';
+        document.getElementById('customer-address').value = '';
+        document.getElementById('order-note').value = '';
+        document.getElementById('coupon-code').value = '';
+        document.getElementById('payment-method').value = 'Kapıda Nakit';
+        toggleCart();
+      });
     }
-
 
     async function updateStockByBarcode(barcode, newStock){
       if(!barcode) return;
@@ -1010,6 +1202,7 @@
       const customerName = document.getElementById('customer-name').value.trim();
       const customerPhone = document.getElementById('customer-phone').value.trim();
       const customerAddress = document.getElementById('customer-address').value.trim();
+      const note = document.getElementById('order-note').value.trim();
       const paymentMethod = document.getElementById('payment-method').value;
 
       let lines = [];
@@ -1018,6 +1211,7 @@
       if(customerName) lines.push("👤 Ad Soyad: " + customerName);
       if(customerPhone) lines.push("📞 Telefon: " + customerPhone);
       if(customerAddress) lines.push("📍 Adres: " + customerAddress);
+      if(note) lines.push("📝 Not: " + note);
       lines.push("💳 Ödeme: " + paymentMethod);
       lines.push("");
       lines.push("Ürünler:");
@@ -1026,10 +1220,13 @@
         lines.push("- " + item.name + " | " + qtyText(item) + " | " + money(itemTotal));
       });
       lines.push("");
-      const total = cart.reduce((sum, item) => sum + (Number(item.price||0) * Number(item.quantity||0)), 0);
-      lines.push("Toplam: " + money(total));
+      lines.push("Ara Toplam: " + money(getSubtotal()));
+      lines.push("İndirim: -" + money(getDiscountAmount(getSubtotal())));
+      lines.push("Teslimat: " + money(getDeliveryFee(getSubtotal())));
+      lines.push("Genel Toplam: " + money(getCartTotal()));
 
-      const message = encodeURIComponent(lines.join("\n"));
+      const message = encodeURIComponent(lines.join("
+"));
       const phone = "905518857099";
       window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
     }
@@ -1176,6 +1373,7 @@
       alert('Ürün güncellendi.');
       loadAdminProducts();
       loadProducts();
+    fillSettingsForm();
     }
 
     async function addNewProduct(){
@@ -1312,11 +1510,26 @@
     function applyAdminFilters(){
       const search = document.getElementById('admin-search')?.value?.trim() || '';
       const status = document.getElementById('admin-status-filter')?.value || 'Hepsi';
+      const dateFilter = document.getElementById('admin-date-filter')?.value || 'Hepsi';
+      const now = new Date();
 
       const filtered = adminOrdersCache.filter(order => {
         const statusOk = status === 'Hepsi' || String(order.status || 'Yeni') === status;
         const searchOk = orderMatchesSearch(order, search);
-        return statusOk && searchOk;
+
+        let dateOk = true;
+        if(dateFilter !== 'Hepsi' && order.created_at){
+          const d = new Date(order.created_at);
+          if(dateFilter === 'Bugün'){
+            dateOk = d.toDateString() === now.toDateString();
+          } else if(dateFilter === 'Hafta'){
+            const diffDays = (now - d) / (1000*60*60*24);
+            dateOk = diffDays <= 7;
+          } else if(dateFilter === 'Ay'){
+            dateOk = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+          }
+        }
+        return statusOk && searchOk && dateOk;
       });
 
       renderAdminOrders(filtered);
@@ -1340,50 +1553,23 @@
       return 'yeni';
     }
 
-    async function syncAdminSession(){
-      const { data, error } = await client.auth.getSession();
-      const session = data?.session || null;
-      const email = session?.user?.email || '';
-
-      if(error){
-        console.error('Admin oturum kontrol hatası:', error.message);
-      }
-
-      if(session && email && email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
-        adminLoggedIn = true;
-        document.getElementById('admin-login-box').style.display = 'none';
-        document.getElementById('admin-content').style.display = 'block';
-        document.getElementById('admin-state').textContent = 'Admin oturumu açık: ' + email;
-        loadAdminOrders();
-        loadAdminProducts();
-      } else {
-        adminLoggedIn = false;
-        document.getElementById('admin-login-box').style.display = 'block';
-        document.getElementById('admin-content').style.display = 'none';
-        document.getElementById('admin-state').textContent = 'Giriş yapılmadı';
-      }
-    }
-
-    async function adminLogin(){
+    function adminLogin(){
       const email = document.getElementById('admin-email').value.trim();
       const password = document.getElementById('admin-password').value.trim();
-
-      if(!email || !password){
-        alert('Admin e-posta ve şifre gerekli.');
+      if(email !== 'admin@market.com' || password !== '123456'){
+        alert('Admin bilgileri hatalı.');
         return;
       }
-
-      const { error } = await client.auth.signInWithPassword({ email, password });
-      if(error){
-        alert('Admin girişi başarısız: ' + error.message);
-        return;
-      }
-
-      await syncAdminSession();
+      adminLoggedIn = true;
+      document.getElementById('admin-login-box').style.display = 'none';
+      document.getElementById('admin-content').style.display = 'block';
+      document.getElementById('admin-state').textContent = 'Giriş yapıldı';
+      loadAdminOrders();
+      loadAdminProducts();
+      fillSettingsForm();
     }
 
-    async function adminLogout(){
-      await client.auth.signOut();
+    function adminLogout(){
       adminLoggedIn = false;
       document.getElementById('admin-login-box').style.display = 'block';
       document.getElementById('admin-content').style.display = 'none';
@@ -1436,6 +1622,7 @@
       }));
 
       updateAdminStats(adminOrdersCache);
+      playNewOrderAlert(adminOrdersCache.length);
       applyAdminFilters();
     }
 
@@ -1454,14 +1641,114 @@
     }
 
 
-    client.auth.onAuthStateChange(() => {
-      syncAdminSession();
-    });
+
+    async function trackOrders(){
+      const phone = normalizedPhone(document.getElementById('tracker-phone').value);
+      const box = document.getElementById('tracker-results');
+      box.innerHTML = '';
+      if(!phone){
+        box.innerHTML = '<div class="admin-empty">Telefon numarası gir.</div>';
+        return;
+      }
+      const { data, error } = await client
+        .from('orders')
+        .select('*')
+        .eq('phone', phone)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if(error){
+        box.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + error.message + '</div>';
+        return;
+      }
+      if(!data || !data.length){
+        box.innerHTML = '<div class="admin-empty">Bu telefon numarasına ait sipariş bulunamadı.</div>';
+        return;
+      }
+      box.innerHTML = data.map(order => `
+        <div class="tracker-card">
+          <strong>Sipariş #${order.id}</strong>
+          <div class="muted">${order.created_at ? new Date(order.created_at).toLocaleString('tr-TR') : '-'}</div>
+          <div style="margin-top:8px"><span class="admin-badge ${statusBadgeClass(order.status || 'Yeni')}">${order.status || 'Yeni'}</span></div>
+          <div class="muted" style="margin-top:8px">Toplam: ${money(order.total_amount || order.total || 0)}</div>
+        </div>
+      `).join('');
+    }
+
+    function exportRowsToCsv(filename, rows){
+      if(!rows.length){
+        alert('Dışa aktarılacak veri yok.');
+        return;
+      }
+      const csv = rows.map(row => row.map(value => {
+        const s = String(value ?? '');
+        return '"' + s.replaceAll('"', '""') + '"';
+      }).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportOrdersCsv(){
+      const rows = [['Sipariş No','Müşteri','Telefon','Adres','Ödeme','Durum','Toplam','Tarih']];
+      adminOrdersCache.forEach(o => rows.push([o.id, o.customer_name, o.phone, o.address, o.payment_method, o.status, Number(o.total_amount || o.total || 0), o.created_at]));
+      exportRowsToCsv('siparisler.csv', rows);
+    }
+
+    function exportProductsCsv(){
+      const rows = [['Barkod','Stok Kodu','Ürün','Marka','Kategori','Alt Kategori','Birim','Fiyat','Stok','KDV','Depo','Aktif']];
+      adminProductsCache.forEach(p => rows.push([p.barcode, p.stock_code, p.name, p.brand, p.category, p.subcategory, p.unit, p.price, p.stock_qty, p.tax_rate, p.warehouse, p.is_active]));
+      exportRowsToCsv('urunler.csv', rows);
+    }
+
+    function saveSettings(){
+      settings.lowStockThreshold = Number(document.getElementById('set-low-stock').value || 5);
+      settings.minOrderAmount = Number(document.getElementById('set-min-order').value || 0);
+      settings.deliveryFee = Number(document.getElementById('set-delivery-fee').value || 0);
+      settings.freeDeliveryThreshold = Number(document.getElementById('set-free-delivery').value || 0);
+      settings.couponCode = document.getElementById('set-coupon-code').value.trim() || 'INDIRIM10';
+      settings.couponType = document.getElementById('set-coupon-type').value;
+      settings.couponValue = Number(document.getElementById('set-coupon-value').value || 0);
+      localStorage.setItem('market_settings', JSON.stringify(settings));
+      alert('Ayarlar kaydedildi.');
+      renderProducts();
+      renderCart();
+    }
+
+    function fillSettingsForm(){
+      const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+      set('set-low-stock', settings.lowStockThreshold || 5);
+      set('set-min-order', settings.minOrderAmount || 0);
+      set('set-delivery-fee', settings.deliveryFee || 0);
+      set('set-free-delivery', settings.freeDeliveryThreshold || 0);
+      set('set-coupon-code', settings.couponCode || 'INDIRIM10');
+      set('set-coupon-type', settings.couponType || 'percent');
+      set('set-coupon-value', settings.couponValue || 10);
+    }
+
+    async function playNewOrderAlert(newCount){
+      if(newCount > knownOrderCount && knownOrderCount > 0){
+        try{
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.frequency.value = 880;
+          gain.gain.value = 0.03;
+          osc.start();
+          setTimeout(()=>{ osc.stop(); ctx.close(); }, 180);
+        }catch(e){}
+      }
+      knownOrderCount = newCount;
+    }
+
 
     renderSlider();
     resetSlideTimer();
     loadProducts();
-    syncAdminSession();
   </script>
 </body>
 </html>
