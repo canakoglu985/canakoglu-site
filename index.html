@@ -450,6 +450,36 @@
       padding:24px;border:1px dashed var(--border);border-radius:16px;background:#fbfcfe;color:var(--muted);text-align:center
     }
 
+  
+    .low-stock-banner{
+      margin:0 0 18px;
+      padding:14px 16px;
+      border-radius:18px;
+      background:rgba(244,154,39,.12);
+      border:1px solid rgba(244,154,39,.24);
+      color:#b86c08;
+      font-weight:800;
+      box-shadow:var(--shadow-soft)
+    }
+    .low-stock-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px
+    }
+    .low-stock-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:#fff;
+      border:1px solid rgba(244,154,39,.2);
+      color:#9a5a06;
+      font-size:12px;
+      font-weight:900
+    }
+
   </style>
 </head>
 <body>
@@ -504,6 +534,8 @@
       </div>
       <div class="search-hint">Ürünleri hızlı bulmak için arama yapabilir veya aşağıdan kategori seçebilirsin.</div>
     </div>
+
+    <div id="low-stock-box"></div>
 
     <div class="main-banner">
       <div id="slider-track" class="slider-track"></div>
@@ -710,6 +742,7 @@
     let cart = [];
     let activeCategory = 'Hepsi';
     let searchTerm = '';
+    const LOW_STOCK_THRESHOLD = 5;
 
     function money(v){ return Number(v || 0).toFixed(2) + " TL"; }
     function qtyText(item){ return item.unit === "kg" ? Number(item.quantity).toFixed(2) + " kg" : Number(item.quantity) + " adet"; }
@@ -763,6 +796,25 @@
     function resetSlideTimer(){
       if(slideTimer) clearInterval(slideTimer);
       slideTimer = setInterval(()=>{ currentSlide = (currentSlide + 1) % sliderItems.length; updateSlider(); }, 4500);
+    }
+
+
+    function renderLowStockWarnings(){
+      const box = document.getElementById('low-stock-box');
+      if(!box) return;
+      const lows = products.filter(p => Number(p.stock_qty || 0) > 0 && Number(p.stock_qty || 0) <= LOW_STOCK_THRESHOLD);
+      if(!lows.length){
+        box.innerHTML = '';
+        return;
+      }
+      box.innerHTML = `
+        <div class="low-stock-banner">
+          Düşük stok uyarısı: bazı ürünler azaldı.
+          <div class="low-stock-list">
+            ${lows.slice(0,10).map(p => `<span class="low-stock-pill">${p.name} • ${Number(p.stock_qty || 0).toFixed(0)} adet</span>`).join('')}
+          </div>
+        </div>
+      `;
     }
 
     function toggleCart(){
@@ -849,9 +901,10 @@
       }
 
       box.innerHTML = filtered.map(p => {
-        const hasStock = Number(p.stock_qty || 0) > 0;
-        const stockText = hasStock ? `Stok: ${Number(p.stock_qty || 0).toFixed(0)} adet` : 'Stok Yok';
-        const stockClass = hasStock ? 'stock' : 'out-stock';
+        const stockQty = Number(p.stock_qty || 0);
+        const hasStock = stockQty > 0;
+        const stockText = !hasStock ? 'Stok Yok' : stockQty <= LOW_STOCK_THRESHOLD ? `Son ${stockQty.toFixed(0)} ürün` : `Stok: ${stockQty.toFixed(0)} adet`;
+        const stockClass = !hasStock ? 'out-stock' : stockQty <= LOW_STOCK_THRESHOLD ? 'low-stock' : 'stock';
         return `
         <div class="card">
           <div class="promo-badge">${promoBadge(p)}</div>
@@ -888,6 +941,7 @@
       }
       renderCart();
       renderProducts();
+      renderLowStockWarnings();
     }
 
     function changeQty(id, delta){
@@ -1084,6 +1138,7 @@
         renderCategoryBar();
         renderProducts();
         renderCart();
+        renderLowStockWarnings();
       }catch(err){
         setStatus("Sistem hatası: " + (err?.message || err), 'err');
         document.getElementById('products').innerHTML = '<div class="empty" style="grid-column:1/-1">Sistem hatası oluştu.</div>';
@@ -1320,6 +1375,7 @@
                   <option value="İptal" ${String(order.status||'')==='İptal'?'selected':''}>İptal</option>
                 </select>
                 <button class="btn primary" onclick="updateOrderStatus('${order.id}')">Kaydet</button>
+                <button class="btn secondary" onclick="cancelOrder('${order.id}')">İptal Et</button>
               </div>
             </div>
           </div>
@@ -1354,6 +1410,16 @@
       renderAdminOrders(filtered);
     }
 
+
+
+    function normalizeStatusValue(value){
+      const v = String(value || '').trim().toLowerCase();
+      if(v === 'iptal' || v === 'i̇ptal') return 'İptal';
+      if(v === 'hazırlanıyor' || v === 'hazirlaniyor') return 'Hazırlanıyor';
+      if(v === 'teslim edildi' || v === 'teslimedildi') return 'Teslim Edildi';
+      if(v === 'yolda') return 'Yolda';
+      return 'Yeni';
+    }
 
     function statusBadgeClass(status){
       const s = String(status || 'Yeni').toLowerCase()
@@ -1444,10 +1510,12 @@
     }
 
     async function updateOrderStatus(orderId){
-      const status = document.getElementById('status-' + orderId).value;
+      const rawStatus = document.getElementById('status-' + orderId).value;
+      const status = normalizeStatusValue(rawStatus);
+
       const { error } = await client
         .from('orders')
-        .update({ status })
+        .update({ status: status })
         .eq('id', orderId);
 
       if(error){
