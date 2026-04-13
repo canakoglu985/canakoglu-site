@@ -483,6 +483,17 @@
     .admin-tab.active{background:var(--orange-gradient);color:#fff;border-color:transparent}
     .admin-section{display:none}
     .admin-section.active{display:block}
+    .admin-accordion-list{display:grid;gap:12px;margin-top:12px}
+    details.admin-accordion{background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-soft);overflow:hidden}
+    details.admin-accordion[open]{border-color:rgba(244,154,39,.28);box-shadow:0 14px 28px rgba(18,50,85,.10)}
+    .admin-accordion summary{list-style:none;cursor:pointer;padding:16px 18px;font-weight:900;color:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff}
+    .admin-accordion summary::-webkit-details-marker{display:none}
+    .admin-accordion summary .left{display:flex;align-items:center;gap:12px}
+    .admin-accordion summary .icon{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(29,70,120,.08);font-size:18px}
+    .admin-accordion summary .sub{display:block;color:var(--muted);font-size:12px;font-weight:700;margin-top:3px}
+    .admin-accordion summary .chev{font-size:20px;transition:transform .2s ease;color:var(--navy)}
+    .admin-accordion[open] summary .chev{transform:rotate(180deg)}
+    .admin-accordion-body{padding:0 18px 18px}
     .product-admin-grid{display:grid;gap:14px}
     .product-admin-card{
       background:linear-gradient(180deg,#fff,#f8fafd);
@@ -798,133 +809,168 @@
 
         <div id="admin-products-section" class="admin-section">
           <div class="admin-toolbar">
-            <div class="muted">Ürünleri buradan yönetebilirsin.</div>
+            <div class="muted">Ürünleri ve vitrin ayarlarını buradan yönetebilirsin.</div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn secondary" onclick="loadAdminProducts()">Ürünleri Yenile</button>
             </div>
-</div>
-
-
-<div class="settings-panel">
-  <div class="section-head" style="margin-bottom:8px">
-    <div>
-      <h2>Vitrin / Banner Yönetimi</h2>
-      <p>Banner başlıklarını, görselleri ve sipariş sonrası WhatsApp numarasını buradan yönet.</p>
-    </div>
-  </div>
-  <div class="tiny-note">Bu alan Supabase üzerinde kalıcı saklanır. Her cihazda aynı ayarlar görünür.</div>
-  <div class="banner-admin-grid">
-    <div class="banner-admin-card">
-      <strong>Banner 1</strong>
-      <div class="field"><label class="muted">Başlık</label><input id="banner-title-0" placeholder="Başlık"></div>
-      <div class="field"><label class="muted">Açıklama</label><input id="banner-text-0" placeholder="Açıklama"></div>
-      <div class="field"><label class="muted">Görsel URL</label><input id="banner-image-0" placeholder="https://..."></div>
-    </div>
-    <div class="banner-admin-card">
-      <strong>Banner 2</strong>
-      <div class="field"><label class="muted">Başlık</label><input id="banner-title-1" placeholder="Başlık"></div>
-      <div class="field"><label class="muted">Açıklama</label><input id="banner-text-1" placeholder="Açıklama"></div>
-      <div class="field"><label class="muted">Görsel URL</label><input id="banner-image-1" placeholder="https://..."></div>
-    </div>
-    <div class="banner-admin-card">
-      <strong>Banner 3</strong>
-      <div class="field"><label class="muted">Başlık</label><input id="banner-title-2" placeholder="Başlık"></div>
-      <div class="field"><label class="muted">Açıklama</label><input id="banner-text-2" placeholder="Açıklama"></div>
-      <div class="field"><label class="muted">Görsel URL</label><input id="banner-image-2" placeholder="https://..."></div>
-    </div>
-  </div>
-  <div class="settings-grid-4">
-    <div><label class="muted">Market WhatsApp</label><input id="whatsapp-number-setting" placeholder="WhatsApp numarası. Örn: 90555..."></div>
-    <div><label class="muted">Sipariş sonrası market WhatsApp</label><select id="auto-whatsapp-setting">
-      <option value="true">Otomatik açılsın</option>
-      <option value="false">Sadece butonla açılsın</option>
-    </select></div>
-    <div><label class="muted">Müşteri durum mesajı</label><select id="customer-status-whatsapp-setting">
-      <option value="true">Durum değişince WhatsApp aç</option>
-      <option value="false">Otomatik açma</option>
-    </select></div>
-    <div><label class="muted">Minimum sipariş</label><input id="minimum-order-setting" type="number" step="0.01" placeholder="0"></div>
-    <div><label class="muted">Standart teslimat ücreti</label><input id="delivery-fee-setting" type="number" step="0.01" placeholder="0"></div>
-    <div><label class="muted">Ücretsiz teslimat limiti</label><input id="free-delivery-setting" type="number" step="0.01" placeholder="0"></div>
-  </div>
-  <div class="product-admin-actions">
-    <button class="btn primary" onclick="saveBannerSettings()">Banner Ayarlarını Kaydet</button>
-    <button class="btn secondary" onclick="resetBannerSettings()">Varsayılan Bannerları Geri Yükle</button>
-  </div>
-
-<div class="sales-summary-grid">
-  <div class="sales-summary-card"><div class="label">Bugün En Çok Satan</div><div class="value" id="summary-top-product">-</div></div>
-  <div class="sales-summary-card"><div class="label">En Çok Sipariş Veren</div><div class="value" id="summary-top-customer">-</div></div>
-  <div class="sales-summary-card"><div class="label">En Çok Satan Kategori</div><div class="value" id="summary-top-category">-</div></div>
-  <div class="sales-summary-card"><div class="label">İptal Sipariş</div><div class="value" id="summary-cancelled">0</div></div>
-</div>
-</div>
-
-<div class="critical-stock-box">
-  <div class="section-head" style="margin-bottom:8px">
-    <div>
-      <h2>Kritik Stok Uyarısı</h2>
-      <p>Stoğu 5 ve altına düşen ürünler burada görünür.</p>
-    </div>
-    <div id="critical-stock-count" class="admin-badge yeni">0 ürün</div>
-  </div>
-  <div id="critical-stock-list" class="critical-stock-list"></div>
-</div>
-
-<div class="upload-panel">
-  <h3 style="margin:0 0 10px;color:var(--navy)">Tek Excel ile Toplu Ürün Yükleme</h3>
-  <div class="upload-grid single-excel-upload">
-    <div>
-      <label class="muted">Excel / CSV Dosyası</label>
-      <input id="excel-file" type="file" accept=".xlsx,.xls,.csv">
-    </div>
-    <div>
-      <button class="btn secondary" onclick="previewExcelUpload()">Önizleme Yap</button>
-    </div>
-    <div>
-      <button class="btn primary" onclick="uploadExcelProducts()">Yüklemeyi Başlat</button>
-    </div>
-    <div>
-      <button class="btn secondary" onclick="downloadExcelTemplate()">Excel Şablonu İndir</button>
-    </div>
-  </div>
-  <div class="upload-help">
-    Excel başlıkları: <strong>barcode, name, price, category, stock_qty, unit, is_active, image_url, campaign_label</strong><br>
-    Görsel URL aynı Excel satırından okunur. Ayrı görsel seçmeye gerek yok.
-  </div>
-  <div id="upload-log" class="upload-log">Henüz yükleme yapılmadı.</div>
-</div>
-
-<div class="admin-panel" style="margin:0 0 16px;padding:16px">
-            <h3 style="margin:0 0 10px;color:var(--navy)">Yeni Ürün Ekle</h3>
-            <div class="product-admin-form">
-              <input id="new-barcode" placeholder="Barkod">
-              <input id="new-stock-code" placeholder="Stok Kodu">
-              <input id="new-name" placeholder="Ürün Adı">
-              <input id="new-brand" placeholder="Marka" value="SÜTAŞ">
-              <input id="new-category" placeholder="Kategori">
-              <input id="new-subcategory" placeholder="Alt Kategori">
-              <select id="new-unit">
-                <option value="adet">adet</option>
-                <option value="kg">kg</option>
-              </select>
-              <input id="new-price" type="number" step="0.01" placeholder="Fiyat">
-              <input id="new-stock-qty" type="number" step="0.01" placeholder="Stok">
-              <input id="new-tax-rate" type="number" step="0.01" placeholder="KDV">
-              <input id="new-warehouse" placeholder="Depo">
-              <input id="new-image-url" placeholder="Görsel URL">
-              <input id="new-campaign-label" placeholder="Kampanya Etiketi (örn: İndirimde)">
-              <select id="new-is-active">
-                <option value="true">Aktif</option>
-                <option value="false">Pasif</option>
-              </select>
-            </div>
-            <div class="product-admin-actions">
-              <button class="btn primary" onclick="addNewProduct()">Yeni Ürün Kaydet</button>
-            </div>
           </div>
 
-          <div id="admin-products" class="product-admin-grid"></div>
+          <div class="admin-accordion-list">
+            <details class="admin-accordion" open>
+              <summary>
+                <div class="left">
+                  <span class="icon">🖼️</span>
+                  <div>Vitrin / Banner Ayarları<span class="sub">Banner, WhatsApp ve sipariş kuralları</span></div>
+                </div>
+                <span class="chev">⌄</span>
+              </summary>
+              <div class="admin-accordion-body">
+                <div class="settings-panel">
+                  <div class="tiny-note">Bu alan Supabase üzerinde kalıcı saklanır. Her cihazda aynı ayarlar görünür.</div>
+                  <div class="banner-admin-grid">
+                    <div class="banner-admin-card">
+                      <strong>Banner 1</strong>
+                      <div class="field"><label class="muted">Başlık</label><input id="banner-title-0" placeholder="Başlık"></div>
+                      <div class="field"><label class="muted">Açıklama</label><input id="banner-text-0" placeholder="Açıklama"></div>
+                      <div class="field"><label class="muted">Görsel URL</label><input id="banner-image-0" placeholder="https://..."></div>
+                    </div>
+                    <div class="banner-admin-card">
+                      <strong>Banner 2</strong>
+                      <div class="field"><label class="muted">Başlık</label><input id="banner-title-1" placeholder="Başlık"></div>
+                      <div class="field"><label class="muted">Açıklama</label><input id="banner-text-1" placeholder="Açıklama"></div>
+                      <div class="field"><label class="muted">Görsel URL</label><input id="banner-image-1" placeholder="https://..."></div>
+                    </div>
+                    <div class="banner-admin-card">
+                      <strong>Banner 3</strong>
+                      <div class="field"><label class="muted">Başlık</label><input id="banner-title-2" placeholder="Başlık"></div>
+                      <div class="field"><label class="muted">Açıklama</label><input id="banner-text-2" placeholder="Açıklama"></div>
+                      <div class="field"><label class="muted">Görsel URL</label><input id="banner-image-2" placeholder="https://..."></div>
+                    </div>
+                  </div>
+                  <div class="settings-grid-4">
+                    <div><label class="muted">Market WhatsApp</label><input id="whatsapp-number-setting" placeholder="WhatsApp numarası. Örn: 90555..."></div>
+                    <div><label class="muted">Sipariş sonrası market WhatsApp</label><select id="auto-whatsapp-setting"><option value="true">Otomatik açılsın</option><option value="false">Sadece butonla açılsın</option></select></div>
+                    <div><label class="muted">Müşteri durum mesajı</label><select id="customer-status-whatsapp-setting"><option value="true">Durum değişince WhatsApp aç</option><option value="false">Otomatik açma</option></select></div>
+                    <div><label class="muted">Minimum sipariş</label><input id="minimum-order-setting" type="number" step="0.01" placeholder="0"></div>
+                    <div><label class="muted">Standart teslimat ücreti</label><input id="delivery-fee-setting" type="number" step="0.01" placeholder="0"></div>
+                    <div><label class="muted">Ücretsiz teslimat limiti</label><input id="free-delivery-setting" type="number" step="0.01" placeholder="0"></div>
+                  </div>
+                  <div class="product-admin-actions">
+                    <button class="btn primary" onclick="saveBannerSettings()">Banner Ayarlarını Kaydet</button>
+                    <button class="btn secondary" onclick="resetBannerSettings()">Varsayılan Bannerları Geri Yükle</button>
+                  </div>
+                  <div class="sales-summary-grid">
+                    <div class="sales-summary-card"><div class="label">Bugün En Çok Satan</div><div class="value" id="summary-top-product">-</div></div>
+                    <div class="sales-summary-card"><div class="label">En Çok Sipariş Veren</div><div class="value" id="summary-top-customer">-</div></div>
+                    <div class="sales-summary-card"><div class="label">En Çok Satan Kategori</div><div class="value" id="summary-top-category">-</div></div>
+                    <div class="sales-summary-card"><div class="label">İptal Sipariş</div><div class="value" id="summary-cancelled">0</div></div>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <details class="admin-accordion">
+              <summary>
+                <div class="left">
+                  <span class="icon">⚠️</span>
+                  <div>Kritik Stok Uyarıları<span class="sub">Stoğu azalan ürünleri hızlı gör</span></div>
+                </div>
+                <span class="chev">⌄</span>
+              </summary>
+              <div class="admin-accordion-body">
+                <div class="critical-stock-box">
+                  <div class="section-head" style="margin-bottom:8px">
+                    <div>
+                      <h2>Kritik Stok Uyarısı</h2>
+                      <p>Stoğu 5 ve altına düşen ürünler burada görünür.</p>
+                    </div>
+                    <div id="critical-stock-count" class="admin-badge yeni">0 ürün</div>
+                  </div>
+                  <div id="critical-stock-list" class="critical-stock-list"></div>
+                </div>
+              </div>
+            </details>
+
+            <details class="admin-accordion">
+              <summary>
+                <div class="left">
+                  <span class="icon">📥</span>
+                  <div>Toplu Excel Yükleme<span class="sub">Tek Excel ile ürünleri ekle veya güncelle</span></div>
+                </div>
+                <span class="chev">⌄</span>
+              </summary>
+              <div class="admin-accordion-body">
+                <div class="upload-panel">
+                  <h3 style="margin:0 0 10px;color:var(--navy)">Tek Excel ile Toplu Ürün Yükleme</h3>
+                  <div class="upload-grid single-excel-upload">
+                    <div>
+                      <label class="muted">Excel / CSV Dosyası</label>
+                      <input id="excel-file" type="file" accept=".xlsx,.xls,.csv">
+                    </div>
+                    <div>
+                      <button class="btn secondary" onclick="previewExcelUpload()">Önizleme Yap</button>
+                    </div>
+                    <div>
+                      <button class="btn primary" onclick="uploadExcelProducts()">Yüklemeyi Başlat</button>
+                    </div>
+                    <div>
+                      <button class="btn secondary" onclick="downloadExcelTemplate()">Excel Şablonu İndir</button>
+                    </div>
+                  </div>
+                  <div class="upload-help">Excel başlıkları: <strong>barcode, name, price, category, stock_qty, unit, is_active, image_url, campaign_label</strong><br>Görsel URL aynı Excel satırından okunur. Ayrı görsel seçmeye gerek yok.</div>
+                  <div id="upload-log" class="upload-log">Henüz yükleme yapılmadı.</div>
+                </div>
+              </div>
+            </details>
+
+            <details class="admin-accordion">
+              <summary>
+                <div class="left">
+                  <span class="icon">➕</span>
+                  <div>Yeni Ürün Ekle<span class="sub">Tek ürün girişi için hızlı form</span></div>
+                </div>
+                <span class="chev">⌄</span>
+              </summary>
+              <div class="admin-accordion-body">
+                <div class="admin-panel" style="margin:0 0 16px;padding:16px">
+                  <h3 style="margin:0 0 10px;color:var(--navy)">Yeni Ürün Ekle</h3>
+                  <div class="product-admin-form">
+                    <input id="new-barcode" placeholder="Barkod">
+                    <input id="new-stock-code" placeholder="Stok Kodu">
+                    <input id="new-name" placeholder="Ürün Adı">
+                    <input id="new-brand" placeholder="Marka" value="SÜTAŞ">
+                    <input id="new-category" placeholder="Kategori">
+                    <input id="new-subcategory" placeholder="Alt Kategori">
+                    <select id="new-unit"><option value="adet">adet</option><option value="kg">kg</option></select>
+                    <input id="new-price" type="number" step="0.01" placeholder="Fiyat">
+                    <input id="new-stock-qty" type="number" step="0.01" placeholder="Stok">
+                    <input id="new-tax-rate" type="number" step="0.01" placeholder="KDV">
+                    <input id="new-warehouse" placeholder="Depo">
+                    <input id="new-image-url" placeholder="Görsel URL">
+                    <input id="new-campaign-label" placeholder="Kampanya Etiketi (örn: İndirimde)">
+                    <select id="new-is-active"><option value="true">Aktif</option><option value="false">Pasif</option></select>
+                  </div>
+                  <div class="product-admin-actions">
+                    <button class="btn primary" onclick="addNewProduct()">Yeni Ürün Kaydet</button>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <details class="admin-accordion" open>
+              <summary>
+                <div class="left">
+                  <span class="icon">📦</span>
+                  <div>Mevcut Ürünler<span class="sub">Var olan ürünleri düzenle ve kaydet</span></div>
+                </div>
+                <span class="chev">⌄</span>
+              </summary>
+              <div class="admin-accordion-body">
+                <div id="admin-products" class="product-admin-grid"></div>
+              </div>
+            </details>
+          </div>
+        </div></div>
         </div>
       </div>
     </div>
