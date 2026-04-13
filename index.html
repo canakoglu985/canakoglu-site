@@ -435,6 +435,112 @@
       border:1px solid rgba(255,255,255,.20);
     }
 
+  
+    .search-top{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:16px;
+      box-shadow:var(--shadow-soft);
+      margin:0 0 18px;
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:12px;
+      align-items:center;
+    }
+    .search-input-wrap{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:10px 14px;
+    }
+    .search-input-wrap span{font-size:18px}
+    .search-input-wrap input{
+      border:none;
+      outline:none;
+      padding:0;
+      background:transparent;
+    }
+    .search-hint{
+      color:var(--muted);
+      font-size:13px;
+      text-align:right;
+      font-weight:700;
+    }
+    .category-bar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:0 0 18px;
+    }
+    .cat-btn{
+      border:none;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:999px;
+      padding:10px 14px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      font-weight:800;
+      color:var(--navy);
+      box-shadow:var(--shadow-soft);
+    }
+    .cat-btn.active{
+      background:var(--orange-gradient);
+      color:#fff;
+      border-color:transparent;
+    }
+    .cat-icon{
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(29,70,120,.08);
+      font-size:13px;
+      flex:0 0 24px;
+    }
+    .cat-btn.active .cat-icon{
+      background:rgba(255,255,255,.18);
+      color:#fff;
+    }
+    .product-image{
+      width:100%;
+      height:160px;
+      object-fit:cover;
+      border-radius:18px;
+      background:#f3f6fa;
+      border:1px solid rgba(29,70,120,.08);
+    }
+    .promo-badge{
+      position:absolute;
+      top:14px;
+      right:14px;
+      max-width:52%;
+      padding:7px 10px;
+      border-radius:999px;
+      background:#c62828;
+      color:#fff;
+      font-size:11px;
+      font-weight:900;
+      text-align:center;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      box-shadow:0 8px 18px rgba(198,40,40,.22);
+    }
+    .card-media{
+      position:relative;
+      margin-bottom:2px;
+    }
+
+
   </style>
 </head>
 <body>
@@ -456,6 +562,14 @@
 
   <div class="wrap">
     <div class="notice">Final görünüm — Çalışan çekirdek korunarak logo, banner ve daha güçlü vitrin alanı eklendi.</div>
+    <div class="search-top">
+      <div class="search-input-wrap">
+        <span>🔎</span>
+        <input id="search-input-top" type="text" placeholder="Ürün ara... örn: süt, ekmek, domates" oninput="handleSearch(this.value)" />
+      </div>
+      <div class="search-hint">Ürünleri hızlı bulmak için arama yapabilirsin</div>
+    </div>
+
     <div class="main-banner">
       <div class="banner-slider" id="banner-slider">
         <div class="banner-track" id="banner-track">
@@ -649,45 +763,162 @@ const WHATSAPP_NUMBER = "905518857099";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const products = [
-  { id: 1, name: "Ekmek", price: 12, unit: "adet", category: "Temel Gıda" },
-  { id: 2, name: "Yumurta 15'li", price: 50, unit: "adet", category: "Kahvaltılık" },
-  { id: 3, name: "Çay 1 KG", price: 195, unit: "adet", category: "İçecek" },
-  { id: 4, name: "Domates", price: 39.9, unit: "kg", category: "Sebze Meyve" },
-  { id: 5, name: "Salatalık", price: 29.9, unit: "kg", category: "Sebze Meyve" },
-  { id: 6, name: "Pirinç", price: 72.5, unit: "kg", category: "Temel Gıda" },
-  { id: 7, name: "Makarna", price: 24.5, unit: "adet", category: "Temel Gıda" },
-  { id: 8, name: "Ayçiçek Yağı 1L", price: 89.9, unit: "adet", category: "Temel Gıda" },
-  { id: 9, name: "Toz Şeker 1 KG", price: 44.9, unit: "adet", category: "Temel Gıda" },
-  { id: 10, name: "Un 1 KG", price: 29.9, unit: "adet", category: "Temel Gıda" },
-  { id: 11, name: "Süt 1L", price: 32.5, unit: "adet", category: "Süt Ürünleri" },
-  { id: 12, name: "Yoğurt 1 KG", price: 59.9, unit: "adet", category: "Süt Ürünleri" },
-  { id: 13, name: "Beyaz Peynir", price: 149.9, unit: "kg", category: "Süt Ürünleri" },
-  { id: 14, name: "Kaşar Peyniri", price: 219.9, unit: "kg", category: "Süt Ürünleri" },
-  { id: 15, name: "Zeytin", price: 179.9, unit: "kg", category: "Kahvaltılık" },
-  { id: 16, name: "Bal 850 GR", price: 169.9, unit: "adet", category: "Kahvaltılık" },
-  { id: 17, name: "Reçel", price: 74.9, unit: "adet", category: "Kahvaltılık" },
-  { id: 18, name: "Kola 1L", price: 39.9, unit: "adet", category: "İçecek" },
-  { id: 19, name: "Meyve Suyu", price: 27.5, unit: "adet", category: "İçecek" },
-  { id: 20, name: "Su 1.5L", price: 9.5, unit: "adet", category: "İçecek" },
-  { id: 21, name: "Maden Suyu 6'lı", price: 38.9, unit: "adet", category: "İçecek" },
-  { id: 22, name: "Cips", price: 31.5, unit: "adet", category: "Atıştırmalık" },
-  { id: 23, name: "Bisküvi", price: 18.9, unit: "adet", category: "Atıştırmalık" },
-  { id: 24, name: "Çikolata", price: 24.9, unit: "adet", category: "Atıştırmalık" },
-  { id: 25, name: "Kuruyemiş", price: 289.9, unit: "kg", category: "Atıştırmalık" },
-  { id: 26, name: "Bulaşık Deterjanı", price: 64.9, unit: "adet", category: "Temizlik" },
-  { id: 27, name: "Çamaşır Suyu", price: 49.9, unit: "adet", category: "Temizlik" },
-  { id: 28, name: "Kağıt Havlu", price: 79.9, unit: "adet", category: "Temizlik" },
-  { id: 29, name: "Tuvalet Kağıdı", price: 139.9, unit: "adet", category: "Temizlik" },
-  { id: 30, name: "Elma", price: 49.9, unit: "kg", category: "Sebze Meyve" },
-  { id: 31, name: "Muz", price: 79.9, unit: "kg", category: "Sebze Meyve" },
-  { id: 32, name: "Patates", price: 24.9, unit: "kg", category: "Sebze Meyve" },
-  { id: 33, name: "Soğan", price: 19.9, unit: "kg", category: "Sebze Meyve" },
-  { id: 34, name: "Tavuk Bonfile", price: 189.9, unit: "kg", category: "Kasap" },
-  { id: 35, name: "Kıyma", price: 429.9, unit: "kg", category: "Kasap" }
+  {
+    "id": 1,
+    "name": "Ekmek",
+    "price": 12,
+    "unit": "adet",
+    "category": "Kahvaltılık",
+    "icon": "🥐",
+    "promo": "Taze günlük",
+    "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 2,
+    "name": "Yumurta 15'li",
+    "price": 69,
+    "unit": "adet",
+    "category": "Kahvaltılık",
+    "icon": "🥚",
+    "promo": "Aile boy",
+    "image": "https://images.unsplash.com/photo-1518569656558-1f25e69d93d7?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 3,
+    "name": "Beyaz Peynir",
+    "price": 139.9,
+    "unit": "adet",
+    "category": "Süt Ürünleri",
+    "icon": "🧀",
+    "promo": "Kahvaltı fırsatı",
+    "image": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 4,
+    "name": "Süt 1 L",
+    "price": 32.5,
+    "unit": "adet",
+    "category": "Süt Ürünleri",
+    "icon": "🥛",
+    "promo": "Günlük ihtiyaç",
+    "image": "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 5,
+    "name": "Çay 1 Kg",
+    "price": 195,
+    "unit": "adet",
+    "category": "İçecek",
+    "icon": "🫖",
+    "promo": "Çok satan",
+    "image": "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 6,
+    "name": "Kola 1 L",
+    "price": 39.9,
+    "unit": "adet",
+    "category": "İçecek",
+    "icon": "🥤",
+    "promo": "Soğuk servis",
+    "image": "https://images.unsplash.com/photo-1629203851122-3726ecdf080e?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 7,
+    "name": "Domates",
+    "price": 39.9,
+    "unit": "kg",
+    "category": "Sebze Meyve",
+    "icon": "🍅",
+    "promo": "Günlük taze",
+    "image": "https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 8,
+    "name": "Salatalık",
+    "price": 29.9,
+    "unit": "kg",
+    "category": "Sebze Meyve",
+    "icon": "🥒",
+    "promo": "Tarladan",
+    "image": "https://images.unsplash.com/photo-1604977046807-1eecc1b2d1c9?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 9,
+    "name": "Muz",
+    "price": 54.9,
+    "unit": "kg",
+    "category": "Sebze Meyve",
+    "icon": "🍌",
+    "promo": "Vitamin deposu",
+    "image": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 10,
+    "name": "Pirinç",
+    "price": 72.5,
+    "unit": "kg",
+    "category": "Temel Gıda",
+    "icon": "🍚",
+    "promo": "Uygun fiyat",
+    "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 11,
+    "name": "Makarna",
+    "price": 24.9,
+    "unit": "adet",
+    "category": "Temel Gıda",
+    "icon": "🍝",
+    "promo": "2 al 1 öde yok ama hesaplı",
+    "image": "https://images.unsplash.com/photo-1551462147-37885acc36f1?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 12,
+    "name": "Bisküvi",
+    "price": 18.9,
+    "unit": "adet",
+    "category": "Atıştırmalık",
+    "icon": "🍪",
+    "promo": "Çay saati",
+    "image": "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 13,
+    "name": "Cips",
+    "price": 27.5,
+    "unit": "adet",
+    "category": "Atıştırmalık",
+    "icon": "🥔",
+    "promo": "Akşam keyfi",
+    "image": "https://images.unsplash.com/photo-1613919113640-25732ec5e61f?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 14,
+    "name": "Bulaşık Deterjanı",
+    "price": 64.9,
+    "unit": "adet",
+    "category": "Temizlik",
+    "icon": "🧴",
+    "promo": "Ev fırsatı",
+    "image": "https://images.unsplash.com/photo-1583947582886-f40ec95dd752?auto=format&fit=crop&w=900&q=80"
+  },
+  {
+    "id": 15,
+    "name": "Tuvalet Kağıdı",
+    "price": 119.9,
+    "unit": "adet",
+    "category": "Temizlik",
+    "icon": "🧻",
+    "promo": "Ekonomik paket",
+    "image": "https://images.unsplash.com/photo-1583947215259-38e31be8751f?auto=format&fit=crop&w=900&q=80"
+  }
 ];
 
 let cart = [];
 let isSubmitting = false;
+let activeCategory = 'Hepsi';
+let searchTerm = '';
 let currentBannerSlide = 0;
 let bannerTimer = null;
 let selectedCategory = "Hepsi";
@@ -901,32 +1132,84 @@ async function updateOrderStatus(orderId, status){
 }
 
 
+
+function getCategories(){
+  const names = ['Hepsi', ...new Set(products.map(p => p.category).filter(Boolean))];
+  return names;
+}
+function categoryIcon(name){
+  const map = {
+    'Hepsi':'🛒',
+    'Kahvaltılık':'🍳',
+    'Süt Ürünleri':'🥛',
+    'İçecek':'🥤',
+    'Sebze Meyve':'🥬',
+    'Temel Gıda':'🍚',
+    'Atıştırmalık':'🍪',
+    'Temizlik':'🧼'
+  };
+  return map[name] || '📦';
+}
+function getProductQty(productId){
+  const item = cart.find(x => x.id === productId);
+  if(!item) return null;
+  return qtyText(item);
+}
+function handleSearch(value){
+  searchTerm = String(value || '').toLowerCase().trim();
+  renderProducts();
+}
+function setCategory(name){
+  activeCategory = name;
+  renderProducts();
+}
+function renderCategoryBar(){
+  const bar = document.getElementById('category-bar');
+  if(!bar) return;
+  bar.innerHTML = getCategories().map(name => `
+    <button class="cat-btn ${activeCategory === name ? 'active' : ''}" onclick="setCategory('${name.replace("'", "\'")}')">
+      <span class="cat-icon">${categoryIcon(name)}</span>
+      <span>${name}</span>
+    </button>
+  `).join('');
+}
+
 function renderProducts(){
   const box = document.getElementById("products");
-  const visibleProducts = getVisibleProducts();
+  renderCategoryBar();
   box.innerHTML = "";
-  if(!visibleProducts.length){
-    box.innerHTML = '<div class="grid-empty">Aramaya veya seçili kategoriye uygun ürün bulunamadı.</div>';
-    return;
-  }
-  visibleProducts.forEach((p) => {
-    const selectedQty = getCartItemQuantity(p.id);
+  const filtered = products.filter(p => {
+    const categoryOk = activeCategory === 'Hepsi' || p.category === activeCategory;
+    const searchOk = !searchTerm || p.name.toLowerCase().includes(searchTerm) || String(p.category || '').toLowerCase().includes(searchTerm);
+    return categoryOk && searchOk;
+  });
+
+  filtered.forEach((p, index) => {
+    const realIndex = products.findIndex(x => x.id === p.id);
+    const currentQty = getProductQty(p.id);
     box.innerHTML += `
       <div class="card">
-        <div class="badge">${p.unit === "kg" ? "Kiloluk ürün" : "Adetli ürün"}</div>
-        <div class="category-tag">${p.category}</div>
+        <div class="promo-badge">${p.promo || 'Fırsat ürünü'}</div>
+        <div class="card-media">
+          <img class="product-image" src="${p.image}" alt="${p.name}">
+        </div>
+        <div class="badge">${p.icon || "🛍️"} ${p.category || (p.unit === "kg" ? "Kiloluk ürün" : "Adetli ürün")}</div>
         <div class="name">${p.name}</div>
         <div class="price">${money(p.price)}</div>
         <div class="muted">Birim: ${p.unit}</div>
         <div class="stock">Stokta var</div>
-        <div class="product-qty-box">
-          <div class="product-qty-label">Seçilen miktar</div>
-          <div class="product-qty-value" title="${selectedQty}">${selectedQty}</div>
-        </div>
-        <button class="btn primary" style="margin-top:auto" onclick="addToCart(${p.id})">Sepete Ekle</button>
+        <div class="muted" style="min-height:22px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Seçilen miktar: ${currentQty || "Henüz eklenmedi"}</div>
+        <button class="btn primary" style="margin-top:auto" onclick="addToCart(${realIndex})">Sepete Ekle</button>
       </div>
     `;
   });
+
+  if(filtered.length === 0){
+    box.innerHTML = `<div class="section" style="grid-column:1/-1;text-align:center;padding:28px">
+      <strong>Aramana uygun ürün bulunamadı.</strong>
+      <div class="muted" style="margin-top:8px">Farklı bir kelime ya da kategori deneyebilirsin.</div>
+    </div>`;
+  }
 }
 
 function addToCart(productId){
