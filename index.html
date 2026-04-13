@@ -1325,11 +1325,11 @@
               <div class="muted">Durum güncelle</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <select id="status-${order.id}">
-                  <option value="Yeni" ${String(order.status||'Yeni')==='Yeni'?'selected':''}>Yeni</option>
-                  <option value="Hazırlanıyor" ${String(order.status||'')==='Hazırlanıyor'?'selected':''}>Hazırlanıyor</option>
-                  <option value="Yolda" ${String(order.status||'')==='Yolda'?'selected':''}>Yolda</option>
-                  <option value="Teslim Edildi" ${String(order.status||'')==='Teslim Edildi'?'selected':''}>Teslim Edildi</option>
-                  <option value="İptal" ${String(order.status||'')==='İptal'?'selected':''}>İptal</option>
+                  <option value="Yeni" ${normalizeStatusValue(order.status||'Yeni')==='Yeni'?'selected':''}>Yeni</option>
+                  <option value="Hazırlanıyor" ${normalizeStatusValue(order.status||'')==='Hazırlanıyor'?'selected':''}>Hazırlanıyor</option>
+                  <option value="Yolda" ${normalizeStatusValue(order.status||'')==='Yolda'?'selected':''}>Yolda</option>
+                  <option value="Teslim Edildi" ${normalizeStatusValue(order.status||'')==='Teslim Edildi'?'selected':''}>Teslim Edildi</option>
+                  <option value="İptal" ${normalizeStatusValue(order.status||'')==='İptal'?'selected':''}>İptal</option>
                 </select>
                 <button class="btn primary" onclick="updateOrderStatus('${order.id}')">Kaydet</button>
                 <button class="btn secondary" onclick="cancelOrder('${order.id}')">İptal Et</button>
@@ -1367,6 +1367,22 @@
       renderAdminOrders(filtered);
     }
 
+
+    function normalizeStatusValue(value){
+      const v = String(value || '').trim().toLowerCase()
+        .replaceAll('ı','i')
+        .replaceAll('İ'.toLowerCase(),'i')
+        .replaceAll('ş','s')
+        .replaceAll('ğ','g')
+        .replaceAll('ü','u')
+        .replaceAll('ö','o')
+        .replaceAll('ç','c');
+      if(v === 'iptal') return 'İptal';
+      if(v === 'hazirlaniyor') return 'Hazırlanıyor';
+      if(v === 'teslim edildi' || v === 'teslimedildi') return 'Teslim Edildi';
+      if(v === 'yolda') return 'Yolda';
+      return 'Yeni';
+    }
 
     function statusBadgeClass(status){
       const s = String(status || 'Yeni').toLowerCase()
@@ -1458,17 +1474,27 @@
 
     async function updateOrderStatus(orderId){
       const select = document.getElementById('status-' + orderId);
-      const status = select ? select.value : 'Yeni';
-      const { error } = await client
+      const rawStatus = select ? select.value : 'Yeni';
+      const status = normalizeStatusValue(rawStatus);
+
+      const { data, error } = await client
         .from('orders')
         .update({ status: status })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select('id,status')
+        .maybeSingle();
 
       if(error){
         alert('Durum güncellenemedi: ' + error.message);
         return;
       }
-      if(select) select.value = status;
+      if(!data){
+        alert('Sipariş bulunamadı ya da durum değişmedi.');
+        return;
+      }
+
+      if(select) select.value = normalizeStatusValue(data.status);
+      alert('Sipariş durumu güncellendi: ' + normalizeStatusValue(data.status));
       await loadAdminOrders();
     }
 
@@ -1476,17 +1502,25 @@
       const ok = confirm('Bu siparişi iptal etmek istediğine emin misin?');
       if(!ok) return;
 
-      const { error } = await client
+      const { data, error } = await client
         .from('orders')
         .update({ status: 'İptal' })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select('id,status')
+        .maybeSingle();
 
       if(error){
         alert('Sipariş iptal edilemedi: ' + error.message);
         return;
       }
+      if(!data){
+        alert('Sipariş bulunamadı ya da iptal uygulanmadı.');
+        return;
+      }
+
       const select = document.getElementById('status-' + orderId);
       if(select) select.value = 'İptal';
+      alert('Sipariş iptal edildi.');
       await loadAdminOrders();
     }
 
