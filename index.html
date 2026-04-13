@@ -762,7 +762,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const WHATSAPP_NUMBER = "905518857099";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const products = [
+const fallbackProducts = [
   {
     "id": 1,
     "name": "Ekmek",
@@ -915,6 +915,10 @@ const products = [
   }
 ];
 
+let products = [];
+
+];
+
 let cart = [];
 let isSubmitting = false;
 let activeCategory = 'Hepsi';
@@ -959,6 +963,96 @@ function updateCartButton(){
   else btn.classList.remove("has-items");
 }
 
+function guessUnit(unitValue, nameValue){
+  const raw = String(unitValue || "").toLowerCase();
+  const name = String(nameValue || "").toLowerCase();
+  if(raw.includes("kg") || raw.includes("kilo") || raw.includes("kilogram")) return "kg";
+  if(name.includes(" kg") || name.includes("/kg")) return "kg";
+  return "adet";
+}
+
+function guessCategory(categoryValue){
+  const value = String(categoryValue || "").trim();
+  return value || "Diğer";
+}
+
+function categoryIcon(name){
+  const map = {
+    "Hepsi":"🛒",
+    "Kahvaltılık":"🍳",
+    "Süt Ürünleri":"🥛",
+    "İçecek":"🥤",
+    "Sebze Meyve":"🥬",
+    "Temel Gıda":"🍚",
+    "Atıştırmalık":"🍪",
+    "Temizlik":"🧼",
+    "Diğer":"📦"
+  };
+  return map[name] || "📦";
+}
+
+function promoText(product){
+  const category = String(product.category || "").toLowerCase();
+  if(category.includes("süt")) return "Süt ürünleri";
+  if(category.includes("içecek")) return "Serin fırsat";
+  if(category.includes("temizlik")) return "Ev fırsatı";
+  if(category.includes("atıştır")) return "Çok satan";
+  if(category.includes("kahvalt")) return "Kahvaltılık";
+  return "Market ürünü";
+}
+
+function productImage(product){
+  const label = encodeURIComponent(product.name || "Ürün");
+  const bg = "EEF3F9";
+  const fg = "1D4678";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect width="100%" height="100%" fill="#${bg}"/><text x="50%" y="44%" text-anchor="middle" font-size="54" font-family="Arial" fill="#${fg}">Çanakoğlu Market</text><text x="50%" y="58%" text-anchor="middle" font-size="34" font-family="Arial" fill="#${fg}">${(product.name || "Ürün").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</text></svg>`;
+  return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+}
+
+async function loadProductsFromSupabase(){
+  const box = document.getElementById("products");
+  if(box) box.innerHTML = '<div class="section" style="grid-column:1/-1;text-align:center;padding:28px"><strong>Ürünler yükleniyor...</strong></div>';
+
+  try{
+    const { data, error } = await supabaseClient
+      .from("products")
+      .select("barcode, stock_code, name, brand, category, subcategory, unit, price, stock_qty, tax_rate, warehouse, is_active")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+
+    if(error) throw error;
+
+    const rows = Array.isArray(data) ? data : [];
+    products = rows
+      .filter(p => String(p.name || "").trim() !== "")
+      .map((p, index) => ({
+        id: String(p.barcode || p.stock_code || index + 1),
+        barcode: String(p.barcode || ""),
+        stock_code: String(p.stock_code || ""),
+        name: String(p.name || "Ürün"),
+        brand: String(p.brand || ""),
+        price: Number(p.price || 0),
+        unit: guessUnit(p.unit, p.name),
+        category: guessCategory(p.category),
+        subcategory: String(p.subcategory || ""),
+        icon: categoryIcon(guessCategory(p.category)),
+        promo: promoText(p),
+        image: productImage(p),
+        stock_qty: Number(p.stock_qty || 0)
+      }));
+
+    if(!products.length){
+      products = fallbackProducts.slice();
+    }
+  }catch(err){
+    console.error("Ürünler Supabase'ten alınamadı:", err);
+    products = fallbackProducts.slice();
+  }
+
+  renderCategoryFilters();
+  renderProducts();
+}
+
 function updateBannerSlider(){
   const track = document.getElementById("banner-track");
   const dots = document.querySelectorAll(".banner-dot");
@@ -993,7 +1087,7 @@ function restartBannerAutoPlay(){
 
 
 function getCategories(){
-  return ["Hepsi", ...new Set(products.map(p => p.category))];
+  return ["Hepsi", ...new Set((products || []).map(p => p.category).filter(Boolean))];
 }
 
 function getVisibleProducts(){
@@ -1014,12 +1108,13 @@ function renderCategoryFilters(){
 
 function setCategory(category){
   selectedCategory = category;
+  activeCategory = category;
   renderCategoryFilters();
   renderProducts();
 }
 
 function handleSearch(value){
-  searchTerm = String(value || "").trim();
+  searchTerm = String(value || "").trim().toLowerCase();
   renderProducts();
 }
 
@@ -1166,7 +1261,7 @@ function renderCategoryBar(){
   const bar = document.getElementById('category-bar');
   if(!bar) return;
   bar.innerHTML = getCategories().map(name => `
-    <button class="cat-btn ${activeCategory === name ? 'active' : ''}" onclick="setCategory('${name.replace("'", "\'")}')">
+    <button class="cat-btn ${selectedCategory === name ? 'active' : ''}" onclick="setCategory(${JSON.stringify(name)})">
       <span class="cat-icon">${categoryIcon(name)}</span>
       <span>${name}</span>
     </button>
@@ -1177,18 +1272,17 @@ function renderProducts(){
   const box = document.getElementById("products");
   renderCategoryBar();
   box.innerHTML = "";
-  const filtered = products.filter(p => {
-    const categoryOk = activeCategory === 'Hepsi' || p.category === activeCategory;
-    const searchOk = !searchTerm || p.name.toLowerCase().includes(searchTerm) || String(p.category || '').toLowerCase().includes(searchTerm);
+  const filtered = (products || []).filter(p => {
+    const categoryOk = selectedCategory === "Hepsi" || p.category === selectedCategory;
+    const searchOk = !searchTerm || String(p.name || "").toLowerCase().includes(searchTerm) || String(p.category || "").toLowerCase().includes(searchTerm);
     return categoryOk && searchOk;
   });
 
-  filtered.forEach((p, index) => {
-    const realIndex = products.findIndex(x => x.id === p.id);
+  filtered.forEach((p) => {
     const currentQty = getProductQty(p.id);
     box.innerHTML += `
       <div class="card">
-        <div class="promo-badge">${p.promo || 'Fırsat ürünü'}</div>
+        <div class="promo-badge">${p.promo || 'Market ürünü'}</div>
         <div class="card-media">
           <img class="product-image" src="${p.image}" alt="${p.name}">
         </div>
@@ -1196,9 +1290,9 @@ function renderProducts(){
         <div class="name">${p.name}</div>
         <div class="price">${money(p.price)}</div>
         <div class="muted">Birim: ${p.unit}</div>
-        <div class="stock">Stokta var</div>
+        <div class="stock">${Number(p.stock_qty || 0) > 0 ? "Stokta var" : "Kontrol ediniz"}</div>
         <div class="muted" style="min-height:22px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Seçilen miktar: ${currentQty || "Henüz eklenmedi"}</div>
-        <button class="btn primary" style="margin-top:auto" onclick="addToCart(${realIndex})">Sepete Ekle</button>
+        <button class="btn primary" style="margin-top:auto" onclick="addToCart(\'${String(p.id).replace(/\\/g, "\\\\").replace(/\'/g, "\\\'")}\')">Sepete Ekle</button>
       </div>
     `;
   });
@@ -1396,8 +1490,7 @@ async function placeOrder(){
   }
 }
 
-renderCategoryFilters();
-renderProducts();
+loadProductsFromSupabase();
 renderCart();
 updateBannerSlider();
 startBannerAutoPlay();
