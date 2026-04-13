@@ -451,50 +451,16 @@
     }
 
   
-    .low-stock-banner{
-      margin:0 0 18px;
-      padding:14px 16px;
-      border-radius:18px;
-      background:rgba(244,154,39,.12);
-      border:1px solid rgba(244,154,39,.24);
-      color:#b86c08;
-      font-weight:800;
-      box-shadow:var(--shadow-soft)
-    }
-    .low-stock-list{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:8px
-    }
-    .low-stock-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      background:#fff;
-      border:1px solid rgba(244,154,39,.2);
-      color:#9a5a06;
-      font-size:12px;
-      font-weight:900
-    }
-
-  
     .image-wrap{position:relative}
     .corner-stock-badge{
-      position:absolute;
-      left:10px;
-      bottom:10px;
-      padding:7px 10px;
-      border-radius:999px;
-      background:rgba(198,40,40,.94);
-      color:#fff;
-      font-size:12px;
-      font-weight:900;
-      box-shadow:0 8px 18px rgba(198,40,40,.22)
+      position:absolute;left:10px;bottom:10px;
+      padding:7px 10px;border-radius:999px;background:rgba(198,40,40,.94);color:#fff;
+      font-size:12px;font-weight:900;box-shadow:0 8px 18px rgba(198,40,40,.22)
     }
-
+    .low-stock{
+      display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(244,154,39,.14);
+      color:#c97507;font-size:12px;font-weight:900;width:max-content
+    }
   </style>
 </head>
 <body>
@@ -755,7 +721,6 @@
     let cart = [];
     let activeCategory = 'Hepsi';
     let searchTerm = '';
-    const LOW_STOCK_THRESHOLD = 5;
 
     function money(v){ return Number(v || 0).toFixed(2) + " TL"; }
     function qtyText(item){ return item.unit === "kg" ? Number(item.quantity).toFixed(2) + " kg" : Number(item.quantity) + " adet"; }
@@ -809,15 +774,6 @@
     function resetSlideTimer(){
       if(slideTimer) clearInterval(slideTimer);
       slideTimer = setInterval(()=>{ currentSlide = (currentSlide + 1) % sliderItems.length; updateSlider(); }, 4500);
-    }
-      box.innerHTML = `
-        <div class="low-stock-banner">
-          Düşük stok uyarısı: bazı ürünler azaldı.
-          <div class="low-stock-list">
-            ${lows.slice(0,10).map(p => `<span class="low-stock-pill">${p.name} • ${Number(p.stock_qty || 0).toFixed(0)} adet</span>`).join('')}
-          </div>
-        </div>
-      `;
     }
 
     function toggleCart(){
@@ -904,18 +860,14 @@
       }
 
       box.innerHTML = filtered.map(p => {
+        const hasStock = Number(p.stock_qty || 0) > 0;
         const stockQty = Number(p.stock_qty || 0);
-        const hasStock = stockQty > 0;
-        const stockText = !hasStock ? 'Stok Yok' : stockQty <= LOW_STOCK_THRESHOLD ? `Stok: ${stockQty.toFixed(0)} adet` : `Stok: ${stockQty.toFixed(0)} adet`;
-        const stockClass = !hasStock ? 'out-stock' : stockQty <= LOW_STOCK_THRESHOLD ? 'low-stock' : 'stock';
-        const cornerBadge = (hasStock && stockQty <= 3) ? `<span class="corner-stock-badge">Son ${stockQty.toFixed(0)} ürün</span>` : '';
+        const stockText = hasStock ? `Stok: ${stockQty.toFixed(0)} adet` : 'Stok Yok';
+        const stockClass = !hasStock ? 'out-stock' : stockQty <= 5 ? 'low-stock' : 'stock';
         return `
         <div class="card">
           <div class="promo-badge">${promoBadge(p)}</div>
-          <div class="image-wrap">
-            <img class="product-image" src="${productImageByCategory(p.category)}" alt="${p.name}">
-            ${cornerBadge}
-          </div>
+          <div class="image-wrap"><img class="product-image" src="${productImageByCategory(p.category)}" alt="${p.name}">${(hasStock && Number(p.stock_qty || 0) <= 3) ? `<span class="corner-stock-badge">Son ${Number(p.stock_qty || 0).toFixed(0)} ürün</span>` : ""}</div>
           <div class="badge">${categoryIcon(p.category)} ${p.category || 'Diğer'}</div>
           <div class="name">${p.name || '-'}</div>
           <div class="price">${money(p.price)}</div>
@@ -1416,16 +1368,6 @@
     }
 
 
-
-    function normalizeStatusValue(value){
-      const v = String(value || '').trim().toLowerCase();
-      if(v === 'iptal' || v === 'i̇ptal') return 'İptal';
-      if(v === 'hazırlanıyor' || v === 'hazirlaniyor') return 'Hazırlanıyor';
-      if(v === 'teslim edildi' || v === 'teslimedildi') return 'Teslim Edildi';
-      if(v === 'yolda') return 'Yolda';
-      return 'Yeni';
-    }
-
     function statusBadgeClass(status){
       const s = String(status || 'Yeni').toLowerCase()
         .replaceAll('ı','i')
@@ -1516,20 +1458,35 @@
 
     async function updateOrderStatus(orderId){
       const select = document.getElementById('status-' + orderId);
-      const rawStatus = select ? select.value : 'Yeni';
-      const status = normalizeStatusValue(rawStatus);
-
-      const { data, error } = await client
+      const status = select ? select.value : 'Yeni';
+      const { error } = await client
         .from('orders')
         .update({ status: status })
-        .eq('id', orderId)
-        .select();
+        .eq('id', orderId);
 
       if(error){
         alert('Durum güncellenemedi: ' + error.message);
         return;
       }
       if(select) select.value = status;
+      await loadAdminOrders();
+    }
+
+    async function cancelOrder(orderId){
+      const ok = confirm('Bu siparişi iptal etmek istediğine emin misin?');
+      if(!ok) return;
+
+      const { error } = await client
+        .from('orders')
+        .update({ status: 'İptal' })
+        .eq('id', orderId);
+
+      if(error){
+        alert('Sipariş iptal edilemedi: ' + error.message);
+        return;
+      }
+      const select = document.getElementById('status-' + orderId);
+      if(select) select.value = 'İptal';
       await loadAdminOrders();
     }
 
@@ -1570,26 +1527,6 @@
           <div class="muted" style="margin-top:8px">Toplam: ${money(order.total_amount || order.total || 0)}</div>
         </div>
       `).join('');
-    }
-
-    async function cancelOrder(orderId){
-      const ok = confirm('Bu siparişi iptal etmek istediğine emin misin?');
-      if(!ok) return;
-
-      const { data, error } = await client
-        .from('orders')
-        .update({ status: 'İptal' })
-        .eq('id', orderId)
-        .select();
-
-      if(error){
-        alert('Sipariş iptal edilemedi: ' + error.message);
-        return;
-      }
-
-      const select = document.getElementById('status-' + orderId);
-      if(select) select.value = 'İptal';
-      await loadAdminOrders();
     }
 
     renderSlider();
