@@ -442,6 +442,14 @@
       display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px
     }
 
+  
+    .tracker-grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+    .tracker-results{margin-top:14px;display:grid;gap:12px}
+    .tracker-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow-soft)}
+    .admin-empty{
+      padding:24px;border:1px dashed var(--border);border-radius:16px;background:#fbfcfe;color:var(--muted);text-align:center
+    }
+
   </style>
 </head>
 <body>
@@ -516,6 +524,20 @@
       <div id="category-bar" class="category-bar"></div>
       <div id="products" class="grid"></div>
     
+    <div class="section" id="siparis-takip">
+      <div class="section-head">
+        <div>
+          <h2>Sipariş Takibi</h2>
+          <p>Telefon numaran ile son sipariş durumlarını görebilirsin.</p>
+        </div>
+      </div>
+      <div class="tracker-grid">
+        <input id="tracker-phone" placeholder="Telefon numaranı yaz">
+        <button class="btn primary" onclick="trackOrders()">Siparişlerimi Göster</button>
+      </div>
+      <div id="tracker-results" class="tracker-results"></div>
+    </div>
+
     <div class="admin-panel" id="admin-panel">
       <div class="section-head">
         <div>
@@ -581,6 +603,12 @@
                 <option value="İptal">İptal</option>
               </select>
             </div>
+            <select id="admin-date-filter" onchange="applyAdminFilters()">
+              <option value="Hepsi">Tüm Tarihler</option>
+              <option value="Bugün">Bugün</option>
+              <option value="Hafta">Bu Hafta</option>
+              <option value="Ay">Bu Ay</option>
+            </select>
             <button class="btn secondary" onclick="loadAdminOrders()">Yenile</button>
             <button class="btn secondary" onclick="adminLogout()">Çıkış</button>
           </div>
@@ -1302,11 +1330,25 @@
     function applyAdminFilters(){
       const search = document.getElementById('admin-search')?.value?.trim() || '';
       const status = document.getElementById('admin-status-filter')?.value || 'Hepsi';
+      const dateFilter = document.getElementById('admin-date-filter')?.value || 'Hepsi';
+      const now = new Date();
 
       const filtered = adminOrdersCache.filter(order => {
         const statusOk = status === 'Hepsi' || String(order.status || 'Yeni') === status;
         const searchOk = orderMatchesSearch(order, search);
-        return statusOk && searchOk;
+
+        let dateOk = true;
+        if(dateFilter !== 'Hepsi' && order.created_at){
+          const d = new Date(order.created_at);
+          if(dateFilter === 'Bugün'){
+            dateOk = d.toDateString() === now.toDateString();
+          } else if(dateFilter === 'Hafta'){
+            dateOk = ((now - d) / (1000*60*60*24)) <= 7;
+          } else if(dateFilter === 'Ay'){
+            dateOk = d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+          }
+        }
+        return statusOk && searchOk && dateOk;
       });
 
       renderAdminOrders(filtered);
@@ -1415,6 +1457,44 @@
       loadAdminOrders();
     }
 
+
+
+    async function trackOrders(){
+      const phone = String(document.getElementById('tracker-phone').value || '').trim();
+      const box = document.getElementById('tracker-results');
+      box.innerHTML = '';
+
+      if(!phone){
+        box.innerHTML = '<div class="admin-empty">Telefon numarası gir.</div>';
+        return;
+      }
+
+      const { data, error } = await client
+        .from('orders')
+        .select('*')
+        .eq('phone', phone)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if(error){
+        box.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + error.message + '</div>';
+        return;
+      }
+
+      if(!data || !data.length){
+        box.innerHTML = '<div class="admin-empty">Bu telefon numarasına ait sipariş bulunamadı.</div>';
+        return;
+      }
+
+      box.innerHTML = data.map(order => `
+        <div class="tracker-card">
+          <strong>Sipariş #${order.id}</strong>
+          <div class="muted">${order.created_at ? new Date(order.created_at).toLocaleString('tr-TR') : '-'}</div>
+          <div style="margin-top:8px"><span class="admin-badge ${statusBadgeClass(order.status || 'Yeni')}">${order.status || 'Yeni'}</span></div>
+          <div class="muted" style="margin-top:8px">Toplam: ${money(order.total_amount || order.total || 0)}</div>
+        </div>
+      `).join('');
+    }
 
     renderSlider();
     resetSlideTimer();
