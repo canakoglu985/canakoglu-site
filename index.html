@@ -442,6 +442,12 @@
       display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px
     }
 
+  
+    .auth-note{
+      margin-top:10px;padding:12px 14px;border-radius:14px;background:#f7f9fc;border:1px solid var(--border);
+      color:var(--muted);font-size:13px;line-height:1.6
+    }
+
   </style>
 </head>
 <body>
@@ -529,13 +535,16 @@
         <div class="admin-login">
           <div>
             <label class="muted">Admin E-posta</label>
-            <input id="admin-email" value="admin@market.com" />
+            <input id="admin-email" placeholder="Admin e-posta" />
           </div>
           <div>
             <label class="muted">Şifre</label>
-            <input id="admin-password" type="password" value="123456" />
+            <input id="admin-password" type="password" placeholder="Admin şifre" />
           </div>
           <button class="btn primary" onclick="adminLogin()">Admin Girişi</button>
+        </div>
+        <div class="auth-note">
+          Bu sürümde admin girişi Supabase Auth ile çalışır. Supabase içinde oluşturduğun admin e-posta ile giriş yapılırsa admin panel açılır.
         </div>
       </div>
 
@@ -657,6 +666,7 @@
     const supabaseUrl = "https://jpguymicdiujhutnycvl.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
     const client = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const ADMIN_EMAIL = 'admin@market.com';
 
     const sliderItems = [
       {
@@ -1330,22 +1340,50 @@
       return 'yeni';
     }
 
-    function adminLogin(){
-      const email = document.getElementById('admin-email').value.trim();
-      const password = document.getElementById('admin-password').value.trim();
-      if(email !== 'admin@market.com' || password !== '123456'){
-        alert('Admin bilgileri hatalı.');
-        return;
+    async function syncAdminSession(){
+      const { data, error } = await client.auth.getSession();
+      const session = data?.session || null;
+      const email = session?.user?.email || '';
+
+      if(error){
+        console.error('Admin oturum kontrol hatası:', error.message);
       }
-      adminLoggedIn = true;
-      document.getElementById('admin-login-box').style.display = 'none';
-      document.getElementById('admin-content').style.display = 'block';
-      document.getElementById('admin-state').textContent = 'Giriş yapıldı';
-      loadAdminOrders();
-      loadAdminProducts();
+
+      if(session && email && email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
+        adminLoggedIn = true;
+        document.getElementById('admin-login-box').style.display = 'none';
+        document.getElementById('admin-content').style.display = 'block';
+        document.getElementById('admin-state').textContent = 'Admin oturumu açık: ' + email;
+        loadAdminOrders();
+        loadAdminProducts();
+      } else {
+        adminLoggedIn = false;
+        document.getElementById('admin-login-box').style.display = 'block';
+        document.getElementById('admin-content').style.display = 'none';
+        document.getElementById('admin-state').textContent = 'Giriş yapılmadı';
+      }
     }
 
-    function adminLogout(){
+    async function adminLogin(){
+      const email = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value.trim();
+
+      if(!email || !password){
+        alert('Admin e-posta ve şifre gerekli.');
+        return;
+      }
+
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      if(error){
+        alert('Admin girişi başarısız: ' + error.message);
+        return;
+      }
+
+      await syncAdminSession();
+    }
+
+    async function adminLogout(){
+      await client.auth.signOut();
       adminLoggedIn = false;
       document.getElementById('admin-login-box').style.display = 'block';
       document.getElementById('admin-content').style.display = 'none';
@@ -1416,9 +1454,14 @@
     }
 
 
+    client.auth.onAuthStateChange(() => {
+      syncAdminSession();
+    });
+
     renderSlider();
     resetSlideTimer();
     loadProducts();
+    syncAdminSession();
   </script>
 </body>
 </html>
