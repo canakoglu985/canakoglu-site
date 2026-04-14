@@ -253,6 +253,7 @@
           <input id="market-phone" placeholder="905xxxxxxxxx">
         </div>
       </div>
+      <div id="auto-refresh-note" class="tiny" style="margin-top:10px">Otomatik yenileme kapalı.</div>
       <div class="row" style="margin-top:12px">
         <button class="btn primary" onclick="connectSupabase()">Bağlan</button>
         <button class="btn secondary" onclick="loadAllData()">Tüm Verileri Yenile</button>
@@ -479,6 +480,7 @@
 
   <script>
     let supabaseClient = null;
+    let autoRefreshTimer = null;
     let products = [];
     let orders = [];
     let orderItems = [];
@@ -528,12 +530,46 @@
       if(savedPhone) document.getElementById('market-phone').value = savedPhone;
     }
 
+
+    function startAutoRefresh(){
+      stopAutoRefresh();
+      autoRefreshTimer = setInterval(async () => {
+        if(!supabaseClient) return;
+        if(document.hidden) return;
+        try{
+          await Promise.all([loadOrders(), loadProductsAdmin()]);
+          updateStats();
+          renderCriticalStock();
+          const note = document.getElementById('auto-refresh-note');
+          if(note){
+            const now = new Date();
+            note.textContent = 'Otomatik yenileme açık. Son kontrol: ' + now.toLocaleTimeString('tr-TR');
+          }
+        }catch(e){}
+      }, 5000);
+
+      const note = document.getElementById('auto-refresh-note');
+      if(note){
+        note.textContent = 'Otomatik yenileme açık. Her 5 saniyede siparişler kontrol edilir.';
+      }
+    }
+
+    function stopAutoRefresh(){
+      if(autoRefreshTimer){
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
+
+
     async function connectSupabase(){
       try{
         const url = document.getElementById('supabase-url').value.trim();
         const key = document.getElementById('supabase-key').value.trim();
 
-        if(!url || !key){
+        
+        saveConfigLocal();
+if(!url || !key){
           setStatus('global-status', 'Supabase URL ve anon key gerekli.', false);
           return;
         }
@@ -548,9 +584,11 @@
         setStatus('global-status', 'Supabase bağlantısı başarılı.', true);
         setStatus('live-status-box', 'Sistem bağlı. Veriler yüklenebilir.', true);
         await loadAllData();
+        startAutoRefresh();
       }catch(err){
         setStatus('global-status', 'Bağlantı hatası: ' + err.message, false);
         setStatus('live-status-box', 'Bağlantı hatası: ' + err.message, false);
+        stopAutoRefresh();
       }
     }
 
@@ -1000,6 +1038,9 @@
         localStorage.setItem('canakoglu_admin_login', 'true');
         localStorage.setItem('canakoglu_admin_remember', remember ? 'true' : 'false');
         document.getElementById('login-screen').style.display = 'none';
+        const savedUrl = localStorage.getItem('canakoglu_admin_url');
+        const savedKey = localStorage.getItem('canakoglu_admin_key');
+        if(savedUrl && savedKey){ setTimeout(() => connectSupabase(), 200); }
         document.getElementById('login-error').style.display = 'none';
       }else{
         document.getElementById('login-error').style.display = 'block';
@@ -1204,6 +1245,14 @@
       }
     }
 
+
+
+    const savedUrlAuto = localStorage.getItem('canakoglu_admin_url');
+    const savedKeyAuto = localStorage.getItem('canakoglu_admin_key');
+    if(savedUrlAuto && savedKeyAuto){
+      document.getElementById('supabase-url').value = savedUrlAuto;
+      document.getElementById('supabase-key').value = savedKeyAuto;
+    }
 
     loadConfigLocal();
     hydrateRememberedLogin();
