@@ -775,6 +775,7 @@
         </div>
       </a>
       <div class="header-actions">
+        <a class="header-shortcut" href="admin.html">Admin</a>
         <details class="account-dropdown">
           <summary>
             <div class="account-btn-left">
@@ -953,7 +954,8 @@
       </select>
       <div id="cart-rule-note" class="cart-note">Sepet kuralları yükleniyor...</div>
       <button class="btn primary" onclick="placeOrder()">Sipariş Ver</button>
-      <button class="btn primary" onclick="sendWhatsAppOrder()" style="width:100%">📲 Siparişi WhatsApp ile Gönder</button>
+      <button class="btn primary" type="button" onclick="submitWebsiteOrder()">Sipariş Ver</button>
+          <button class="btn primary" onclick="sendWhatsAppOrder()" style="width:100%">📲 Siparişi WhatsApp Sipariş</button>
     </div>
   </aside>
 
@@ -1812,7 +1814,89 @@
       window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
     }
 
-    function sendWhatsAppOrder(){
+    
+    async function submitWebsiteOrder(){
+      try{
+        if(!supabaseClient){
+          alert('Sistem bağlantısı hazır değil.');
+          return;
+        }
+
+        if(!cart || !cart.length){
+          alert('Sepet boş.');
+          return;
+        }
+
+        const customerName = (document.getElementById('customer-name')?.value || document.getElementById('name')?.value || '').trim();
+        const phone = (document.getElementById('customer-phone')?.value || document.getElementById('phone')?.value || '').trim();
+        const address = (document.getElementById('customer-address')?.value || document.getElementById('address')?.value || '').trim();
+        const paymentMethod = (document.getElementById('payment-method')?.value || 'nakit').trim();
+
+        if(!customerName || !phone || !address){
+          alert('Ad, telefon ve adres gerekli.');
+          return;
+        }
+
+        const totalAmount = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || item.quantity || 0)), 0);
+
+        const { data: orderRows, error: orderError } = await supabaseClient
+          .from('orders')
+          .insert([{
+            customer_name: customerName,
+            phone,
+            address,
+            status: 'yeni',
+            payment_method: paymentMethod,
+            total_amount: totalAmount
+          }])
+          .select();
+
+        if(orderError) throw orderError;
+        const orderId = orderRows?.[0]?.id;
+        if(!orderId) throw new Error('Sipariş ID alınamadı.');
+
+        const orderItemsPayload = cart.map(item => ({
+          order_id: orderId,
+          product_name: item.name || item.product_name || '',
+          price: Number(item.price || 0),
+          quantity: Number(item.qty || item.quantity || 0),
+          unit: item.unit || 'adet'
+        }));
+
+        const { error: itemsError } = await supabaseClient
+          .from('order_items')
+          .insert(orderItemsPayload);
+
+        if(itemsError) throw itemsError;
+
+        // stock düşür
+        for (const item of cart){
+          const qty = Number(item.qty || item.quantity || 0);
+          const currentStock = Number(item.stock_qty || 0);
+          const nextStock = Math.max(0, currentStock - qty);
+          const productId = item.id;
+
+          if(productId){
+            await supabaseClient
+              .from('products')
+              .update({ stock_qty: nextStock })
+              .eq('id', productId);
+          }
+        }
+
+        alert('Sipariş başarıyla oluşturuldu.');
+
+        cart = [];
+        if(typeof renderCart === 'function') renderCart();
+        if(typeof loadProducts === 'function') await loadProducts();
+        if(typeof closeCart === 'function') closeCart();
+
+      }catch(err){
+        alert('Sipariş oluşturulamadı: ' + err.message);
+      }
+    }
+
+function sendWhatsAppOrder(){
       if(!cart.length){
         alert("Sepet boş.");
         return;
@@ -2497,16 +2581,5 @@ async function uploadExcelProducts(){
 
     initApp();
   </script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-  document.querySelectorAll('.header-shortcut').forEach(function(el){
-    if((el.textContent || '').trim().toLowerCase() === 'admin'){
-      el.remove();
-    }
-  });
-});
-</script>
-
 </body>
 </html>
