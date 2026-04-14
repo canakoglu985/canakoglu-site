@@ -5651,5 +5651,162 @@ document.addEventListener('DOMContentLoaded', async function(){
 })();
 </script>
 
+
+<script>
+(function(){
+  if(window.__canakogluHotfixOrdersLogout) return;
+  window.__canakogluHotfixOrdersLogout = true;
+
+  function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  async function safeUser(){
+    try{
+      if(!window.client?.auth?.getUser) return null;
+      const { data } = await window.client.auth.getUser();
+      return data?.user || null;
+    }catch(e){
+      console.error(e);
+      return null;
+    }
+  }
+
+  async function safeRefreshAccount(){
+    try{
+      if(typeof window.loadCurrentCustomerProfile === 'function'){
+        await window.loadCurrentCustomerProfile();
+      }
+    }catch(e){ console.error(e); }
+
+    try{
+      if(typeof window.refreshCustomerProfileSummary === 'function'){
+        await window.refreshCustomerProfileSummary();
+      }
+    }catch(e){ console.error(e); }
+
+    try{
+      if(typeof window.renderAccountBox === 'function'){
+        await window.renderAccountBox();
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.closeAccountDropdown === 'function'){
+        window.closeAccountDropdown();
+      }
+    }catch(e){}
+  }
+
+  window.signOutCustomer = async function(){
+    try{
+      if(window.client?.auth?.signOut){
+        await window.client.auth.signOut();
+      }
+    }catch(e){
+      console.error('signout error', e);
+    }
+
+    try{ window.currentCustomerProfile = null; }catch(e){}
+    await safeRefreshAccount();
+
+    const ordersModal = document.getElementById('customer-orders-modal');
+    if(ordersModal) ordersModal.classList.remove('open');
+
+    alert('Çıkış yapıldı.');
+  };
+
+  window.accountMenuAction = async function(sectionId){
+    try{
+      if(typeof window.closeAccountDropdown === 'function'){
+        window.closeAccountDropdown();
+      }
+    }catch(e){}
+
+    if(sectionId === 'siparis-takip'){
+      return window.openCustomerOrdersModal();
+    }
+
+    if(sectionId === 'cikis'){
+      return window.signOutCustomer();
+    }
+
+    if(sectionId === 'adresler' || sectionId === 'ayarlar' || sectionId === 'giris'){
+      if(typeof window.openCustomerRegisterModal === 'function'){
+        return window.openCustomerRegisterModal();
+      }
+      return;
+    }
+
+    if(sectionId === 'favoriler'){
+      alert('Favori Ürünlerim bölümü sonraki adımda aktif edilebilir.');
+      return;
+    }
+  };
+
+  window.openCustomerOrdersModal = async function(){
+    const modal = document.getElementById('customer-orders-modal');
+    const list = document.getElementById('customer-orders-list');
+
+    if(list) list.innerHTML = '<div class="empty">Siparişler yükleniyor...</div>';
+    if(modal) modal.classList.add('open');
+
+    const user = await safeUser();
+    if(!user){
+      if(list) list.innerHTML = '<div class="admin-empty">Siparişlerini görmek için giriş yap.</div>';
+      return;
+    }
+
+    try{
+      await wait(150);
+
+      let orders = [];
+      if(typeof window.fetchCustomerOrders === 'function'){
+        orders = await window.fetchCustomerOrders();
+      }else{
+        const { data, error } = await window.client
+          .from('orders')
+          .select('*')
+          .eq('customer_id', user.id)
+          .order('created_at', { ascending:false });
+        if(error) throw error;
+        orders = data || [];
+      }
+
+      if(typeof window.renderCustomerOrdersList === 'function'){
+        window.renderCustomerOrdersList(orders || []);
+      } else if(list) {
+        list.innerHTML = '<div class="admin-empty">Sipariş listesi çizilemedi.</div>';
+      }
+    }catch(err){
+      console.error('orders modal error', err);
+      if(list){
+        list.innerHTML = '<div class="admin-empty">Siparişler yüklenemedi: ' + String(err?.message || err) + '</div>';
+      }
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const ordersModal = document.getElementById('customer-orders-modal');
+    if(ordersModal && !ordersModal.dataset.hotfixBound){
+      ordersModal.dataset.hotfixBound = '1';
+      ordersModal.addEventListener('click', function(e){
+        if(e.target === ordersModal){
+          ordersModal.classList.remove('open');
+        }
+      });
+    }
+  });
+
+  try{
+    if(window.client?.auth?.onAuthStateChange){
+      window.client.auth.onAuthStateChange(async () => {
+        await safeRefreshAccount();
+      });
+    }
+  }catch(e){
+    console.error(e);
+  }
+})();
+</script>
+
 </body>
 </html>
