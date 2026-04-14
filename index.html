@@ -1180,9 +1180,9 @@
 <script>
 window.getCurrentCustomerUser = async function(){
   try{
-    if (typeof client !== 'undefined' && client && client.auth && client.auth.getUser){
+    if (typeof client !== 'undefined' && client?.auth?.getUser){
       const { data } = await client.auth.getUser();
-      return data && data.user ? data.user : null;
+      return data?.user || null;
     }
     return null;
   }catch(e){
@@ -4755,6 +4755,360 @@ document.addEventListener('DOMContentLoaded', async function(){
       alert('WhatsApp sipariş açılamadı: ' + err.message);
     }
   };
+})();
+</script>
+
+
+<script>
+(function(){
+  if(window.__CANAKOGLU_AUTH_ORDER_PATCH__) return;
+  window.__CANAKOGLU_AUTH_ORDER_PATCH__ = true;
+
+  const FALLBACK_URL = 'https://jpguymicdiujhutnycvl.supabase.co';
+  const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I';
+  let patchClient = null;
+  let currentCustomerProfileSafe = null;
+
+  function getClient(){
+    try{
+      if (typeof client !== 'undefined' && client) return client;
+    } catch(e) {}
+    if (patchClient) return patchClient;
+    const url = localStorage.getItem('canakoglu_admin_url') || FALLBACK_URL;
+    const key = localStorage.getItem('canakoglu_admin_key') || FALLBACK_KEY;
+    patchClient = window.supabase.createClient(url, key);
+    return patchClient;
+  }
+
+  function byId(id){ return document.getElementById(id); }
+  function val(id){ return (byId(id)?.value || '').trim(); }
+  function setVal(id,v){ if(byId(id)) byId(id).value = v || ''; }
+  function normalizePhone(phone){ return String(phone || '').replace(/\s+/g,'').trim(); }
+  function isEmail(v){ return /@/.test(String(v || '')); }
+  function getCartItems(){
+    try{ if (Array.isArray(cart)) return cart; }catch(e){}
+    if (Array.isArray(window.cart)) return window.cart;
+    return [];
+  }
+  function setCartItems(items){
+    try{ cart = items; }catch(e){}
+    window.cart = items;
+  }
+  function getPaymentMethod(){ return byId('payment-method')?.value || 'Kapıda Nakit'; }
+  function getDeliverySlot(){ return byId('delivery-slot')?.value || 'Müsait olan en kısa sürede'; }
+  function getTotals(){
+    try{ if (typeof calculateCartGrandTotal === 'function') return calculateCartGrandTotal(); }catch(e){}
+    const items = getCartItems();
+    const subtotal = items.reduce((sum,item)=>sum + Number(item.price || 0) * Number(item.quantity || 0),0);
+    return { subtotal, deliveryFee: 0, grandTotal: subtotal };
+  }
+
+  async function getCurrentCustomerUserPatched(){
+    const { data, error } = await getClient().auth.getUser();
+    if(error) return null;
+    return data?.user || null;
+  }
+
+  async function loadCurrentCustomerProfilePatched(){
+    const user = await getCurrentCustomerUserPatched();
+    if(!user){
+      currentCustomerProfileSafe = null;
+      if (typeof refreshCustomerProfileSummary === 'function') refreshCustomerProfileSummary();
+      return null;
+    }
+    const { data, error } = await getClient()
+      .from('profiles')
+      .select('id, email, full_name, phone, address')
+      .eq('id', user.id)
+      .maybeSingle();
+    if(error){
+      console.error('Profil okunamadı', error);
+      currentCustomerProfileSafe = { id:user.id, email:user.email || '', full_name:'', phone:'', address:'' };
+    }else{
+      currentCustomerProfileSafe = data || { id:user.id, email:user.email || '', full_name:'', phone:'', address:'' };
+    }
+    try{ window.currentCustomerProfile = currentCustomerProfileSafe; }catch(e){}
+    updateProfileUI();
+    return currentCustomerProfileSafe;
+  }
+
+  function updateProfileUI(){
+    const accountNames = document.querySelectorAll('.account-name');
+    const note = byId('cart-rule-note');
+    const name = currentCustomerProfileSafe?.full_name || 'Hesabım';
+    accountNames.forEach(el => el.textContent = name);
+    if(note){
+      if(currentCustomerProfileSafe?.full_name){
+        note.innerHTML = '<strong>Kayıtlı Kullanıcı:</strong> ' + currentCustomerProfileSafe.full_name +
+          '<br><span class="tiny-note">' + (currentCustomerProfileSafe.phone || '') + ' • ' + (currentCustomerProfileSafe.address || '') + '</span>';
+      }else{
+        note.innerHTML = '<strong>Sipariş Hesabı</strong><br><span class="tiny-note">Sipariş vermek için önce giriş yap veya kayıt ol.</span>';
+      }
+    }
+  }
+
+  async function signInCustomerPatched(){
+    const identifier = val('register-email');
+    const password = val('register-password');
+    if(!identifier || !password){
+      alert('E-posta/telefon ve şifre gerekli.');
+      return;
+    }
+
+    let email = identifier;
+    if(!isEmail(identifier)){
+      const phone = normalizePhone(identifier);
+      const { data: profiles, error: profileErr } = await getClient()
+        .from('profiles')
+        .select('email, phone')
+        .or(`phone.eq.${phone},phone.eq.${identifier}`)
+        .limit(1);
+      if(profileErr || !profiles?.length || !profiles[0]?.email){
+        alert('Bu telefona ait kullanıcı bulunamadı. E-posta ile deneyin.');
+        return;
+      }
+      email = profiles[0].email;
+    }
+
+    const { error } = await getClient().auth.signInWithPassword({ email, password });
+    if(error){
+      alert('Giriş yapılamadı: ' + error.message);
+      return;
+    }
+
+    await loadCurrentCustomerProfilePatched();
+    if (typeof closeCustomerRegisterModal === 'function') closeCustomerRegisterModal();
+    alert('Giriş başarılı.');
+  }
+
+  async function registerCustomerPatched(){
+    const email = val('register-email');
+    const password = val('register-password');
+    const fullName = val('register-name');
+    const phone = normalizePhone(val('register-phone'));
+    const address = val('register-address');
+
+    if(!email || !password || !fullName || !phone || !address){
+      alert('Ad soyad, telefon, adres, e-posta ve şifre gerekli.');
+      return;
+    }
+
+    const sb = getClient();
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if(error){
+      const msg = String(error.message || '').toLowerCase();
+      if(msg.includes('rate limit')){
+        alert('Çok sık kayıt denendi. Birkaç dakika sonra tekrar deneyin veya giriş yapın.');
+        return;
+      }
+      if(msg.includes('already') || msg.includes('registered')){
+        alert('Bu e-posta zaten kayıtlı. Giriş yapmayı deneyin.');
+        return;
+      }
+      alert('Kayıt oluşturulamadı: ' + error.message);
+      return;
+    }
+
+    const userId = data?.user?.id || data?.session?.user?.id;
+    if(!userId){
+      alert('Kayıt oluşturuldu. E-posta doğrulaması gerekebilir. Sonra giriş yapın.');
+      return;
+    }
+
+    const { error: profileError } = await sb.from('profiles').upsert([{
+      id: userId,
+      email,
+      full_name: fullName,
+      phone,
+      address
+    }], { onConflict: 'id' });
+
+    if(profileError){
+      alert('Profil kaydedilemedi: ' + profileError.message);
+      return;
+    }
+
+    // bazı projelerde signup sonrası session hemen gelir
+    try{ await sb.auth.signInWithPassword({ email, password }); }catch(e){}
+    await loadCurrentCustomerProfilePatched();
+    if (typeof closeCustomerRegisterModal === 'function') closeCustomerRegisterModal();
+    alert('Kayıt başarılı.');
+  }
+
+  async function saveCustomerProfilePatched(){
+    const user = await getCurrentCustomerUserPatched();
+    if(!user){
+      alert('Önce giriş yapmalısınız.');
+      return;
+    }
+    const payload = {
+      id: user.id,
+      email: user.email || currentCustomerProfileSafe?.email || '',
+      full_name: val('register-name'),
+      phone: normalizePhone(val('register-phone')),
+      address: val('register-address')
+    };
+    const { error } = await getClient().from('profiles').upsert([payload], { onConflict: 'id' });
+    if(error){
+      alert('Profil kaydedilemedi: ' + error.message);
+      return;
+    }
+    await loadCurrentCustomerProfilePatched();
+    if (typeof closeCustomerRegisterModal === 'function') closeCustomerRegisterModal();
+    alert('Bilgiler kaydedildi.');
+  }
+
+  async function submitCustomerAuthPatched(){
+    const mode = window.customerAuthMode || 'login';
+    if(mode === 'login') return signInCustomerPatched();
+    if(mode === 'register') return registerCustomerPatched();
+    return saveCustomerProfilePatched();
+  }
+
+  async function submitWebsiteOrderPatched(){
+    const user = await getCurrentCustomerUserPatched();
+    if(!user){
+      if (typeof openCustomerRegisterModal === 'function') await openCustomerRegisterModal('login');
+      alert('Sipariş vermek için önce giriş yapmalısın.');
+      return;
+    }
+
+    const profile = await loadCurrentCustomerProfilePatched();
+    const customer_name = profile?.full_name || val('customer-name');
+    const phone = profile?.phone || val('customer-phone');
+    const address = profile?.address || val('customer-address');
+    const payment_method = getPaymentMethod();
+    const deliverySlot = getDeliverySlot();
+    const items = getCartItems();
+    const totals = getTotals();
+
+    if(!customer_name || !phone || !address){
+      alert('Profil bilgilerini tamamla. Ad soyad, telefon ve adres gerekli.');
+      if (typeof openCustomerRegisterModal === 'function') await openCustomerRegisterModal('profile');
+      return;
+    }
+
+    if(!items.length){
+      alert('Sepet boş.');
+      return;
+    }
+
+    const orderPayload = {
+      customer_id: user.id,
+      customer_name,
+      phone,
+      address,
+      delivery_slot: deliverySlot,
+      payment_method,
+      status: 'Yeni',
+      total_amount: Number(totals.grandTotal || 0),
+      total: Number(totals.grandTotal || 0)
+    };
+
+    const { data: orderData, error: orderError } = await getClient()
+      .from('orders')
+      .insert(orderPayload)
+      .select()
+      .single();
+
+    if(orderError){
+      alert('Sipariş kaydı hatası: ' + orderError.message);
+      return;
+    }
+
+    const itemsPayload = items.map(item => ({
+      order_id: orderData.id,
+      product_id: item.id || null,
+      product_name: item.name,
+      quantity: Number(item.quantity || 0),
+      unit_price: Number(item.price || 0),
+      line_total: Number(item.price || 0) * Number(item.quantity || 0),
+      price: Number(item.price || 0),
+      unit: item.unit || null
+    }));
+
+    const { error: itemError } = await getClient().from('order_items').insert(itemsPayload);
+    if(itemError){
+      alert('Sipariş ürünleri kaydedilemedi: ' + itemError.message);
+      return;
+    }
+
+    const summary = {
+      orderId: orderData.id,
+      customer_name,
+      phone,
+      address,
+      payment_method,
+      deliverySlot,
+      items: items.map(item => ({...item})),
+      subtotal: Number(totals.subtotal || 0),
+      deliveryFee: Number(totals.deliveryFee || 0),
+      grandTotal: Number(totals.grandTotal || 0),
+      whatsAppLines: typeof orderMessageLines === 'function' ? orderMessageLines(true) : []
+    };
+
+    alert('Sipariş başarıyla kaydedildi.');
+    if (typeof showOrderSummary === 'function') showOrderSummary(summary);
+    setCartItems([]);
+    try{ if(typeof renderCart === 'function') renderCart(); }catch(e){}
+    try{ if(typeof renderProducts === 'function') renderProducts(); }catch(e){}
+    setVal('customer-name','');
+    setVal('customer-phone','');
+    setVal('customer-address','');
+    setVal('payment-method','Kapıda Nakit');
+    setVal('delivery-slot','Müsait olan en kısa sürede');
+    try{ if(typeof toggleCart === 'function') toggleCart(); }catch(e){}
+  }
+
+  async function openCustomerRegisterModalPatched(forcedMode){
+    const modal = byId('customer-register-modal');
+    if(!modal) return;
+    const user = await getCurrentCustomerUserPatched();
+    if(user){
+      const profile = await loadCurrentCustomerProfilePatched();
+      setVal('register-email', profile?.email || user.email || '');
+      setVal('register-password', '');
+      setVal('register-name', profile?.full_name || '');
+      setVal('register-phone', profile?.phone || '');
+      setVal('register-address', profile?.address || '');
+      if (typeof switchCustomerAuthMode === 'function') switchCustomerAuthMode(forcedMode || 'profile');
+    } else {
+      setVal('register-email', '');
+      setVal('register-password', '');
+      setVal('register-name', '');
+      setVal('register-phone', '');
+      setVal('register-address', '');
+      if (typeof switchCustomerAuthMode === 'function') switchCustomerAuthMode(forcedMode || 'login');
+    }
+    modal.classList.add('open');
+    const dropdown = document.querySelector('.account-dropdown');
+    if(dropdown) dropdown.removeAttribute('open');
+  }
+
+  window.getCurrentCustomerUser = getCurrentCustomerUserPatched;
+  window.loadCurrentCustomerProfile = loadCurrentCustomerProfilePatched;
+  window.signInCustomer = signInCustomerPatched;
+  window.registerCustomer = registerCustomerPatched;
+  window.signUpCustomer = registerCustomerPatched;
+  window.saveCustomerProfile = saveCustomerProfilePatched;
+  window.submitCustomerAuth = submitCustomerAuthPatched;
+  window.submitWebsiteOrder = submitWebsiteOrderPatched;
+  window.openCustomerRegisterModal = openCustomerRegisterModalPatched;
+  window.requireCustomerProfile = async function(){
+    const user = await getCurrentCustomerUserPatched();
+    if(user) return true;
+    await openCustomerRegisterModalPatched('login');
+    return false;
+  };
+
+  document.addEventListener('DOMContentLoaded', async function(){
+    await loadCurrentCustomerProfilePatched();
+    getClient().auth.onAuthStateChange(async function(){
+      await loadCurrentCustomerProfilePatched();
+    });
+    const submitBtn = byId('customer-auth-submit');
+    if(submitBtn) submitBtn.onclick = submitCustomerAuthPatched;
+  });
 })();
 </script>
 
