@@ -787,11 +787,11 @@
             <div class="account-chevron">⌄</div>
           </summary>
           <div class="account-menu">
-            <button class="account-menu-item" onclick="accountMenuAction('adresler')"><span class="account-menu-icon">📍</span><span>Adreslerim</span></button>
-            <button class="account-menu-item" onclick="accountMenuAction('siparis-takip')"><span class="account-menu-icon">🧾</span><span>Siparişlerim</span></button>
-            <button class="account-menu-item" onclick="accountMenuAction('favoriler')"><span class="account-menu-icon">♡</span><span>Favori Ürünlerim</span></button>
-            <button class="account-menu-item" onclick="accountMenuAction('ayarlar')"><span class="account-menu-icon">⚙️</span><span>Hesap Ayarları</span></button>
-            <button class="account-menu-item" onclick="accountMenuAction('cikis')"><span class="account-menu-icon">↪</span><span>Çıkış Yap</span></button>
+            <button type="button" class="account-menu-item" onclick="accountMenuAction('adresler')"><span class="account-menu-icon">📍</span><span>Adreslerim</span></button>
+            <button type="button" class="account-menu-item" onclick="accountMenuAction('siparis-takip')"><span class="account-menu-icon">🧾</span><span>Siparişlerim</span></button>
+            <button type="button" class="account-menu-item" onclick="accountMenuAction('favoriler')"><span class="account-menu-icon">♡</span><span>Favori Ürünlerim</span></button>
+            <button type="button" class="account-menu-item" onclick="accountMenuAction('ayarlar')"><span class="account-menu-icon">⚙️</span><span>Hesap Ayarları</span></button>
+            <button type="button" class="account-menu-item" onclick="accountMenuAction('cikis')"><span class="account-menu-icon">↪</span><span>Çıkış Yap</span></button>
           </div>
         </details>
         <button class="header-shortcut" onclick="scrollToSection('urunler')">Ürünler</button>
@@ -1377,7 +1377,13 @@
         sliderItems = getSliderItems();
         currentSlide = 0;
     
+    function closeAccountDropdown(){
+      const dropdown = document.querySelector('.account-dropdown');
+      if(dropdown) dropdown.removeAttribute('open');
+    }
+
     function accountMenuAction(sectionId){
+      closeAccountDropdown();
       if(sectionId === 'siparis-takip'){
         const el = document.getElementById('siparis-takip');
         if(el) el.scrollIntoView({behavior:'smooth'});
@@ -1399,6 +1405,14 @@
         alert('Gerçek üyelik sistemi bağlanınca çıkış işlemi aktif olur.');
       }
     }
+
+    document.addEventListener('click', function(e){
+      const dropdown = document.querySelector('.account-dropdown');
+      if(!dropdown) return;
+      if(!dropdown.contains(e.target)){
+        dropdown.removeAttribute('open');
+      }
+    });
 
     renderSlider();
         resetSlideTimer();
