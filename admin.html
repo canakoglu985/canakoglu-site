@@ -4,7 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Çanakoğlu Admin Panel</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+
+    loadConfigLocal();
+    const autoLogged = tryAutoLogin();
+    if(localStorage.getItem('canakoglu_admin_url') && localStorage.getItem('canakoglu_admin_key') && autoLogged){
+      setTimeout(() => connectSupabase(), 250);
+    }
+
+
+
+document.addEventListener('DOMContentLoaded', function(){
+  const savedUser = localStorage.getItem('canakoglu_admin_login_user') || 'admin';
+  const u = document.getElementById('login-username');
+  const chk = document.getElementById('remember-admin');
+  if(u) u.value = savedUser;
+  if(chk) chk.checked = localStorage.getItem('canakoglu_admin_login_ok') === '1';
+});
+
+</script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     :root{
@@ -200,6 +218,23 @@
     .customer-meta,.report-meta{font-size:12px;color:var(--muted);margin-top:4px}
     @media (max-width:900px){.grid-2{grid-template-columns:1fr}}
 
+  
+    .floating-alert{
+      position:fixed;
+      right:20px;
+      bottom:20px;
+      background:#17324f;
+      color:#fff;
+      padding:14px 16px;
+      border-radius:16px;
+      box-shadow:0 16px 34px rgba(0,0,0,.22);
+      z-index:9999;
+      display:none;
+      max-width:320px;
+      font-weight:800;
+    }
+    .floating-alert.show{display:block}
+
   </style>
 </head>
 <body>
@@ -210,7 +245,7 @@
       <input id="login-username" placeholder="Kullanıcı adı">
       <input id="login-password" type="password" placeholder="Şifre">
       <label class="remember"><input id="remember-login" type="checkbox"> Beni hatırla</label>
-      <button onclick="loginAdmin()">Giriş Yap</button>
+      <label style="display:flex;align-items:center;gap:8px;margin:8px 0 14px;color:#5d6f86;font-weight:700"><input id="remember-admin" type="checkbox" style="width:18px;height:18px"> Beni hatırla</label><button onclick="loginAdmin()">Giriş Yap</button>
       <div id="login-error" class="login-error">Hatalı giriş</div>
     </div>
   </div>
@@ -480,6 +515,62 @@
 
   <script>
     let supabaseClient = null;
+
+    let lastKnownOrderCount = null;
+    let audioCtx = null;
+
+    function showFloatingAlert(message){
+      const el = document.getElementById('floating-alert');
+      if(!el) return;
+      el.textContent = message;
+      el.classList.add('show');
+      clearTimeout(window.__floatingAlertTimer);
+      window.__floatingAlertTimer = setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    function playNotifySound(){
+      try{
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.08, audioCtx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.28);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.30);
+      }catch(e){}
+    }
+
+    function saveAdminLogin(username, remember){
+      if(remember){
+        localStorage.setItem('canakoglu_admin_login_user', username || 'admin');
+        localStorage.setItem('canakoglu_admin_login_ok', '1');
+      }else{
+        localStorage.removeItem('canakoglu_admin_login_user');
+        localStorage.removeItem('canakoglu_admin_login_ok');
+      }
+    }
+
+    function tryAutoLogin(){
+      const ok = localStorage.getItem('canakoglu_admin_login_ok') === '1';
+      if(!ok) return false;
+      const screen = document.getElementById('login-screen');
+      if(screen) screen.style.display = 'none';
+      return true;
+    }
+
+    function logoutAdmin(){
+      localStorage.removeItem('canakoglu_admin_login_ok');
+      localStorage.removeItem('canakoglu_admin_login_user');
+      stopAutoRefresh();
+      location.reload();
+    }
+
+
     let autoRefreshTimer = null;
     let products = [];
     let orders = [];
@@ -1253,10 +1344,9 @@ if(!url || !key){
       document.getElementById('supabase-url').value = savedUrlAuto;
       document.getElementById('supabase-key').value = savedKeyAuto;
     }
-
-    loadConfigLocal();
     hydrateRememberedLogin();
     setReportRange(7);
   </script>
+  <div id="floating-alert" class="floating-alert"></div>
 </body>
 </html>
