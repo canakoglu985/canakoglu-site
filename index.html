@@ -828,7 +828,15 @@
       </a>
       <div class="header-actions">
         <div class="account-wrap">
-          <button class="account-btn" onclick="toggleAccountMenu(event)">
+          <button class="account-btn" onclick="function toggleAccountMenu(){
+  const menu = document.getElementById("account-menu");
+
+  if(menu.classList.contains("open")){
+    menu.classList.remove("open");
+  } else {
+    menu.classList.add("open");
+  }
+}(event)">
             <div class="account-btn-left">
               <div class="account-avatar">👤</div>
               <div class="account-copy">
