@@ -1164,6 +1164,9 @@
       .customer-register-card{width:100% !important;border-radius:22px 22px 0 0 !important}
     }
 
+  
+    .auth-hidden{display:none !important}
+
   </style>
 </head>
 <body>
@@ -3160,22 +3163,38 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 
-  <div id="customer-register-modal" class="customer-register-modal">
-    <div class="customer-register-card">
-      <div class="row">
-        <h3>Kayıt Ol / Bilgileri Düzenle</h3>
-        <button class="btn secondary" type="button" onclick="closeCustomerRegisterModal()">Kapat</button>
-      </div>
-      <div class="customer-register-grid">
-        <input id="register-name" placeholder="Ad Soyad">
-        <input id="register-phone" placeholder="Telefon">
-        <textarea id="register-address" placeholder="Adres"></textarea>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <button class="btn primary" type="button" onclick="saveCustomerProfile()">Kaydet</button>
-      </div>
+  
+<div id="customer-register-modal" class="customer-register-modal">
+  <div class="customer-register-card">
+    <div class="row">
+      <h3 id="customer-auth-title">Müşteri Giriş / Kayıt</h3>
+      <button class="btn secondary" type="button" onclick="closeCustomerRegisterModal()">Kapat</button>
+    </div>
+
+    <div class="row" style="gap:8px;margin:10px 0 14px">
+      <button class="btn secondary" type="button" id="auth-mode-login-btn" onclick="switchCustomerAuthMode('login')">Giriş Yap</button>
+      <button class="btn secondary" type="button" id="auth-mode-register-btn" onclick="switchCustomerAuthMode('register')">Kayıt Ol</button>
+      <button class="btn secondary" type="button" id="auth-mode-profile-btn" onclick="switchCustomerAuthMode('profile')" style="display:none">Bilgilerim</button>
+    </div>
+
+    <div class="customer-register-grid">
+      <input id="register-email" type="email" placeholder="E-posta">
+      <input id="register-password" type="password" placeholder="Şifre">
+      <input id="register-name" placeholder="Ad Soyad">
+      <input id="register-phone" placeholder="Telefon">
+      <textarea id="register-address" placeholder="Adres"></textarea>
+    </div>
+
+    <div class="tiny-note" style="margin-top:10px">
+      Sipariş vermek için giriş yapmış olman gerekir.
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" type="button" id="customer-auth-submit" onclick="submitCustomerAuth()">Devam Et</button>
     </div>
   </div>
+</div>
+</div>
 
 
 <script>
@@ -3238,6 +3257,407 @@ document.addEventListener('DOMContentLoaded', function(){
     const accountNames = document.querySelectorAll('.account-name');
     accountNames.forEach(el => el.textContent = savedName);
   }
+});
+</script>
+
+
+<script>
+let customerAuthMode = 'login';
+let currentCustomerProfile = null;
+
+function switchCustomerAuthMode(mode){
+  customerAuthMode = mode;
+  const title = document.getElementById('customer-auth-title');
+  const email = document.getElementById('register-email');
+  const password = document.getElementById('register-password');
+  const name = document.getElementById('register-name');
+  const phone = document.getElementById('register-phone');
+  const address = document.getElementById('register-address');
+  const submit = document.getElementById('customer-auth-submit');
+  const loginBtn = document.getElementById('auth-mode-login-btn');
+  const registerBtn = document.getElementById('auth-mode-register-btn');
+  const profileBtn = document.getElementById('auth-mode-profile-btn');
+
+  [loginBtn, registerBtn, profileBtn].forEach(btn => btn && btn.classList.remove('primary'));
+  [loginBtn, registerBtn, profileBtn].forEach(btn => btn && btn.classList.add('secondary'));
+
+  if(mode === 'login'){
+    if(title) title.textContent = 'Müşteri Giriş';
+    if(submit) submit.textContent = 'Giriş Yap';
+    if(email) email.classList.remove('auth-hidden');
+    if(password) password.classList.remove('auth-hidden');
+    if(name) name.classList.add('auth-hidden');
+    if(phone) phone.classList.add('auth-hidden');
+    if(address) address.classList.add('auth-hidden');
+    if(loginBtn){ loginBtn.classList.add('primary'); loginBtn.classList.remove('secondary'); }
+  }else if(mode === 'register'){
+    if(title) title.textContent = 'Müşteri Kayıt';
+    if(submit) submit.textContent = 'Kayıt Ol';
+    if(email) email.classList.remove('auth-hidden');
+    if(password) password.classList.remove('auth-hidden');
+    if(name) name.classList.remove('auth-hidden');
+    if(phone) phone.classList.remove('auth-hidden');
+    if(address) address.classList.remove('auth-hidden');
+    if(registerBtn){ registerBtn.classList.add('primary'); registerBtn.classList.remove('secondary'); }
+  }else{
+    if(title) title.textContent = 'Bilgilerimi Düzenle';
+    if(submit) submit.textContent = 'Bilgileri Kaydet';
+    if(email) email.classList.add('auth-hidden');
+    if(password) password.classList.add('auth-hidden');
+    if(name) name.classList.remove('auth-hidden');
+    if(phone) phone.classList.remove('auth-hidden');
+    if(address) address.classList.remove('auth-hidden');
+    if(profileBtn){ profileBtn.classList.add('primary'); profileBtn.classList.remove('secondary'); }
+  }
+}
+
+async function getCurrentCustomerUser(){
+  const { data } = await client.auth.getUser();
+  return data?.user || null;
+}
+
+async function loadCurrentCustomerProfile(){
+  const user = await getCurrentCustomerUser();
+  if(!user){
+    currentCustomerProfile = null;
+    refreshCustomerProfileSummary();
+    return null;
+  }
+  const { data, error } = await client
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if(error){
+    console.error(error);
+    return null;
+  }
+  currentCustomerProfile = data || { id:user.id, email:user.email || '', full_name:'', phone:'', address:'' };
+  refreshCustomerProfileSummary();
+  return currentCustomerProfile;
+}
+
+function refreshCustomerProfileSummary(){
+  const note = document.getElementById('cart-rule-note');
+  const accountNames = document.querySelectorAll('.account-name');
+  const loginProfileBtn = document.getElementById('auth-mode-profile-btn');
+
+  if(currentCustomerProfile && currentCustomerProfile.full_name){
+    if(note){
+      note.innerHTML = '<strong>Kayıtlı Kullanıcı:</strong> ' + (currentCustomerProfile.full_name || '') +
+        '<br><span class="tiny-note">' + (currentCustomerProfile.phone || '') + ' • ' + (currentCustomerProfile.address || '') + '</span>';
+    }
+    accountNames.forEach(el => el.textContent = currentCustomerProfile.full_name || 'Hesabım');
+    if(loginProfileBtn) loginProfileBtn.style.display = '';
+  }else{
+    if(note){
+      note.innerHTML = '<strong>Sipariş Hesabı</strong><br><span class="tiny-note">Sipariş vermek için önce giriş yap veya kayıt ol.</span>';
+    }
+    accountNames.forEach(el => el.textContent = 'Hesabım');
+    if(loginProfileBtn) loginProfileBtn.style.display = 'none';
+  }
+}
+
+async function openCustomerRegister(){
+  await openCustomerRegisterModal();
+}
+async function openCustomerRegisterModal(){
+  const modal = document.getElementById('customer-register-modal');
+  if(!modal) return;
+  const user = await getCurrentCustomerUser();
+  if(user){
+    await loadCurrentCustomerProfile();
+    document.getElementById('register-email').value = user.email || '';
+    document.getElementById('register-password').value = '';
+    document.getElementById('register-name').value = currentCustomerProfile?.full_name || '';
+    document.getElementById('register-phone').value = currentCustomerProfile?.phone || '';
+    document.getElementById('register-address').value = currentCustomerProfile?.address || '';
+    switchCustomerAuthMode('profile');
+  }else{
+    document.getElementById('register-email').value = '';
+    document.getElementById('register-password').value = '';
+    document.getElementById('register-name').value = '';
+    document.getElementById('register-phone').value = '';
+    document.getElementById('register-address').value = '';
+    switchCustomerAuthMode('login');
+  }
+  modal.classList.add('open');
+}
+
+function closeCustomerRegister(){
+  closeCustomerRegisterModal();
+}
+function closeCustomerRegisterModal(){
+  const modal = document.getElementById('customer-register-modal');
+  if(modal) modal.classList.remove('open');
+}
+
+async function submitCustomerAuth(){
+  if(customerAuthMode === 'login'){
+    return signInCustomer();
+  }
+  if(customerAuthMode === 'register'){
+    return signUpCustomer();
+  }
+  return saveCustomerProfile();
+}
+
+async function signInCustomer(){
+  const email = (document.getElementById('register-email')?.value || '').trim();
+  const password = (document.getElementById('register-password')?.value || '').trim();
+  if(!email || !password){
+    alert('E-posta ve şifre gerekli.');
+    return;
+  }
+  const { error } = await client.auth.signInWithPassword({ email, password });
+  if(error){
+    alert('Giriş yapılamadı: ' + error.message);
+    return;
+  }
+  await loadCurrentCustomerProfile();
+  closeCustomerRegisterModal();
+  alert('Giriş başarılı.');
+}
+
+async function signUpCustomer(){
+  const email = (document.getElementById('register-email')?.value || '').trim();
+  const password = (document.getElementById('register-password')?.value || '').trim();
+  const full_name = (document.getElementById('register-name')?.value || '').trim();
+  const phone = (document.getElementById('register-phone')?.value || '').trim();
+  const address = (document.getElementById('register-address')?.value || '').trim();
+
+  if(!email || !password || !full_name || !phone || !address){
+    alert('E-posta, şifre, ad soyad, telefon ve adres gerekli.');
+    return;
+  }
+
+  const { data, error } = await client.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name }
+    }
+  });
+
+  if(error){
+    alert('Kayıt oluşturulamadı: ' + error.message);
+    return;
+  }
+
+  const userId = data?.user?.id;
+  if(userId){
+    const { error: profileError } = await client
+      .from('profiles')
+      .upsert({
+        id: userId,
+        email,
+        full_name,
+        phone,
+        address
+      });
+    if(profileError){
+      alert('Profil kaydedilemedi: ' + profileError.message);
+      return;
+    }
+  }
+
+  currentCustomerProfile = { email, full_name, phone, address, id: userId };
+  refreshCustomerProfileSummary();
+  closeCustomerRegisterModal();
+  alert('Kayıt oluşturuldu. E-posta doğrulaması açıksa mailini onayla, sonra giriş yap.');
+}
+
+async function saveCustomerProfile(){
+  const user = await getCurrentCustomerUser();
+  if(!user){
+    switchCustomerAuthMode('login');
+    alert('Önce giriş yapman gerekiyor.');
+    return;
+  }
+  const full_name = (document.getElementById('register-name')?.value || '').trim();
+  const phone = (document.getElementById('register-phone')?.value || '').trim();
+  const address = (document.getElementById('register-address')?.value || '').trim();
+
+  if(!full_name || !phone || !address){
+    alert('Ad soyad, telefon ve adres zorunlu.');
+    return;
+  }
+
+  const { error } = await client
+    .from('profiles')
+    .upsert({
+      id: user.id,
+      email: user.email || '',
+      full_name,
+      phone,
+      address
+    });
+
+  if(error){
+    alert('Profil güncellenemedi: ' + error.message);
+    return;
+  }
+
+  currentCustomerProfile = { id:user.id, email:user.email || '', full_name, phone, address };
+  refreshCustomerProfileSummary();
+  closeCustomerRegisterModal();
+  alert('Bilgiler kaydedildi.');
+}
+
+async function signOutCustomer(){
+  await client.auth.signOut();
+  currentCustomerProfile = null;
+  refreshCustomerProfileSummary();
+  closeAccountDropdown();
+  alert('Çıkış yapıldı.');
+}
+
+function getSavedCustomerProfile(){
+  if(!currentCustomerProfile){
+    return { name:'', phone:'', address:'' };
+  }
+  return {
+    name: currentCustomerProfile.full_name || '',
+    phone: currentCustomerProfile.phone || '',
+    address: currentCustomerProfile.address || ''
+  };
+}
+
+function hasSavedCustomerProfile(){
+  return !!(currentCustomerProfile && currentCustomerProfile.full_name && currentCustomerProfile.phone && currentCustomerProfile.address);
+}
+
+function requireCustomerProfile(){
+  if(hasSavedCustomerProfile()) return true;
+  openCustomerRegisterModal();
+  alert('Sipariş vermek için önce giriş yapman gerekiyor.');
+  return false;
+}
+
+async function placeOrder(){
+  if(!requireCustomerProfile()) return;
+  if(!cart.length){
+    alert("Sepet boş.");
+    return;
+  }
+
+  const profile = getSavedCustomerProfile();
+  const customer_name = profile.name;
+  const phone = profile.phone;
+  const address = profile.address;
+  const payment_method = document.getElementById('payment-method').value;
+  const deliverySlot = document.getElementById('delivery-slot')?.value || 'Müsait olan en kısa sürede';
+
+  const totals = calculateCartGrandTotal();
+  const minimumOrderAmount = Number(marketSettings.minimumOrderAmount || 0);
+  if(minimumOrderAmount > 0 && totals.subtotal < minimumOrderAmount){
+    alert(`Minimum sipariş tutarı ${money(minimumOrderAmount)} olmalı.`);
+    return;
+  }
+
+  const total_amount = totals.grandTotal;
+  const user = await getCurrentCustomerUser();
+
+  const orderPayload = {
+    customer_name, phone, address, payment_method,
+    status: 'yeni',
+    total_amount,
+    user_id: user?.id || null
+  };
+
+  const { data: orderData, error: orderError } = await client
+    .from('orders')
+    .insert([orderPayload])
+    .select()
+    .single();
+
+  if(orderError){
+    alert("Sipariş kaydedilemedi: " + orderError.message);
+    return;
+  }
+
+  const orderItems = cart.map(item => ({
+    order_id: orderData.id,
+    product_name: item.name,
+    price: Number(item.price || 0),
+    quantity: Number(item.quantity || 0),
+    unit: item.unit || 'adet'
+  }));
+
+  const { error: itemError } = await client.from('order_items').insert(orderItems);
+  if(itemError){
+    alert("Sipariş ürünleri kaydedilemedi: " + itemError.message);
+    return;
+  }
+
+  const summary = {
+    orderId: orderData.id,
+    customer_name,
+    phone,
+    address,
+    payment_method,
+    deliverySlot,
+    items: cart.map(item => ({...item})),
+    subtotal: totals.subtotal,
+    deliveryFee: totals.deliveryFee,
+    grandTotal: totals.grandTotal,
+    whatsAppLines: orderMessageLines(true)
+  };
+
+  cart = [];
+  renderCart();
+  showOrderSummary(summary);
+  closeCart();
+  if(typeof loadProducts === 'function') await loadProducts();
+}
+
+async function sendWhatsAppOrder(){
+  if(!requireCustomerProfile()) return;
+  if(!cart.length){
+    alert("Sepet boş.");
+    return;
+  }
+  const minimumOrderAmount = Number(marketSettings.minimumOrderAmount || 0);
+  const totals = calculateCartGrandTotal();
+  if(minimumOrderAmount > 0 && totals.subtotal < minimumOrderAmount){
+    alert(`Minimum sipariş tutarı ${money(minimumOrderAmount)} olmalı.`);
+    return;
+  }
+  openWhatsApp(marketSettings.whatsappNumber, orderMessageLines(true));
+}
+
+async function accountMenuAction(sectionId){
+  closeAccountDropdown();
+  if(sectionId === 'siparis-takip'){
+    const el = document.getElementById('siparis-takip');
+    if(el) el.scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  if(sectionId === 'adresler' || sectionId === 'ayarlar'){
+    openCustomerRegisterModal();
+    return;
+  }
+  if(sectionId === 'favoriler'){
+    alert('Favori Ürünlerim bölümü sonraki adımda aktif edilebilir.');
+    return;
+  }
+  if(sectionId === 'cikis'){
+    signOutCustomer();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async function(){
+  switchCustomerAuthMode('login');
+  await loadCurrentCustomerProfile();
+  client.auth.onAuthStateChange(async (_event, session) => {
+    if(session?.user){
+      await loadCurrentCustomerProfile();
+    }else{
+      currentCustomerProfile = null;
+      refreshCustomerProfileSummary();
+    }
+  });
 });
 </script>
 
