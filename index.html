@@ -1167,6 +1167,14 @@
   
     .auth-hidden{display:none !important}
 
+  
+    .btn-loading{
+      opacity:.7 !important;
+      pointer-events:none !important;
+      cursor:not-allowed !important;
+      filter:grayscale(.05);
+    }
+
   </style>
 </head>
 <body>
@@ -3420,24 +3428,104 @@ async function signInCustomer(){
   alert('Giriş başarılı.');
 }
 
-async function signUpCustomer(){
-  const email = (document.getElementById('register-email')?.value || '').trim();
-  const password = (document.getElementById('register-password')?.value || '').trim();
-  const full_name = (document.getElementById('register-name')?.value || '').trim();
-  const phone = (document.getElementById('register-phone')?.value || '').trim();
-  const address = (document.getElementById('register-address')?.value || '').trim();
 
-  if(!email || !password || !full_name || !phone || !address){
-    alert('E-posta, şifre, ad soyad, telefon ve adres gerekli.');
-    return;
-  }
+    let __registerBusy = false;
 
-  const { data, error } = await client.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name }
+    async function registerCustomer(){
+      if(__registerBusy) return;
+      const btn = Array.from(document.querySelectorAll('button')).find(b => (b.textContent || '').trim() === 'Kayıt Ol');
+      try{
+        __registerBusy = true;
+        if(btn){
+          btn.classList.add('btn-loading');
+          btn.disabled = true;
+          btn.textContent = 'Kaydediliyor...';
+        }
+
+        const email = (document.getElementById('register-email')?.value || document.getElementById('auth-email')?.value || '').trim();
+        const password = (document.getElementById('register-password')?.value || document.getElementById('auth-password')?.value || '').trim();
+        const fullName = (document.getElementById('register-name')?.value || '').trim();
+        const phone = (document.getElementById('register-phone')?.value || '').trim();
+        const address = (document.getElementById('register-address')?.value || '').trim();
+
+        if(!email || !password || !fullName || !phone || !address){
+          alert('Ad soyad, e-posta, şifre, telefon ve adres gerekli.');
+          return;
+        }
+
+        if(!window.supabase || !window.supabase.createClient){
+          alert('Supabase bağlantısı hazır değil.');
+          return;
+        }
+
+        const url = localStorage.getItem('canakoglu_admin_url') || 'https://jpguymicdiujhutnycvl.supabase.co';
+        const key = localStorage.getItem('canakoglu_admin_key') || '';
+        if(!key){
+          alert('Sistem anon key olmadan kayıt olamaz. Admin panelde anon key kayıtlı olmalı.');
+          return;
+        }
+
+        const { createClient } = supabase;
+        const authClient = createClient(url, key);
+
+        const { data: signData, error: signError } = await authClient.auth.signUp({
+          email,
+          password
+        });
+
+        if(signError){
+          // if rate limit or user exists, guide to login
+          if(String(signError.message || '').toLowerCase().includes('rate limit') || String(signError.message || '').toLowerCase().includes('already')){
+            alert('Bu e-posta için kayıt isteği zaten gönderilmiş olabilir. Şimdi Giriş Yap ile dene.');
+            const loginBtn = Array.from(document.querySelectorAll('button')).find(b => (b.textContent || '').trim() === 'Giriş Yap');
+            if(loginBtn) loginBtn.click();
+            return;
+          }
+          throw signError;
+        }
+
+        const userId = signData?.user?.id || signData?.session?.user?.id;
+        if(!userId){
+          alert('Kayıt oluşturuldu. E-postayı doğrulayıp sonra Giriş Yap ile devam et.');
+          return;
+        }
+
+        const { error: profileError } = await authClient
+          .from('profiles')
+          .upsert([{
+            id: userId,
+            email,
+            full_name: fullName,
+            phone,
+            address
+          }], { onConflict: 'id' });
+
+        if(profileError){
+          throw profileError;
+        }
+
+        localStorage.setItem('user_name', fullName);
+        localStorage.setItem('user_phone', phone);
+        localStorage.setItem('user_address', address);
+
+        alert('Kayıt başarılı. Şimdi Giriş Yap ile devam et.');
+        const loginBtn = Array.from(document.querySelectorAll('button')).find(b => (b.textContent || '').trim() === 'Giriş Yap');
+        if(loginBtn) loginBtn.click();
+
+      }catch(err){
+        alert('Kayıt oluşturulamadı: ' + err.message);
+      }finally{
+        setTimeout(() => {
+          __registerBusy = false;
+          if(btn){
+            btn.classList.remove('btn-loading');
+            btn.disabled = false;
+            btn.textContent = 'Kayıt Ol';
+          }
+        }, 1500);
+      }
     }
+
   });
 
   if(error){
@@ -3663,4 +3751,3 @@ document.addEventListener('DOMContentLoaded', async function(){
 
 </body>
 </html>
-
