@@ -5411,5 +5411,245 @@ document.addEventListener('DOMContentLoaded', async function(){
 })();
 </script>
 
+
+<script>
+(function(){
+  if(window.__canakogluStabilityPatch) return;
+  window.__canakogluStabilityPatch = true;
+
+  let __myOrdersLoading = false;
+  let __myOrdersRequestId = 0;
+
+  async function wait(ms){
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function getSafeCurrentUser(){
+    try{
+      if(typeof client === 'undefined' || !client?.auth?.getUser) return null;
+      for(let i=0;i<4;i++){
+        const { data, error } = await client.auth.getUser();
+        if(error){
+          console.error('getUser error:', error);
+        }
+        const user = data?.user || null;
+        if(user) return user;
+        if(i < 3) await wait(180);
+      }
+      return null;
+    }catch(err){
+      console.error('getSafeCurrentUser error:', err);
+      return null;
+    }
+  }
+
+  async function fetchStableCustomerOrders(){
+    const user = await getSafeCurrentUser();
+    if(!user) return [];
+
+    let profile = window.currentCustomerProfile || null;
+    if(!profile && typeof window.loadCurrentCustomerProfile === 'function'){
+      profile = await window.loadCurrentCustomerProfile();
+    }
+
+    const normalizedPhone = String(profile?.phone || '').replace(/\D/g,'').trim();
+    let orders = [];
+    let lastError = null;
+
+    const byUser = await client
+      .from('orders')
+      .select('*')
+      .eq('customer_id', user.id)
+      .order('created_at', { ascending:false });
+
+    if(byUser.error){
+      lastError = byUser.error;
+    }else{
+      orders = byUser.data || [];
+    }
+
+    if((!orders || !orders.length) && normalizedPhone){
+      const byPhone = await client
+        .from('orders')
+        .select('*')
+        .eq('phone', normalizedPhone)
+        .order('created_at', { ascending:false });
+
+      if(!lastError && byPhone.error) lastError = byPhone.error;
+      if(byPhone.data?.length) orders = byPhone.data;
+    }
+
+    if((!orders || !orders.length) && lastError){
+      throw lastError;
+    }
+
+    const orderIds = (orders || []).map(x => x.id).filter(Boolean);
+    let itemsMap = {};
+
+    if(orderIds.length){
+      const { data: items, error: itemsError } = await client
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds);
+
+      if(itemsError){
+        console.error('order_items read error:', itemsError);
+      }else if(items?.length){
+        itemsMap = items.reduce((acc, item) => {
+          const key = item.order_id;
+          if(!acc[key]) acc[key] = [];
+          acc[key].push(item);
+          return acc;
+        }, {});
+      }
+    }
+
+    return (orders || []).map(order => ({
+      ...order,
+      items: itemsMap[order.id] || []
+    }));
+  }
+
+  async function loadStableMyOrders(opts){
+    const options = opts || {};
+    const list = document.getElementById('customer-orders-list');
+    if(!list) return;
+
+    if(__myOrdersLoading && !options.force) return;
+    __myOrdersLoading = true;
+    const requestId = ++__myOrdersRequestId;
+
+    if(options.showLoading !== false){
+      list.innerHTML = '<div class="empty">Siparişler yükleniyor...</div>';
+    }
+
+    try{
+      const user = await getSafeCurrentUser();
+      if(requestId !== __myOrdersRequestId) return;
+
+      if(!user){
+        list.innerHTML = '<div class="admin-empty">Siparişlerini görmek için giriş yap.</div>';
+        return;
+      }
+
+      const orders = await fetchStableCustomerOrders();
+      if(requestId !== __myOrdersRequestId) return;
+
+      if(typeof window.renderCustomerOrdersList === 'function'){
+        window.renderCustomerOrdersList(orders);
+      }else{
+        list.innerHTML = '<div class="admin-empty">Sipariş listesi render fonksiyonu bulunamadı.</div>';
+      }
+    }catch(err){
+      console.error('loadStableMyOrders error:', err);
+      if(requestId !== __myOrdersRequestId) return;
+      list.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + String(err?.message || err) + '</div>';
+    }finally{
+      if(requestId === __myOrdersRequestId){
+        __myOrdersLoading = false;
+      }
+    }
+  }
+
+  window.loadMyOrdersStable = loadStableMyOrders;
+
+  const originalOpenCustomerOrdersModal = window.openCustomerOrdersModal;
+  window.openCustomerOrdersModal = async function(){
+    const modal = document.getElementById('customer-orders-modal');
+    if(modal) modal.classList.add('open');
+    await loadStableMyOrders({ force:true, showLoading:true });
+  };
+
+  const originalCloseCustomerOrdersModal = window.closeCustomerOrdersModal;
+  window.closeCustomerOrdersModal = function(){
+    if(typeof originalCloseCustomerOrdersModal === 'function'){
+      originalCloseCustomerOrdersModal();
+      return;
+    }
+    const modal = document.getElementById('customer-orders-modal');
+    if(modal) modal.classList.remove('open');
+  };
+
+  const originalPlaceOrder = window.placeOrder;
+  window.placeOrder = async function(){
+    const result = await originalPlaceOrder.apply(this, arguments);
+    try{
+      await loadStableMyOrders({ force:true, showLoading:false });
+    }catch(err){
+      console.error(err);
+    }
+    return result;
+  };
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    try{
+      await wait(250);
+      if(typeof window.loadCurrentCustomerProfile === 'function'){
+        await window.loadCurrentCustomerProfile();
+      }
+      const modal = document.getElementById('customer-orders-modal');
+      if(modal?.classList.contains('open')){
+        await loadStableMyOrders({ force:true, showLoading:true });
+      }
+    }catch(err){
+      console.error(err);
+    }
+  });
+
+  try{
+    if(typeof client !== 'undefined' && client?.auth?.onAuthStateChange){
+      client.auth.onAuthStateChange(async () => {
+        try{
+          await wait(150);
+          if(typeof window.loadCurrentCustomerProfile === 'function'){
+            await window.loadCurrentCustomerProfile();
+          }
+          const modal = document.getElementById('customer-orders-modal');
+          if(modal?.classList.contains('open')){
+            await loadStableMyOrders({ force:true, showLoading:true });
+          }
+        }catch(err){
+          console.error('auth state reload error:', err);
+        }
+      });
+    }
+  }catch(err){
+    console.error(err);
+  }
+
+  const originalUpdateOrderStatus = window.updateOrderStatus;
+  if(typeof originalUpdateOrderStatus === 'function'){
+    window.updateOrderStatus = async function(orderId){
+      const res = await originalUpdateOrderStatus.apply(this, arguments);
+      try{
+        const modal = document.getElementById('customer-orders-modal');
+        if(modal?.classList.contains('open')){
+          await loadStableMyOrders({ force:true, showLoading:false });
+        }
+      }catch(err){
+        console.error(err);
+      }
+      return res;
+    };
+  }
+
+  const originalCancelOrder = window.cancelOrder;
+  if(typeof originalCancelOrder === 'function'){
+    window.cancelOrder = async function(orderId){
+      const res = await originalCancelOrder.apply(this, arguments);
+      try{
+        const modal = document.getElementById('customer-orders-modal');
+        if(modal?.classList.contains('open')){
+          await loadStableMyOrders({ force:true, showLoading:false });
+        }
+      }catch(err){
+        console.error(err);
+      }
+      return res;
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
