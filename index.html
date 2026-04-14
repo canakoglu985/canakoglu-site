@@ -1176,6 +1176,34 @@
     }
 
   </style>
+
+<script>
+window.getCurrentCustomerUser = async function(){
+  try{
+    if (typeof client !== 'undefined' && client && client.auth && client.auth.getUser){
+      const { data } = await client.auth.getUser();
+      return data && data.user ? data.user : null;
+    }
+    return null;
+  }catch(e){
+    return null;
+  }
+};
+
+window.requireCustomerProfile = async function(){
+  try{
+    const user = await window.getCurrentCustomerUser();
+    if (user) return true;
+    if (typeof openCustomerRegisterModal === 'function') {
+      await openCustomerRegisterModal('login');
+    }
+    return false;
+  }catch(e){
+    return false;
+  }
+};
+</script>
+
 </head>
 <body>
   <header>
@@ -4681,6 +4709,54 @@ document.addEventListener('DOMContentLoaded', async function(){
 })();
 </script>
 
+
+<script>
+(function(){
+  const originalSubmit = window.submitWebsiteOrder;
+  window.submitWebsiteOrder = async function(){
+    try{
+      if (typeof window.getCurrentCustomerUser !== 'function') {
+        throw new Error('getCurrentCustomerUser missing');
+      }
+      const user = await window.getCurrentCustomerUser();
+      if(!user){
+        if (typeof openCustomerRegisterModal === 'function') {
+          await openCustomerRegisterModal('login');
+        } else {
+          alert('Giriş yapman gerekiyor.');
+        }
+        return;
+      }
+      if (typeof originalSubmit === 'function') {
+        return await originalSubmit();
+      }
+      throw new Error('submitWebsiteOrder missing');
+    }catch(err){
+      alert('Sipariş oluşturulamadı: ' + err.message);
+    }
+  };
+
+  const originalWA = window.sendWhatsAppOrder;
+  window.sendWhatsAppOrder = async function(){
+    try{
+      const user = await window.getCurrentCustomerUser();
+      if(!user){
+        if (typeof openCustomerRegisterModal === 'function') {
+          await openCustomerRegisterModal('login');
+        } else {
+          alert('Giriş yapman gerekiyor.');
+        }
+        return;
+      }
+      if (typeof originalWA === 'function') {
+        return await originalWA();
+      }
+    }catch(err){
+      alert('WhatsApp sipariş açılamadı: ' + err.message);
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
-
