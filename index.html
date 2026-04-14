@@ -1103,6 +1103,51 @@
       .cart-overlay{z-index:2999 !important}
     }
 
+  
+    .customer-profile-box{
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+      background:#fbfcfe;
+      display:grid;
+      gap:8px;
+    }
+    .customer-profile-title{
+      font-size:13px;
+      font-weight:900;
+      color:var(--navy);
+    }
+    .customer-profile-summary{
+      font-size:13px;
+      line-height:1.6;
+      color:var(--muted);
+      white-space:pre-wrap;
+    }
+    .account-register-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(7,22,40,.52);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:5000;
+      padding:20px;
+    }
+    .account-register-modal.open{display:flex}
+    .account-register-card{
+      width:min(560px,100%);
+      background:#fff;
+      border-radius:24px;
+      border:1px solid var(--border);
+      box-shadow:0 24px 60px rgba(15,34,56,.24);
+      padding:22px;
+    }
+    .account-register-grid{
+      display:grid;
+      gap:10px;
+      margin-top:14px;
+    }
+
   </style>
 </head>
 <body>
@@ -1282,9 +1327,11 @@
     <div id="cart-total" class="totalbox" style="display:none">Toplam: 0.00 TL</div>
 
     <div class="form">
-      <input id="customer-name" placeholder="Ad Soyad">
-      <input id="customer-phone" placeholder="Telefon">
-      <textarea id="customer-address" placeholder="Adres"></textarea>
+      <div id="customer-profile-box" class="customer-profile-box">
+        <div class="customer-profile-title">Sipariş Hesabı</div>
+        <div id="customer-profile-summary" class="customer-profile-summary">Sipariş vermek için önce kayıt ol.</div>
+        <button class="btn secondary" type="button" onclick="openCustomerRegister()">Kayıt Ol / Bilgileri Düzenle</button>
+      </div>
       <select id="delivery-slot">
         <option value="Müsait olan en kısa sürede">Müsait olan en kısa sürede</option>
         <option value="30 dakika içinde">30 dakika içinde</option>
@@ -1487,7 +1534,7 @@
         return;
       }
       if(sectionId === 'adresler'){
-        alert('Adreslerim bölümü sonraki adımda aktif edilebilir.');
+        openCustomerRegister();
         return;
       }
       if(sectionId === 'favoriler'){
@@ -1495,11 +1542,15 @@
         return;
       }
       if(sectionId === 'ayarlar'){
-        alert('Hesap Ayarları bölümü sonraki adımda aktif edilebilir.');
+        openCustomerRegister();
         return;
       }
       if(sectionId === 'cikis'){
-        alert('Gerçek üyelik sistemi bağlanınca çıkış işlemi aktif olur.');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_phone');
+        localStorage.removeItem('user_address');
+        refreshCustomerProfileSummary();
+        alert('Çıkış yapıldı.');
       }
     }
 
@@ -1564,6 +1615,72 @@
       return standardFee;
     }
 
+
+    function getSavedCustomerProfile(){
+      return {
+        name: (localStorage.getItem('user_name') || '').trim(),
+        phone: (localStorage.getItem('user_phone') || '').trim(),
+        address: (localStorage.getItem('user_address') || '').trim()
+      };
+    }
+
+    function hasSavedCustomerProfile(){
+      const p = getSavedCustomerProfile();
+      return !!(p.name && p.phone && p.address);
+    }
+
+    function refreshCustomerProfileSummary(){
+      const p = getSavedCustomerProfile();
+      const box = document.getElementById('customer-profile-summary');
+      const nameEls = document.querySelectorAll('.account-name');
+      nameEls.forEach(el => { el.textContent = p.name || 'Hesabım'; });
+      if(!box) return;
+      if(!hasSavedCustomerProfile()){
+        box.textContent = 'Sipariş vermek için önce kayıt ol.';
+        return;
+      }
+      box.textContent = `Ad Soyad: ${p.name}\nTelefon: ${p.phone}\nAdres: ${p.address}`;
+    }
+
+    function openCustomerRegister(){
+      const p = getSavedCustomerProfile();
+      const modal = document.getElementById('account-register-modal');
+      if(document.getElementById('register-name')) document.getElementById('register-name').value = p.name || '';
+      if(document.getElementById('register-phone')) document.getElementById('register-phone').value = p.phone || '';
+      if(document.getElementById('register-address')) document.getElementById('register-address').value = p.address || '';
+      if(modal) modal.classList.add('open');
+      const dropdown = document.querySelector('.account-dropdown');
+      if(dropdown) dropdown.removeAttribute('open');
+    }
+
+    function closeCustomerRegister(){
+      const modal = document.getElementById('account-register-modal');
+      if(modal) modal.classList.remove('open');
+    }
+
+    function saveCustomerProfile(){
+      const name = (document.getElementById('register-name')?.value || '').trim();
+      const phone = (document.getElementById('register-phone')?.value || '').trim();
+      const address = (document.getElementById('register-address')?.value || '').trim();
+      if(!name || !phone || !address){
+        alert('Ad soyad, telefon ve adres zorunlu.');
+        return;
+      }
+      localStorage.setItem('user_name', name);
+      localStorage.setItem('user_phone', phone);
+      localStorage.setItem('user_address', address);
+      refreshCustomerProfileSummary();
+      closeCustomerRegister();
+    }
+
+    function requireCustomerProfile(){
+      if(hasSavedCustomerProfile()) return true;
+      openCustomerRegister();
+      alert('Sipariş vermek için önce kayıt olman gerekiyor.');
+      return false;
+    }
+
+
     function calculateCartGrandTotal(){
       const subtotal = calculateCartSubtotal();
       const deliveryFee = calculateDeliveryFee(subtotal);
@@ -1584,9 +1701,10 @@
     }
 
     function orderMessageLines(includeCustomer = true){
-      const customerName = document.getElementById('customer-name').value.trim();
-      const customerPhone = document.getElementById('customer-phone').value.trim();
-      const customerAddress = document.getElementById('customer-address').value.trim();
+      const profile = getSavedCustomerProfile();
+      const customerName = profile.name;
+      const customerPhone = profile.phone;
+      const customerAddress = profile.address;
       const paymentMethod = document.getElementById('payment-method').value;
       const deliverySlot = document.getElementById('delivery-slot')?.value || 'Müsait olan en kısa sürede';
       const totals = calculateCartGrandTotal();
@@ -2185,9 +2303,12 @@
           return;
         }
 
-        const customer_name = (document.getElementById('customer-name')?.value || '').trim();
-        const phone = (document.getElementById('customer-phone')?.value || '').trim();
-        const address = (document.getElementById('customer-address')?.value || '').trim();
+        if(!requireCustomerProfile()) return;
+
+        const profile = getSavedCustomerProfile();
+        const customer_name = profile.name;
+        const phone = profile.phone;
+        const address = profile.address;
         const payment_method = (document.getElementById('payment-method')?.value || 'Kapıda Nakit').trim();
         const deliverySlot = (document.getElementById('delivery-slot')?.value || 'Müsait olan en kısa sürede').trim();
 
@@ -2268,9 +2389,6 @@
         cart = [];
         renderCart();
         renderProducts();
-        document.getElementById('customer-name').value = '';
-        document.getElementById('customer-phone').value = '';
-        document.getElementById('customer-address').value = '';
         document.getElementById('payment-method').value = 'Kapıda Nakit';
         if(document.getElementById('delivery-slot')) document.getElementById('delivery-slot').value = 'Müsait olan en kısa sürede';
         closeCart();
@@ -2283,6 +2401,7 @@
 
 
 function sendWhatsAppOrder(){
+      if(!requireCustomerProfile()) return;
       if(!cart.length){
         alert("Sepet boş.");
         return;
@@ -3008,6 +3127,19 @@ document.addEventListener("DOMContentLoaded", function(){
       }
     });
   }
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const modal = document.getElementById('account-register-modal');
+  if(modal){
+    modal.addEventListener('click', function(e){
+      if(e.target === modal) closeCustomerRegister();
+    });
+  }
+  refreshCustomerProfileSummary();
 });
 </script>
 
