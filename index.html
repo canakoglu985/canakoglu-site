@@ -775,7 +775,6 @@
         </div>
       </a>
       <div class="header-actions">
-        <a class="header-shortcut" href="admin.html">Admin</a>
         <details class="account-dropdown">
           <summary>
             <div class="account-btn-left">
@@ -2498,5 +2497,16 @@ async function uploadExcelProducts(){
 
     initApp();
   </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  document.querySelectorAll('.header-shortcut').forEach(function(el){
+    if((el.textContent || '').trim().toLowerCase() === 'admin'){
+      el.remove();
+    }
+  });
+});
+</script>
+
 </body>
 </html>
