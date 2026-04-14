@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><a class="header-shortcut" href="admin.html">Admin</a></title>
+  <title>Çanakoğlu Admin Panel</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
@@ -177,6 +177,29 @@
     }
     .login-error{color:#c62828;display:none;margin-top:10px;font-weight:700}
 
+  
+    .login-box label.remember{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:700;margin:8px 0 14px}
+    .login-box input[type="checkbox"]{width:auto;margin:0}
+    .notif-badge{
+      min-width:28px;height:28px;border-radius:999px;background:#fff;color:#c62828;
+      display:inline-flex;align-items:center;justify-content:center;font-weight:900;padding:0 8px;
+      border:1px solid rgba(255,255,255,.35)
+    }
+    .top-note{
+      position:fixed;left:50%;top:88px;transform:translateX(-50%) translateY(-10px);
+      background:#17324f;color:#fff;padding:12px 16px;border-radius:999px;box-shadow:0 14px 28px rgba(0,0,0,.18);
+      opacity:0;pointer-events:none;transition:all .25s ease;z-index:9998;font-weight:800
+    }
+    .top-note.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .report-list,.customer-list{display:grid;gap:10px}
+    .report-item,.customer-item{
+      background:#fff;border:1px solid var(--border);border-radius:16px;padding:12px;
+      display:flex;justify-content:space-between;gap:12px;align-items:center
+    }
+    .customer-meta,.report-meta{font-size:12px;color:var(--muted);margin-top:4px}
+    @media (max-width:900px){.grid-2{grid-template-columns:1fr}}
+
   </style>
 </head>
 <body>
@@ -186,6 +209,7 @@
       <h2>Admin Giriş</h2>
       <input id="login-username" placeholder="Kullanıcı adı">
       <input id="login-password" type="password" placeholder="Şifre">
+      <label class="remember"><input id="remember-login" type="checkbox"> Beni hatırla</label>
       <button onclick="loginAdmin()">Giriş Yap</button>
       <div id="login-error" class="login-error">Hatalı giriş</div>
     </div>
@@ -204,6 +228,9 @@
         </div>
       </div>
       <div class="header-actions">
+        <button class="shortcut" onclick="requestNotificationPermission()">Bildirim İzni</button>
+        <div class="notif-badge" id="notif-count">0</div>
+        <button class="shortcut" onclick="logoutAdmin()">Çıkış Yap</button>
         <a class="shortcut" href="index.html">Müşteri Sayfası</a>
       </div>
     </div>
@@ -245,6 +272,8 @@
       <button class="tab" onclick="showTab('products', this)">Ürünler</button>
       <button class="tab" onclick="showTab('excel', this)">Excel Yükleme</button>
       <button class="tab" onclick="showTab('banner', this)">Banner / Vitrin</button>
+      <button class="tab" onclick="showTab('reports', this)">Satış Raporu</button>
+      <button class="tab" onclick="showTab('customers', this)">Müşteriler</button>
       <button class="tab" onclick="showTab('status', this)">Canlı Durum</button>
     </div>
 
@@ -261,7 +290,7 @@
             <option value="teslim">Teslim</option>
             <option value="iptal">İptal</option>
           </select>
-          <button class="btn secondary" onclick="loadOrders()">Siparişleri Yenile</button>
+          <button class="btn secondary" onclick="loadOrders(false)">Siparişleri Yenile</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -398,6 +427,47 @@
       </div>
     </div>
 
+    
+    <div id="tab-reports" class="tab-content">
+      <div class="panel">
+        <h3>Satış Raporu</h3>
+        <div class="row" style="margin-bottom:12px">
+          <input id="report-date-from" type="date" onchange="renderReports()">
+          <input id="report-date-to" type="date" onchange="renderReports()">
+          <button class="btn secondary" onclick="setReportRange(7)">Son 7 Gün</button>
+          <button class="btn secondary" onclick="setReportRange(30)">Son 30 Gün</button>
+          <button class="btn primary" onclick="renderReports()">Raporu Yenile</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat"><div class="label">Rapor Sipariş</div><div id="report-orders" class="value">0</div></div>
+          <div class="stat"><div class="label">Rapor Ciro</div><div id="report-revenue" class="value">0 TL</div></div>
+          <div class="stat"><div class="label">Ortalama Sepet</div><div id="report-average" class="value">0 TL</div></div>
+          <div class="stat"><div class="label">Aktif Müşteri</div><div id="report-customers" class="value">0</div></div>
+        </div>
+        <div class="grid-2" style="margin-top:14px">
+          <div class="card">
+            <h4 style="margin-top:0">En Çok Satan Ürünler</h4>
+            <div id="top-products" class="report-list"></div>
+          </div>
+          <div class="card">
+            <h4 style="margin-top:0">Duruma Göre Siparişler</h4>
+            <div id="status-breakdown" class="report-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-customers" class="tab-content">
+      <div class="panel">
+        <h3>Müşteri Listesi</h3>
+        <div class="row" style="margin-bottom:12px">
+          <input id="customer-search" placeholder="İsim / telefon ara" oninput="renderCustomers()">
+          <button class="btn secondary" onclick="renderCustomers()">Listeyi Yenile</button>
+        </div>
+        <div id="customers-list" class="customer-list"></div>
+      </div>
+    </div>
+
     <div id="tab-status" class="tab-content">
       <div class="panel">
         <h3>Canlı Durum</h3>
@@ -412,6 +482,8 @@
     let products = [];
     let orders = [];
     let orderItems = [];
+    let knownOrderIds = [];
+    let customerRows = [];
 
     function showTab(name, btn){
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -489,11 +561,14 @@
       }
       await Promise.all([
         loadProductsAdmin(),
-        loadOrders(),
+        loadOrders(false),
         loadSettings()
       ]);
       updateStats();
       renderCriticalStock();
+      renderReports();
+      renderCustomers();
+      startOrderPolling();
     }
 
     async function loadProductsAdmin(){
@@ -612,7 +687,7 @@
       }
     }
 
-    async function loadOrders(){
+    async function loadOrders(checkNew = false){
       try{
         const { data: ordersData, error: ordersError } = await supabaseClient
           .from('orders')
@@ -627,10 +702,19 @@
 
         if(itemsError) throw itemsError;
 
-        orders = ordersData || [];
+        const nextOrders = ordersData || [];
         orderItems = orderItemsData || [];
+        if(checkNew && knownOrderIds.length){
+          const newOnes = nextOrders.filter(o => !knownOrderIds.includes(String(o.id)));
+          if(newOnes.length) handleNewOrders(newOnes);
+        }
+        orders = nextOrders;
+        knownOrderIds = orders.map(o => String(o.id));
+        buildCustomerRows();
         renderOrders();
         updateStats();
+        renderReports();
+        renderCustomers();
       }catch(err){
         setStatus('global-status', 'Sipariş yükleme hatası: ' + err.message, false);
       }
@@ -692,7 +776,7 @@
         const { error } = await supabaseClient.from('orders').update({ status }).eq('id', orderId);
         if(error) throw error;
         setStatus('global-status', 'Sipariş durumu güncellendi.', true);
-        await loadOrders();
+        await loadOrders(false);
       }catch(err){
         setStatus('global-status', 'Sipariş durumu güncellenemedi: ' + err.message + '\\nNot: orders update için RLS açık olabilir.', false);
       }
@@ -911,8 +995,12 @@
     function loginAdmin(){
       const u = document.getElementById('login-username').value.trim();
       const p = document.getElementById('login-password').value.trim();
+      const remember = document.getElementById('remember-login').checked;
       if(u === 'admin' && p === '1234'){
+        localStorage.setItem('canakoglu_admin_login', 'true');
+        localStorage.setItem('canakoglu_admin_remember', remember ? 'true' : 'false');
         document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('login-error').style.display = 'none';
       }else{
         document.getElementById('login-error').style.display = 'block';
       }
@@ -926,7 +1014,200 @@
     });
 
 
+
+    function showTopNote(message){
+      const note = document.getElementById('top-note');
+      if(!note) return;
+      note.textContent = message;
+      note.classList.add('show');
+      clearTimeout(window.__topNoteTimer);
+      window.__topNoteTimer = setTimeout(() => note.classList.remove('show'), 2200);
+    }
+
+    function requestNotificationPermission(){
+      if(!('Notification' in window)){
+        alert('Bu tarayıcı bildirim desteklemiyor.');
+        return;
+      }
+      Notification.requestPermission().then((result) => {
+        showTopNote(result === 'granted' ? 'Bildirim izni verildi' : 'Bildirim izni verilmedi');
+      });
+    }
+
+    function playBeep(){
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+        osc.stop(ctx.currentTime + 0.35);
+      }catch(e){}
+    }
+
+    function handleNewOrders(newOrders){
+      const countEl = document.getElementById('notif-count');
+      const current = Number(countEl.textContent || 0);
+      countEl.textContent = String(current + newOrders.length);
+      showTopNote(`${newOrders.length} yeni sipariş geldi`);
+      playBeep();
+      if('Notification' in window && Notification.permission === 'granted'){
+        new Notification('Çanakoğlu Market', {
+          body: `${newOrders.length} yeni sipariş geldi`,
+        });
+      }
+    }
+
+    function startOrderPolling(){
+      clearInterval(window.__orderPollTimer);
+      window.__orderPollTimer = setInterval(() => {
+        if(supabaseClient) loadOrders(true);
+      }, 20000);
+    }
+
+    function logoutAdmin(){
+      localStorage.removeItem('canakoglu_admin_login');
+      localStorage.removeItem('canakoglu_admin_remember');
+      document.getElementById('login-screen').style.display = 'flex';
+    }
+
+    function buildCustomerRows(){
+      const map = new Map();
+      orders.forEach(order => {
+        const key = `${order.customer_name || ''}__${order.phone || ''}`;
+        if(!map.has(key)){
+          map.set(key, {
+            customer_name: order.customer_name || '',
+            phone: order.phone || '',
+            addresses: new Set(),
+            order_count: 0,
+            total_amount: 0,
+            last_order: order.created_at || ''
+          });
+        }
+        const row = map.get(key);
+        row.addresses.add(order.address || '');
+        row.order_count += 1;
+        row.total_amount += Number(order.total_amount || 0);
+        if((order.created_at || '') > row.last_order) row.last_order = order.created_at || '';
+      });
+      customerRows = Array.from(map.values()).map(row => ({
+        ...row,
+        addresses: Array.from(row.addresses)
+      })).sort((a,b) => (b.last_order || '').localeCompare(a.last_order || ''));
+    }
+
+    function renderCustomers(){
+      const box = document.getElementById('customers-list');
+      if(!box) return;
+      const q = (document.getElementById('customer-search').value || '').trim().toLowerCase();
+      const filtered = customerRows.filter(c =>
+        !q ||
+        String(c.customer_name).toLowerCase().includes(q) ||
+        String(c.phone).toLowerCase().includes(q)
+      );
+      if(!filtered.length){
+        box.innerHTML = '<div class="card"><div class="muted">Müşteri bulunamadı.</div></div>';
+        return;
+      }
+      box.innerHTML = filtered.map(c => `
+        <div class="customer-item">
+          <div>
+            <strong>${escapeHtml(c.customer_name || 'İsimsiz müşteri')}</strong>
+            <div class="customer-meta">${escapeHtml(c.phone || '')} • ${escapeHtml((c.addresses[0] || 'Adres yok'))}</div>
+          </div>
+          <div style="text-align:right">
+            <div><strong>${c.order_count}</strong> sipariş</div>
+            <div class="customer-meta">${money(c.total_amount)} • Son: ${c.last_order ? new Date(c.last_order).toLocaleDateString('tr-TR') : '-'}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getFilteredOrdersForReport(){
+      const from = document.getElementById('report-date-from').value;
+      const to = document.getElementById('report-date-to').value;
+      return orders.filter(order => {
+        const d = (order.created_at || '').slice(0,10);
+        if(from && d < from) return false;
+        if(to && d > to) return false;
+        return true;
+      });
+    }
+
+    function setReportRange(days){
+      const now = new Date();
+      const to = new Date(now);
+      const from = new Date(now);
+      from.setDate(now.getDate() - (days - 1));
+      document.getElementById('report-date-from').value = from.toISOString().slice(0,10);
+      document.getElementById('report-date-to').value = to.toISOString().slice(0,10);
+      renderReports();
+    }
+
+    function renderReports(){
+      const reportOrders = getFilteredOrdersForReport();
+      const revenue = reportOrders.reduce((sum,o) => sum + Number(o.total_amount || 0), 0);
+      const avg = reportOrders.length ? revenue / reportOrders.length : 0;
+      const customerSet = new Set(reportOrders.map(o => `${o.customer_name || ''}__${o.phone || ''}`));
+
+      const reportItems = orderItems.filter(item => reportOrders.some(o => String(o.id) === String(item.order_id)));
+      const byProduct = new Map();
+      reportItems.forEach(item => {
+        const key = item.product_name || 'İsimsiz ürün';
+        byProduct.set(key, (byProduct.get(key) || 0) + Number(item.quantity || 0));
+      });
+      const topProducts = Array.from(byProduct.entries()).sort((a,b) => b[1] - a[1]).slice(0,10);
+
+      const byStatus = new Map();
+      reportOrders.forEach(order => {
+        const key = order.status || 'belirsiz';
+        byStatus.set(key, (byStatus.get(key) || 0) + 1);
+      });
+
+      const topProductsBox = document.getElementById('top-products');
+      const statusBox = document.getElementById('status-breakdown');
+      document.getElementById('report-orders').textContent = String(reportOrders.length);
+      document.getElementById('report-revenue').textContent = money(revenue);
+      document.getElementById('report-average').textContent = money(avg);
+      document.getElementById('report-customers').textContent = String(customerSet.size);
+
+      topProductsBox.innerHTML = topProducts.length ? topProducts.map(([name, qty]) => `
+        <div class="report-item">
+          <div>
+            <strong>${escapeHtml(name)}</strong>
+            <div class="report-meta">Satılan miktar</div>
+          </div>
+          <div><strong>${qty}</strong></div>
+        </div>
+      `).join('') : '<div class="muted">Rapor için veri yok.</div>';
+
+      statusBox.innerHTML = Array.from(byStatus.entries()).length ? Array.from(byStatus.entries()).map(([status, count]) => `
+        <div class="report-item">
+          <div><strong>${escapeHtml(status)}</strong></div>
+          <div><strong>${count}</strong></div>
+        </div>
+      `).join('') : '<div class="muted">Rapor için veri yok.</div>';
+    }
+
+    function hydrateRememberedLogin(){
+      const remembered = localStorage.getItem('canakoglu_admin_remember') === 'true';
+      const loggedIn = localStorage.getItem('canakoglu_admin_login') === 'true';
+      const checkbox = document.getElementById('remember-login');
+      if(checkbox) checkbox.checked = remembered;
+      if(remembered && loggedIn){
+        document.getElementById('login-screen').style.display = 'none';
+      }
+    }
+
+
     loadConfigLocal();
+    hydrateRememberedLogin();
+    setReportRange(7);
   </script>
 </body>
 </html>
