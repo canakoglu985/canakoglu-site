@@ -766,9 +766,9 @@
     .cart-note{padding:12px 14px;border-radius:14px;background:#f7f9fc;border:1px solid var(--border);font-size:13px;color:var(--navy);font-weight:700}
     .summary-line{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-weight:800;color:var(--navy)}
     .summary-line.total{padding-top:10px;border-top:1px solid var(--border);font-size:18px}
-    .order-summary-modal{position:fixed;inset:0;background:rgba(7,22,40,.45);display:none;align-items:center;justify-content:center;z-index:120;padding:20px}
+    .order-summary-modal{position:fixed;inset:0;background:rgba(7,22,40,.55);display:none;align-items:center;justify-content:center;z-index:4000;padding:20px}
     .order-summary-modal.open{display:flex}
-    .order-summary-card{width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:26px;border:1px solid var(--border);box-shadow:0 24px 60px rgba(15,34,56,.24);padding:22px}
+    .order-summary-card{width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:26px;border:1px solid var(--border);box-shadow:0 24px 60px rgba(15,34,56,.24);padding:22px;position:relative;z-index:4001}
     .receipt-box{background:#fbfcfe;border:1px solid var(--border);border-radius:18px;padding:16px;margin-top:12px}
     .receipt-items{display:grid;gap:8px;margin-top:12px}
     .receipt-item{display:flex;justify-content:space-between;gap:12px;font-size:14px}
@@ -1090,6 +1090,17 @@
       header{
         z-index:1000 !important;
       }
+    }
+
+  
+    .order-summary-modal.open ~ .cartbar{display:none}
+    .drawer.open ~ .cartbar{display:none}
+    @media (max-width:768px){
+      .order-summary-modal{padding:12px !important;align-items:flex-start !important}
+      .order-summary-card{max-height:calc(100vh - 24px) !important;margin-top:8px !important;padding:16px !important;border-radius:20px !important}
+      .cartbar{z-index:70 !important}
+      .drawer{z-index:3000 !important}
+      .cart-overlay{z-index:2999 !important}
     }
 
   </style>
@@ -2976,6 +2987,27 @@ document.addEventListener("DOMContentLoaded", function(){
       el.remove();
     }
   });
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  document.querySelectorAll('a,button,div,span').forEach(function(el){
+    const t = (el.textContent || '').trim().toLowerCase();
+    if(t === 'admin'){
+      el.remove();
+    }
+  });
+
+  const modal = document.getElementById('order-summary-modal');
+  if(modal){
+    modal.addEventListener('click', function(e){
+      if(e.target === modal){
+        closeOrderSummary();
+      }
+    });
+  }
 });
 </script>
 
