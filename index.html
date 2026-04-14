@@ -1036,6 +1036,21 @@
       }
     }
 
+  
+    @media (max-width:768px){
+      .cartbar{
+        position:fixed !important;
+        top:auto !important;
+        bottom:10px !important;
+        left:10px !important;
+        right:10px !important;
+        z-index:50 !important;
+      }
+      header{
+        z-index:1000 !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -1058,7 +1073,7 @@
               <div class="account-avatar">👤</div>
               <div class="account-copy">
                 <div class="account-label">Hesabım</div>
-                <div id="user-name" class="account-name">Hüseyin Çanakoğlu</div>
+                <div id="user-name" class="account-name">Hesabım</div>
               </div>
             </div>
             <div class="account-chevron">⌄</div>
@@ -2857,5 +2872,16 @@ async function uploadExcelProducts(){
 
     initApp();
   </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const nameEls = document.querySelectorAll('.account-name');
+  const savedName = (localStorage.getItem('user_name') || '').trim();
+  nameEls.forEach(function(el){
+    el.textContent = savedName || 'Hesabım';
+  });
+});
+</script>
+
 </body>
 </html>
