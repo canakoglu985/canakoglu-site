@@ -3800,7 +3800,7 @@ async function refreshCustomerProfileSummary(){
   const note = document.getElementById('customer-profile-summary');
   const accountNames = document.querySelectorAll('.account-name');
   const profileBtn = document.getElementById('auth-mode-profile-btn');
-  const user = await getCurrentCustomerUser().catch(() => null);
+  const user = await getCurrentCustomerUser();
 
   if(user && currentCustomerProfile && currentCustomerProfile.full_name){
     if(note){
@@ -4115,7 +4115,7 @@ async function accountMenuAction(sectionId){
     return;
   }
   if(sectionId === 'cikis'){
-    const user = await getCurrentCustomerUser().catch(() => null);
+    const user = await getCurrentCustomerUser();
     if(user){
       await client.auth.signOut();
       currentCustomerProfile = null;
@@ -4153,7 +4153,7 @@ async function submitWebsiteOrder(){
       return;
     }
 
-    const user = await getCurrentCustomerUser().catch(() => null);
+    const user = await getCurrentCustomerUser();
     const orderPayload = {
       customer_name,
       phone,
