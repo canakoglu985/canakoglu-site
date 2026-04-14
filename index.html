@@ -1287,6 +1287,7 @@
       </select>
       <div id="cart-rule-note" class="cart-note">Sepet kuralları yükleniyor...</div>
       <button class="btn primary" type="button" onclick="submitWebsiteOrder()">Sipariş Ver</button>
+      <button class="btn secondary" type="button" onclick="sendWhatsAppOrder()">WhatsApp Sipariş</button>
     </div>
   </aside>
 
@@ -2160,6 +2161,7 @@
 
     
     
+    
     async function submitWebsiteOrder(){
       try{
         if(!client){
@@ -2172,13 +2174,13 @@
           return;
         }
 
-        const customerName = (document.getElementById('customer-name')?.value || '').trim();
+        const customer_name = (document.getElementById('customer-name')?.value || '').trim();
         const phone = (document.getElementById('customer-phone')?.value || '').trim();
         const address = (document.getElementById('customer-address')?.value || '').trim();
-        const paymentMethod = (document.getElementById('payment-method')?.value || 'Kapıda Nakit').trim();
+        const payment_method = (document.getElementById('payment-method')?.value || 'Kapıda Nakit').trim();
         const deliverySlot = (document.getElementById('delivery-slot')?.value || 'Müsait olan en kısa sürede').trim();
 
-        if(!customerName || !phone || !address){
+        if(!customer_name || !phone || !address){
           alert('Ad soyad, telefon ve adres gerekli.');
           return;
         }
@@ -2190,15 +2192,16 @@
           return;
         }
 
+        const total_amount = totals.grandTotal;
+
         const orderPayload = {
-          customer_name: customerName,
+          customer_name,
           phone,
           address,
-          payment_method: paymentMethod,
+          payment_method,
           status: 'Yeni',
-          total: totals.grandTotal,
-          total_amount: totals.grandTotal,
-          delivery_slot: deliverySlot
+          total: total_amount,
+          total_amount
         };
 
         const { data: orderData, error: orderError } = await client
@@ -2207,7 +2210,10 @@
           .select()
           .single();
 
-        if(orderError) throw orderError;
+        if(orderError){
+          alert('Sipariş kaydı hatası: ' + orderError.message);
+          return;
+        }
 
         const itemsPayload = cart.map(item => ({
           order_id: orderData.id,
@@ -2217,26 +2223,26 @@
           unit: item.unit || 'adet'
         }));
 
-        const { error: itemsError } = await client
-          .from('order_items')
-          .insert(itemsPayload);
+        const { error: itemError } = await client.from('order_items').insert(itemsPayload);
+        if(itemError){
+          alert('Sipariş ürünleri kaydedilemedi: ' + itemError.message);
+          return;
+        }
 
-        if(itemsError) throw itemsError;
-
-        for (const item of cart){
-          const qty = Number(item.quantity || item.qty || 0);
-          const newStock = Math.max(0, Number(item.stock_qty || 0) - qty);
-          await updateStockByBarcode(item.barcode, newStock);
-          const sourceProduct = products.find(p => String(p.id) === String(item.id));
-          if(sourceProduct) sourceProduct.stock_qty = newStock;
+        for (const item of cart) {
+          const sourceProduct = products.find(x => String(x.id) === String(item.id));
+          if(!sourceProduct) continue;
+          const newStock = Math.max(0, Number(sourceProduct.stock_qty || 0) - Number(item.quantity || item.qty || 0));
+          await updateStockByBarcode(sourceProduct.barcode, newStock);
+          sourceProduct.stock_qty = newStock;
         }
 
         const summary = {
           orderId: orderData.id,
-          customer_name: customerName,
+          customer_name,
           phone,
           address,
-          payment_method: paymentMethod,
+          payment_method,
           deliverySlot,
           items: cart.map(item => ({...item})),
           subtotal: totals.subtotal,
@@ -2258,11 +2264,12 @@
         if(document.getElementById('delivery-slot')) document.getElementById('delivery-slot').value = 'Müsait olan en kısa sürede';
         closeCart();
         await loadSalesStats();
-        renderShowcaseSections();
+        if(typeof renderShowcaseSections === 'function') renderShowcaseSections();
       }catch(err){
         alert('Sipariş oluşturulamadı: ' + err.message);
       }
     }
+
 
 function sendWhatsAppOrder(){
       if(!cart.length){
