@@ -5353,5 +5353,271 @@ document.addEventListener('DOMContentLoaded', async function(){
 })();
 </script>
 
+
+<div id="final-user-orders-modal" class="order-summary-modal">
+  <div class="order-summary-card">
+    <div class="row">
+      <h2 style="margin:0">Siparişlerim</h2>
+      <button class="btn secondary" type="button" onclick="closeFinalUserOrdersModal()">Kapat</button>
+    </div>
+    <div id="final-user-orders-list" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  if (window.__ultimateOrdersAndLogoutFix) return;
+  window.__ultimateOrdersAndLogoutFix = true;
+
+  function formatMoneyTR(value){
+    return new Intl.NumberFormat('tr-TR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Number(value || 0)) + ' TL';
+  }
+
+  async function getLoggedInUser(){
+    try{
+      if(!window.client || !window.client.auth || !window.client.auth.getUser) return null;
+      const { data, error } = await window.client.auth.getUser();
+      if(error){
+        console.error('getUser error:', error);
+        return null;
+      }
+      return data && data.user ? data.user : null;
+    }catch(err){
+      console.error('getLoggedInUser error:', err);
+      return null;
+    }
+  }
+
+  async function refreshAfterAuthChange(){
+    try{
+      if(typeof window.loadCurrentCustomerProfile === 'function'){
+        await window.loadCurrentCustomerProfile();
+      }
+    }catch(err){
+      console.error(err);
+    }
+
+    try{
+      if(typeof window.refreshCustomerProfileSummary === 'function'){
+        await window.refreshCustomerProfileSummary();
+      }
+    }catch(err){
+      console.error(err);
+    }
+
+    try{
+      const user = await getLoggedInUser();
+      const actionLabel = document.getElementById('account-auth-action-label');
+      if(actionLabel){
+        actionLabel.textContent = user ? 'Bilgilerim / Giriş Durumu' : 'Giriş Yap / Üye Ol';
+      }
+    }catch(err){
+      console.error(err);
+    }
+  }
+
+  window.closeFinalUserOrdersModal = function(){
+    const modal = document.getElementById('final-user-orders-modal');
+    if(modal) modal.classList.remove('open');
+  };
+
+  async function loadOrdersOnlyForLoggedUser(){
+    const list = document.getElementById('final-user-orders-list');
+    if(!list) return;
+
+    list.innerHTML = '<div class="empty">Siparişler yükleniyor...</div>';
+
+    const user = await getLoggedInUser();
+    if(!user){
+      list.innerHTML = '<div class="admin-empty">Siparişlerini görmek için önce giriş yap.</div>';
+      return;
+    }
+
+    const { data: orders, error } = await window.client
+      .from('orders')
+      .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, user_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending:false });
+
+    if(error){
+      console.error('orders error:', error);
+      list.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + error.message + '</div>';
+      return;
+    }
+
+    if(!orders || !orders.length){
+      list.innerHTML = '<div class="admin-empty">Bu kullanıcıya ait sipariş bulunamadı.</div>';
+      return;
+    }
+
+    const orderIds = orders.map(order => order.id).filter(Boolean);
+
+    let itemsByOrder = {};
+    if(orderIds.length){
+      const { data: items, error: itemsError } = await window.client
+        .from('order_items')
+        .select('order_id, product_name, quantity, unit_price, line_total, price, unit')
+        .in('order_id', orderIds);
+
+      if(itemsError){
+        console.error('order_items error:', itemsError);
+      }else{
+        (items || []).forEach(item => {
+          if(!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = [];
+          itemsByOrder[item.order_id].push(item);
+        });
+      }
+    }
+
+    list.innerHTML = orders.map(order => {
+      const total = order.total_amount ?? order.total ?? 0;
+      const itemHtml = (itemsByOrder[order.id] || []).map(item => {
+        const unitPrice = item.unit_price ?? item.price ?? 0;
+        const lineTotal = item.line_total ?? (Number(unitPrice) * Number(item.quantity || 0));
+        return '<li>' +
+          (item.product_name || 'Ürün') +
+          ' — ' + (item.quantity || 0) + ' ' + (item.unit || 'adet') +
+          ' — ' + formatMoneyTR(lineTotal) +
+        '</li>';
+      }).join('');
+
+      return `
+        <div class="admin-card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+            <strong>Sipariş #${order.id}</strong>
+            <span class="pill">${order.status || 'yeni'}</span>
+          </div>
+          <div class="muted" style="margin-top:6px">${new Date(order.created_at).toLocaleString('tr-TR')}</div>
+
+          <div class="admin-meta" style="margin-top:12px">
+            <div class="mini"><strong>Ödeme</strong><div style="margin-top:4px">${order.payment_method || '-'}</div></div>
+            <div class="mini"><strong>Teslimat</strong><div style="margin-top:4px">${order.delivery_slot || '-'}</div></div>
+            <div class="mini"><strong>Toplam</strong><div style="margin-top:4px">${formatMoneyTR(total)}</div></div>
+            <div class="mini"><strong>Telefon</strong><div style="margin-top:4px">${order.phone || '-'}</div></div>
+          </div>
+
+          <div class="admin-items">
+            <strong>Ürünler</strong>
+            <ul style="margin-top:8px">
+              ${itemHtml || '<li>Ürün bilgisi bulunamadı.</li>'}
+            </ul>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.openFinalUserOrdersModal = async function(){
+    const user = await getLoggedInUser();
+    if(!user){
+      if(typeof window.openCustomerRegisterModal === 'function'){
+        await window.openCustomerRegisterModal('login');
+      }else{
+        alert('Önce giriş yap.');
+      }
+      return;
+    }
+
+    const modal = document.getElementById('final-user-orders-modal');
+    if(modal) modal.classList.add('open');
+    await loadOrdersOnlyForLoggedUser();
+  };
+
+  window.signOutCustomer = async function(){
+    try{
+      const user = await getLoggedInUser();
+      if(!user){
+        if(typeof window.openCustomerRegisterModal === 'function'){
+          await window.openCustomerRegisterModal('login');
+        }else{
+          alert('Önce giriş yap.');
+        }
+        return;
+      }
+
+      await window.client.auth.signOut();
+      window.currentCustomerProfile = null;
+
+      try{
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_phone');
+        localStorage.removeItem('user_address');
+      }catch(err){}
+
+      await refreshAfterAuthChange();
+
+      if(typeof window.closeAccountDropdown === 'function'){
+        window.closeAccountDropdown();
+      }
+      window.closeFinalUserOrdersModal();
+      alert('Çıkış yapıldı.');
+    }catch(err){
+      console.error('signOutCustomer error:', err);
+      alert('Çıkış yapılamadı: ' + (err.message || err));
+    }
+  };
+
+  window.accountMenuAction = async function(sectionId){
+    try{
+      if(typeof window.closeAccountDropdown === 'function'){
+        window.closeAccountDropdown();
+      }
+    }catch(err){}
+
+    if(sectionId === 'siparis-takip'){
+      await window.openFinalUserOrdersModal();
+      return;
+    }
+
+    if(sectionId === 'cikis'){
+      await window.signOutCustomer();
+      return;
+    }
+
+    if(sectionId === 'giris'){
+      const user = await getLoggedInUser();
+      if(typeof window.openCustomerRegisterModal === 'function'){
+        await window.openCustomerRegisterModal(user ? 'profile' : 'login');
+      }
+      return;
+    }
+
+    if(sectionId === 'adresler' || sectionId === 'ayarlar'){
+      const user = await getLoggedInUser();
+      if(typeof window.openCustomerRegisterModal === 'function'){
+        await window.openCustomerRegisterModal(user ? 'profile' : 'login');
+      }
+      return;
+    }
+
+    if(sectionId === 'favoriler'){
+      alert('Favori Ürünlerim bölümü sonraki adımda aktif edilebilir.');
+      return;
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const modal = document.getElementById('final-user-orders-modal');
+    if(modal && !modal.dataset.boundUltimateFix){
+      modal.dataset.boundUltimateFix = '1';
+      modal.addEventListener('click', function(e){
+        if(e.target === modal){
+          window.closeFinalUserOrdersModal();
+        }
+      });
+    }
+  });
+
+  if(window.client && window.client.auth && window.client.auth.onAuthStateChange){
+    window.client.auth.onAuthStateChange(async function(){
+      await refreshAfterAuthChange();
+    });
+  }
+})();
+</script>
+
 </body>
 </html>
