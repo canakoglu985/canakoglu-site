@@ -666,6 +666,122 @@
     .brand-copy{display:flex;flex-direction:column}
     .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .header-shortcut{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:10px 14px;font-weight:800;cursor:pointer}
+    .account-wrap{
+      position:relative;
+      display:flex;
+      align-items:center;
+    }
+    .account-btn{
+      border:none;
+      background:linear-gradient(180deg,#ffffff,#f4f8fc);
+      color:#17324f;
+      border-radius:999px;
+      padding:12px 16px;
+      min-width:220px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      box-shadow:0 12px 26px rgba(8,24,46,.18);
+      border:1px solid rgba(29,70,120,.12);
+      cursor:pointer;
+      font-weight:900;
+      transition:transform .18s ease, box-shadow .18s ease;
+    }
+    .account-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 16px 30px rgba(8,24,46,.22);
+    }
+    .account-btn-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .account-avatar{
+      width:36px;
+      height:36px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(29,70,120,.08);
+      flex:0 0 36px;
+      font-size:17px;
+    }
+    .account-copy{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      min-width:0;
+      line-height:1.15;
+    }
+    .account-label{
+      font-size:13px;
+      font-weight:900;
+      color:#17324f;
+    }
+    .account-name{
+      font-size:12px;
+      font-weight:800;
+      color:#5d6f86;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:120px;
+      margin-top:3px;
+    }
+    .account-chevron{
+      font-size:16px;
+      color:#17324f;
+      transition:transform .18s ease;
+    }
+    .account-menu{
+      position:absolute;
+      top:calc(100% + 10px);
+      right:0;
+      width:270px;
+      background:#fff;
+      border:1px solid rgba(29,70,120,.12);
+      border-radius:18px;
+      box-shadow:0 22px 46px rgba(8,24,46,.20);
+      padding:8px;
+      display:none;
+      z-index:120;
+    }
+    .account-menu.open{display:block}
+    .account-menu-item{
+      width:100%;
+      border:none;
+      background:#fff;
+      border-radius:14px;
+      padding:13px 12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      text-align:left;
+      color:#243f62;
+      cursor:pointer;
+      font-size:15px;
+      font-weight:800;
+      transition:background .18s ease, transform .18s ease;
+    }
+    .account-menu-item:hover{
+      background:#f6f9fd;
+      transform:translateX(2px);
+    }
+    .account-menu-icon{
+      width:32px;
+      height:32px;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#f3f6fb;
+      font-size:16px;
+      flex:0 0 32px;
+    }
+
     .showcase-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0 0 22px}
     .showcase-card{background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid var(--border);border-radius:22px;padding:18px;box-shadow:var(--shadow-soft)}
     .showcase-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
@@ -708,25 +824,24 @@
         </div>
       </a>
       <div class="header-actions">
-        <div class="account-menu-wrap">
+        <div class="account-wrap">
           <button class="account-btn" onclick="toggleAccountMenu(event)">
             <div class="account-btn-left">
               <div class="account-avatar">👤</div>
               <div class="account-copy">
                 <div class="account-label">Hesabım</div>
-                <div class="account-name">Hüseyin Çanakoğlu</div>
+                <div id="user-name" class="account-name">Hüseyin Çanakoğlu</div>
               </div>
             </div>
             <div id="account-chevron" class="account-chevron">⌄</div>
           </button>
           <div id="account-menu" class="account-menu">
-            <button class="account-menu-item" onclick="accountMenuAction('Adreslerim')"><span class="account-menu-icon">📍</span><span>Adreslerim</span></button>
-            <button class="account-menu-item" onclick="accountMenuAction('Siparişlerim')"><span class="account-menu-icon">🧾</span><span>Siparişlerim</span></button>
-            <button class="account-menu-item" onclick="accountMenuAction('Favorilerim')"><span class="account-menu-icon">♡</span><span>Favori Ürünlerim</span></button>
-            <button class="account-menu-item" onclick="accountMenuAction('Hesap Ayarları')"><span class="account-menu-icon">⚙️</span><span>Hesap Ayarları</span></button>
-            <button class="account-menu-item" onclick="accountMenuAction('Çıkış Yap')"><span class="account-menu-icon">↪</span><span>Çıkış Yap</span></button>
+            <button class="account-menu-item" onclick="accountMenuAction('adresler')"><span class="account-menu-icon">📍</span><span>Adreslerim</span></button>
+            <button class="account-menu-item" onclick="accountMenuAction('siparis-takip')"><span class="account-menu-icon">🧾</span><span>Siparişlerim</span></button>
+            <button class="account-menu-item" onclick="accountMenuAction('favoriler')"><span class="account-menu-icon">♡</span><span>Favori Ürünlerim</span></button>
+            <button class="account-menu-item" onclick="accountMenuAction('ayarlar')"><span class="account-menu-icon">⚙️</span><span>Hesap Ayarları</span></button>
+            <button class="account-menu-item" onclick="accountMenuAction('cikis')"><span class="account-menu-icon">↪</span><span>Çıkış Yap</span></button>
           </div>
-          <div id="account-menu-overlay" class="account-menu-overlay" onclick="closeAccountMenu()"></div>
         </div>
         <button class="header-shortcut" onclick="scrollToSection('urunler')">Ürünler</button>
         <button class="header-shortcut" onclick="scrollToSection('siparis-takip')">Sipariş Takibi</button>
@@ -1312,50 +1427,7 @@
         await saveMarketSettings();
         sliderItems = getSliderItems();
         currentSlide = 0;
-    
-    function toggleAccountMenu(event){
-      if(event) event.preventDefault();
-      const menu = document.getElementById('account-menu');
-      const overlay = document.getElementById('account-menu-overlay');
-      const chev = document.getElementById('account-chevron');
-      const willOpen = !menu.classList.contains('open');
-      menu.classList.toggle('open', willOpen);
-      overlay.style.display = willOpen ? 'block' : 'none';
-      if(chev) chev.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-    }
-
-    function closeAccountMenu(){
-      const menu = document.getElementById('account-menu');
-      const overlay = document.getElementById('account-menu-overlay');
-      const chev = document.getElementById('account-chevron');
-      if(menu) menu.classList.remove('open');
-      if(overlay) overlay.style.display = 'none';
-      if(chev) chev.style.transform = 'rotate(0deg)';
-    }
-
-    function accountMenuAction(name){
-      closeAccountMenu();
-      if(name === 'Siparişlerim'){
-        const el = document.getElementById('siparis-takip');
-        if(el) el.scrollIntoView({behavior:'smooth'});
-        return;
-      }
-      if(name === 'Adreslerim' || name === 'Favorilerim' || name === 'Hesap Ayarları'){
-        alert(name + ' bölümü hazırlandı. İstersen bir sonraki adımda bunu gerçek kayıt ekranına çevirelim.');
-        return;
-      }
-      if(name === 'Çıkış Yap'){
-        alert('Çıkış işlemi için gerçek üyelik sistemi bağlanınca aktif ederiz.');
-      }
-    }
-
-    document.addEventListener('click', function(e){
-      const wrap = document.querySelector('.account-menu-wrap');
-      if(!wrap) return;
-      if(!wrap.contains(e.target)) closeAccountMenu();
-    });
-
-    renderSlider();
+renderSlider();
         resetSlideTimer();
         renderCart();
         alert('Banner ve site ayarları kaydedildi.');
@@ -1370,7 +1442,54 @@
         await saveMarketSettings();
         sliderItems = getSliderItems();
         currentSlide = 0;
-        renderSlider();
+    
+    function toggleAccountMenu(event){
+      if(event) event.preventDefault();
+      const menu = document.getElementById('account-menu');
+      const chev = document.getElementById('account-chevron');
+      const willOpen = !menu.classList.contains('open');
+      menu.classList.toggle('open', willOpen);
+      if(chev) chev.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    function closeAccountMenu(){
+      const menu = document.getElementById('account-menu');
+      const chev = document.getElementById('account-chevron');
+      if(menu) menu.classList.remove('open');
+      if(chev) chev.style.transform = 'rotate(0deg)';
+    }
+
+    function accountMenuAction(sectionId){
+      closeAccountMenu();
+      if(sectionId === 'siparis-takip'){
+        const el = document.getElementById('siparis-takip');
+        if(el) el.scrollIntoView({behavior:'smooth'});
+        return;
+      }
+      if(sectionId === 'adresler'){
+        alert('Adreslerim bölümü sonraki adımda gerçek kayıt ekranına bağlanabilir.');
+        return;
+      }
+      if(sectionId === 'favoriler'){
+        alert('Favori Ürünlerim bölümü sonraki adımda aktif edilebilir.');
+        return;
+      }
+      if(sectionId === 'ayarlar'){
+        alert('Hesap Ayarları bölümü sonraki adımda aktif edilebilir.');
+        return;
+      }
+      if(sectionId === 'cikis'){
+        alert('Gerçek üyelik sistemi bağlanınca çıkış işlemi aktif olur.');
+      }
+    }
+
+    document.addEventListener('click', function(e){
+      const wrap = document.querySelector('.account-wrap');
+      if(!wrap) return;
+      if(!wrap.contains(e.target)) closeAccountMenu();
+    });
+
+    renderSlider();
         resetSlideTimer();
         fillBannerSettingsForm();
         renderCart();
