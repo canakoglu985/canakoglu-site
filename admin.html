@@ -137,9 +137,61 @@
       .brand-badge{width:72px;height:72px;flex:0 0 72px}
       .wrap{padding:14px}
     }
+  
+    #login-screen{
+      position:fixed;
+      inset:0;
+      background:linear-gradient(135deg,#173b68,#225996);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+    }
+    .login-box{
+      background:#fff;
+      padding:30px;
+      border-radius:20px;
+      width:min(360px,92vw);
+      text-align:center;
+      box-shadow:0 20px 40px rgba(0,0,0,.2);
+    }
+    .login-box h2{margin:0 0 18px;color:#17324f}
+    .login-box input{
+      width:100%;
+      padding:12px;
+      margin-bottom:10px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      font:inherit;
+    }
+    .login-box button{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:10px;
+      background:#f49a27;
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+      font:inherit;
+    }
+    .login-error{color:#c62828;display:none;margin-top:10px;font-weight:700}
+
   </style>
 </head>
 <body>
+
+  <div id="login-screen">
+    <div class="login-box">
+      <h2>Admin Giriş</h2>
+      <input id="login-username" placeholder="Kullanıcı adı">
+      <input id="login-password" type="password" placeholder="Şifre">
+      <button onclick="loginAdmin()">Giriş Yap</button>
+      <div id="login-error" class="login-error">Hatalı giriş</div>
+    </div>
+  </div>
+
+
   <header>
     <div class="header-inner">
       <div class="brand">
@@ -854,6 +906,25 @@
       XLSX.utils.book_append_sheet(wb, ws, 'Urunler');
       XLSX.writeFile(wb, 'canakoglu_excel_sablon.xlsx');
     }
+
+
+    function loginAdmin(){
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value.trim();
+      if(u === 'admin' && p === '1234'){
+        document.getElementById('login-screen').style.display = 'none';
+      }else{
+        document.getElementById('login-error').style.display = 'block';
+      }
+    }
+
+    document.addEventListener('keydown', function(e){
+      const screen = document.getElementById('login-screen');
+      if(e.key === 'Enter' && screen && screen.style.display !== 'none'){
+        loginAdmin();
+      }
+    });
+
 
     loadConfigLocal();
   </script>
