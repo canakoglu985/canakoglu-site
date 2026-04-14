@@ -362,6 +362,14 @@
       opacity:1 !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important
     }
     .drawer.open{right:0}
+    .cart-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(9,26,47,.32);
+      display:none;
+      z-index:89;
+    }
+    .cart-overlay.open{display:block}
     .row{display:flex;justify-content:space-between;gap:10px;align-items:center}
     .item{padding:14px 0;border-bottom:1px solid var(--border)}
     .qty{display:flex;align-items:center;gap:8px;margin-top:8px}
@@ -1218,10 +1226,12 @@
       <div id="tracker-results" class="tracker-results"></div>
     </div>
 
+  <div id="cart-overlay" class="cart-overlay" onclick="closeCart()"></div>
+
   <aside id="cart-drawer" class="drawer">
     <div class="row">
       <h2 style="margin:0">Sepetim</h2>
-      <button class="btn secondary" onclick="toggleCart()">Kapat</button>
+      <button class="btn secondary" onclick="closeCart()">Kapat</button>
     </div>
 
     <div id="cart-items"></div>
@@ -1244,9 +1254,7 @@
         <option value="Kapıda Kart">Kapıda Kart</option>
       </select>
       <div id="cart-rule-note" class="cart-note">Sepet kuralları yükleniyor...</div>
-      <button class="btn primary" onclick="placeOrder()">Sipariş Ver</button>
       <button class="btn primary" type="button" onclick="submitWebsiteOrder()">Sipariş Ver</button>
-          <button class="btn primary" onclick="sendWhatsAppOrder()" style="width:100%">📲 Siparişi WhatsApp Sipariş</button>
     </div>
   </aside>
 
@@ -1760,7 +1768,18 @@
     }
 
     function toggleCart(){
-      document.getElementById('cart-drawer').classList.toggle('open');
+      const drawer = document.getElementById('cart-drawer');
+      const overlay = document.getElementById('cart-overlay');
+      const willOpen = !drawer.classList.contains('open');
+      drawer.classList.toggle('open', willOpen);
+      if(overlay) overlay.classList.toggle('open', willOpen);
+    }
+
+    function closeCart(){
+      const drawer = document.getElementById('cart-drawer');
+      const overlay = document.getElementById('cart-overlay');
+      if(drawer) drawer.classList.remove('open');
+      if(overlay) overlay.classList.remove('open');
     }
 
     function getCategories(){
@@ -2106,9 +2125,10 @@
     }
 
     
+    
     async function submitWebsiteOrder(){
       try{
-        if(!supabaseClient){
+        if(!client){
           alert('Sistem bağlantısı hazır değil.');
           return;
         }
@@ -2118,70 +2138,93 @@
           return;
         }
 
-        const customerName = (document.getElementById('customer-name')?.value || document.getElementById('name')?.value || '').trim();
-        const phone = (document.getElementById('customer-phone')?.value || document.getElementById('phone')?.value || '').trim();
-        const address = (document.getElementById('customer-address')?.value || document.getElementById('address')?.value || '').trim();
-        const paymentMethod = (document.getElementById('payment-method')?.value || 'nakit').trim();
+        const customerName = (document.getElementById('customer-name')?.value || '').trim();
+        const phone = (document.getElementById('customer-phone')?.value || '').trim();
+        const address = (document.getElementById('customer-address')?.value || '').trim();
+        const paymentMethod = (document.getElementById('payment-method')?.value || 'Kapıda Nakit').trim();
+        const deliverySlot = (document.getElementById('delivery-slot')?.value || 'Müsait olan en kısa sürede').trim();
 
         if(!customerName || !phone || !address){
-          alert('Ad, telefon ve adres gerekli.');
+          alert('Ad soyad, telefon ve adres gerekli.');
           return;
         }
 
-        const totalAmount = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.qty || item.quantity || 0)), 0);
+        const totals = calculateCartGrandTotal();
+        const minimumOrderAmount = Number(marketSettings.minimumOrderAmount || 0);
+        if(minimumOrderAmount > 0 && totals.subtotal < minimumOrderAmount){
+          alert(`Minimum sipariş tutarı ${money(minimumOrderAmount)} olmalı.`);
+          return;
+        }
 
-        const { data: orderRows, error: orderError } = await supabaseClient
+        const orderPayload = {
+          customer_name: customerName,
+          phone,
+          address,
+          payment_method: paymentMethod,
+          status: 'Yeni',
+          total: totals.grandTotal,
+          total_amount: totals.grandTotal,
+          delivery_slot: deliverySlot
+        };
+
+        const { data: orderData, error: orderError } = await client
           .from('orders')
-          .insert([{
-            customer_name: customerName,
-            phone,
-            address,
-            status: 'yeni',
-            payment_method: paymentMethod,
-            total_amount: totalAmount
-          }])
-          .select();
+          .insert(orderPayload)
+          .select()
+          .single();
 
         if(orderError) throw orderError;
-        const orderId = orderRows?.[0]?.id;
-        if(!orderId) throw new Error('Sipariş ID alınamadı.');
 
-        const orderItemsPayload = cart.map(item => ({
-          order_id: orderId,
-          product_name: item.name || item.product_name || '',
+        const itemsPayload = cart.map(item => ({
+          order_id: orderData.id,
+          product_name: item.name,
           price: Number(item.price || 0),
-          quantity: Number(item.qty || item.quantity || 0),
+          quantity: Number(item.quantity || item.qty || 0),
           unit: item.unit || 'adet'
         }));
 
-        const { error: itemsError } = await supabaseClient
+        const { error: itemsError } = await client
           .from('order_items')
-          .insert(orderItemsPayload);
+          .insert(itemsPayload);
 
         if(itemsError) throw itemsError;
 
-        // stock düşür
         for (const item of cart){
-          const qty = Number(item.qty || item.quantity || 0);
-          const currentStock = Number(item.stock_qty || 0);
-          const nextStock = Math.max(0, currentStock - qty);
-          const productId = item.id;
-
-          if(productId){
-            await supabaseClient
-              .from('products')
-              .update({ stock_qty: nextStock })
-              .eq('id', productId);
-          }
+          const qty = Number(item.quantity || item.qty || 0);
+          const newStock = Math.max(0, Number(item.stock_qty || 0) - qty);
+          await updateStockByBarcode(item.barcode, newStock);
+          const sourceProduct = products.find(p => String(p.id) === String(item.id));
+          if(sourceProduct) sourceProduct.stock_qty = newStock;
         }
 
-        alert('Sipariş başarıyla oluşturuldu.');
+        const summary = {
+          orderId: orderData.id,
+          customer_name: customerName,
+          phone,
+          address,
+          payment_method: paymentMethod,
+          deliverySlot,
+          items: cart.map(item => ({...item})),
+          subtotal: totals.subtotal,
+          deliveryFee: totals.deliveryFee,
+          grandTotal: totals.grandTotal,
+          whatsAppLines: orderMessageLines(true)
+        };
+
+        alert('Sipariş başarıyla kaydedildi.');
+        showOrderSummary(summary);
 
         cart = [];
-        if(typeof renderCart === 'function') renderCart();
-        if(typeof loadProducts === 'function') await loadProducts();
-        if(typeof closeCart === 'function') closeCart();
-
+        renderCart();
+        renderProducts();
+        document.getElementById('customer-name').value = '';
+        document.getElementById('customer-phone').value = '';
+        document.getElementById('customer-address').value = '';
+        document.getElementById('payment-method').value = 'Kapıda Nakit';
+        if(document.getElementById('delivery-slot')) document.getElementById('delivery-slot').value = 'Müsait olan en kısa sürede';
+        closeCart();
+        await loadSalesStats();
+        renderShowcaseSections();
       }catch(err){
         alert('Sipariş oluşturulamadı: ' + err.message);
       }
