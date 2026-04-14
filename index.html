@@ -5133,5 +5133,285 @@ document.addEventListener('DOMContentLoaded', async function(){
 })();
 </script>
 
+
+<script>
+(function(){
+  if(window.__finalOrdersLogoutHotfix) return;
+  window.__finalOrdersLogoutHotfix = true;
+
+  function moneyFix(v){
+    return new Intl.NumberFormat('tr-TR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Number(v || 0)) + ' TL';
+  }
+
+  async function getRealUser(){
+    try{
+      if(!window.client?.auth?.getUser) return null;
+      const { data, error } = await window.client.auth.getUser();
+      if(error){
+        console.error('getUser error:', error);
+        return null;
+      }
+      return data?.user || null;
+    }catch(err){
+      console.error(err);
+      return null;
+    }
+  }
+
+  async function hardRefreshCustomerUI(){
+    try{
+      if(typeof window.loadCurrentCustomerProfile === 'function'){
+        await window.loadCurrentCustomerProfile();
+      }
+    } catch(err){ console.error(err); }
+
+    try{
+      if(typeof window.refreshCustomerProfileSummary === 'function'){
+        window.refreshCustomerProfileSummary();
+      }
+    } catch(err){ console.error(err); }
+
+    try{
+      const user = await getRealUser();
+      const authActionLabel = document.getElementById('account-auth-action-label');
+      const userName = document.getElementById('user-name');
+
+      if(authActionLabel){
+        authActionLabel.textContent = user ? 'Bilgilerimi Düzenle' : 'Giriş Yap / Üye Ol';
+      }
+
+      if(userName){
+        if(window.currentCustomerProfile?.full_name){
+          userName.textContent = window.currentCustomerProfile.full_name;
+        } else if(user?.email){
+          userName.textContent = user.email;
+        } else {
+          userName.textContent = 'Hesabım';
+        }
+      }
+    } catch(err){ console.error(err); }
+  }
+
+  window.closeMyOrdersModal = function(){
+    const modal = document.getElementById('my-orders-modal');
+    if(modal) modal.classList.remove('open');
+  };
+
+  async function loadMyOrdersForLoggedUser(){
+    const box = document.getElementById('my-orders-list');
+    if(!box) return;
+
+    box.innerHTML = '<div class="empty">Siparişler yükleniyor...</div>';
+
+    const user = await getRealUser();
+    if(!user){
+      box.innerHTML = '<div class="admin-empty">Siparişlerini görmek için önce giriş yap.</div>';
+      return;
+    }
+
+    let orders = [];
+    let lastError = null;
+
+    const q1 = await window.client
+      .from('orders')
+      .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id, user_id')
+      .eq('customer_id', user.id)
+      .order('created_at', { ascending:false });
+
+    if(q1.error){
+      console.error('orders customer_id error:', q1.error);
+      lastError = q1.error;
+    } else {
+      orders = q1.data || [];
+    }
+
+    if(!orders.length){
+      const q2 = await window.client
+        .from('orders')
+        .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id, user_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending:false });
+
+      if(q2.error){
+        console.error('orders user_id error:', q2.error);
+        if(!lastError) lastError = q2.error;
+      } else {
+        orders = q2.data || [];
+      }
+    }
+
+    if(lastError && !orders.length){
+      box.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + lastError.message + '</div>';
+      return;
+    }
+
+    if(!orders.length){
+      box.innerHTML = '<div class="admin-empty">Bu hesaba ait sipariş bulunamadı.</div>';
+      return;
+    }
+
+    const orderIds = orders.map(x => x.id).filter(Boolean);
+    let items = [];
+    if(orderIds.length){
+      const { data: itemsData, error: itemsError } = await window.client
+        .from('order_items')
+        .select('order_id, product_name, quantity, unit_price, line_total')
+        .in('order_id', orderIds);
+
+      if(itemsError){
+        console.error('order_items error:', itemsError);
+      } else {
+        items = itemsData || [];
+      }
+    }
+
+    const itemsMap = {};
+    items.forEach(item => {
+      if(!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+      itemsMap[item.order_id].push(item);
+    });
+
+    box.innerHTML = orders.map(order => {
+      const total = order.total_amount ?? order.total ?? 0;
+      const rows = (itemsMap[order.id] || []).map(item => {
+        const line = item.line_total ?? ((Number(item.unit_price || 0)) * Number(item.quantity || 0));
+        return '<li>' + (item.product_name || 'Ürün') + ' — ' + (item.quantity || 0) + ' adet — ' + moneyFix(line) + '</li>';
+      }).join('');
+
+      return `
+        <div class="admin-card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+            <strong>Sipariş #${order.id}</strong>
+            <span class="pill">${order.status || 'Yeni'}</span>
+          </div>
+          <div class="muted" style="margin-top:6px">${new Date(order.created_at).toLocaleString('tr-TR')}</div>
+
+          <div class="admin-meta" style="margin-top:12px">
+            <div class="mini"><strong>Ödeme</strong><div style="margin-top:4px">${order.payment_method || '-'}</div></div>
+            <div class="mini"><strong>Teslimat</strong><div style="margin-top:4px">${order.delivery_slot || '-'}</div></div>
+            <div class="mini"><strong>Toplam</strong><div style="margin-top:4px">${moneyFix(total)}</div></div>
+            <div class="mini"><strong>Telefon</strong><div style="margin-top:4px">${order.phone || '-'}</div></div>
+          </div>
+
+          <div class="admin-items">
+            <strong>Ürünler</strong>
+            <ul style="margin-top:8px">${rows || '<li>Ürün bilgisi bulunamadı.</li>'}</ul>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.openMyOrdersModal = async function(){
+    const user = await getRealUser();
+    if(!user){
+      if(typeof window.openCustomerRegisterModal === 'function'){
+        await window.openCustomerRegisterModal('login');
+      } else {
+        alert('Önce giriş yap.');
+      }
+      return;
+    }
+
+    const modal = document.getElementById('my-orders-modal');
+    if(modal) modal.classList.add('open');
+    await loadMyOrdersForLoggedUser();
+  };
+
+  window.signOutCustomer = async function(){
+    try{
+      if(window.client?.auth?.signOut){
+        await window.client.auth.signOut();
+      }
+
+      window.currentCustomerProfile = null;
+      localStorage.removeItem('user_name');
+      localStorage.removeItem('user_phone');
+      localStorage.removeItem('user_address');
+
+      await hardRefreshCustomerUI();
+      if(typeof window.closeAccountDropdown === 'function'){
+        window.closeAccountDropdown();
+      }
+      window.closeMyOrdersModal();
+      alert('Çıkış yapıldı.');
+    }catch(err){
+      console.error(err);
+      alert('Çıkış yapılırken hata oluştu: ' + (err?.message || err));
+    }
+  };
+
+  window.accountMenuAction = async function(sectionId){
+    if(typeof window.closeAccountDropdown === 'function'){
+      window.closeAccountDropdown();
+    }
+
+    const user = await getRealUser();
+
+    if(sectionId === 'giris'){
+      if(typeof window.openCustomerRegisterModal === 'function'){
+        await window.openCustomerRegisterModal(user ? 'profile' : 'login');
+      }
+      return;
+    }
+
+    if(sectionId === 'siparis-takip'){
+      if(!user){
+        if(typeof window.openCustomerRegisterModal === 'function'){
+          await window.openCustomerRegisterModal('login');
+        } else {
+          alert('Önce giriş yap.');
+        }
+        return;
+      }
+      await window.openMyOrdersModal();
+      return;
+    }
+
+    if(sectionId === 'adresler' || sectionId === 'ayarlar'){
+      if(typeof window.openCustomerRegisterModal === 'function'){
+        await window.openCustomerRegisterModal(user ? 'profile' : 'login');
+      }
+      return;
+    }
+
+    if(sectionId === 'favoriler'){
+      alert('Favori Ürünlerim bölümü sonraki adımda aktif edilebilir.');
+      return;
+    }
+
+    if(sectionId === 'cikis'){
+      if(!user){
+        if(typeof window.openCustomerRegisterModal === 'function'){
+          await window.openCustomerRegisterModal('login');
+        }
+        return;
+      }
+      await window.signOutCustomer();
+      return;
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const modal = document.getElementById('my-orders-modal');
+    if(modal && !modal.dataset.fixBound){
+      modal.dataset.fixBound = '1';
+      modal.addEventListener('click', function(e){
+        if(e.target === modal) window.closeMyOrdersModal();
+      });
+    }
+  });
+
+  if(window.client?.auth?.onAuthStateChange){
+    window.client.auth.onAuthStateChange(async function(){
+      await hardRefreshCustomerUI();
+    });
+  }
+})();
+</script>
+
 </body>
 </html>
