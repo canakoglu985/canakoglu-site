@@ -648,7 +648,7 @@ if(!url || !key){
         const { error } = await supabaseClient.from('products').select('id', { count: 'exact', head: true });
         if(error) throw error;
 
-        setStatus('global-status', 'Supabase bağlantısı başarılı.', true);
+        setStatus('global-status', 'Supabase bağlantısı başarılı. Otomatik takip aktif.', true);
         setStatus('live-status-box', 'Sistem bağlı. Veriler yüklenebilir.', true);
         await loadAllData();
         subscribeRealtime();
@@ -855,7 +855,7 @@ if(!url || !key){
             <td>${money(o.total_amount ?? o.total ?? 0)}</td>
             <td>${escapeHtml(o.payment_method || '')}</td>
             <td>
-              <select onchange="updateOrderStatus('${String(o.id)}', this.value)">
+              <select id="order-status-${String(o.id)}">
                 <option value="yeni" ${o.status === 'yeni' ? 'selected' : ''}>Yeni</option>
                 <option value="hazirlaniyor" ${o.status === 'hazirlaniyor' ? 'selected' : ''}>Hazırlanıyor</option>
                 <option value="yolda" ${o.status === 'yolda' ? 'selected' : ''}>Yolda</option>
@@ -865,7 +865,8 @@ if(!url || !key){
             </td>
             <td>
               <div class="row">
-                <button class="btn secondary" onclick="sendOrderWhatsapp('${String(o.id)}')">WhatsApp</button>
+                <button class="btn primary" onclick="saveOrderStatus('${String(o.id)}')">Kaydet</button>
+                <button class="btn secondary" onclick="sendOrderWhatsapp('${String(o.id)}')">WP</button>
               </div>
             </td>
           </tr>
