@@ -41,6 +41,61 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
 .pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.2)}
 .hide{display:none !important}
 @media (max-width:960px){.layout{grid-template-columns:1fr}}
+
+.success-modal{
+  position:fixed; inset:0; background:rgba(9,26,47,.42);
+  display:none; align-items:center; justify-content:center; z-index:5000;
+  padding:20px;
+}
+.success-modal.open{ display:flex; }
+.success-card{
+  width:min(520px,100%);
+  background:#fff;
+  border:1px solid #dbe6f1;
+  border-radius:28px;
+  box-shadow:0 24px 60px rgba(18,50,85,.20);
+  overflow:hidden;
+}
+.success-top{
+  background:linear-gradient(135deg, rgba(9,33,63,.96) 0%, rgba(22,55,94,.98) 52%, rgba(37,91,148,.95) 100%);
+  color:#fff;
+  padding:26px 24px 18px;
+}
+.success-icon{
+  width:64px; height:64px; border-radius:20px;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.16);
+  font-size:30px; margin-bottom:14px;
+}
+.success-top h3{
+  margin:0 0 6px; font-size:28px; line-height:1.1;
+}
+.success-top p{
+  margin:0; color:rgba(255,255,255,.90); line-height:1.6;
+}
+.success-body{
+  padding:22px 24px;
+}
+.success-grid{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px;
+}
+.success-mini{
+  background:#f7f9fc; border:1px solid #dbe6f1; border-radius:16px; padding:12px;
+}
+.success-mini strong{
+  display:block; color:#1d4678; margin-bottom:4px;
+}
+.success-list{
+  background:#fbfcfe; border:1px solid #dbe6f1; border-radius:18px; padding:14px;
+}
+.success-actions{
+  display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;
+}
+@media (max-width:700px){
+  .success-grid{ grid-template-columns:1fr; }
+}
+
 </style>
 </head>
 <body>
@@ -103,6 +158,37 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
   </div>
 </div>
 
+
+<div id="successModal" class="success-modal">
+  <div class="success-card">
+    <div class="success-top">
+      <div class="success-icon">✓</div>
+      <h3>Siparişiniz alındı</h3>
+      <p>Siparişiniz başarıyla oluşturuldu. Aşağıda sipariş özetini görebilirsiniz.</p>
+    </div>
+    <div class="success-body">
+      <div class="success-grid">
+        <div class="success-mini">
+          <strong>Sipariş No</strong>
+          <div id="successOrderNo">-</div>
+        </div>
+        <div class="success-mini">
+          <strong>Toplam</strong>
+          <div id="successOrderTotal">-</div>
+        </div>
+      </div>
+      <div class="success-list">
+        <strong style="display:block;color:#1d4678;margin-bottom:8px;">Ürünler</strong>
+        <div id="successOrderItems" class="muted">-</div>
+      </div>
+      <div class="success-actions">
+        <button class="btn primary" type="button" onclick="closeSuccessModal()">Siparişlerime Git</button>
+        <a class="btn secondary" href="index.html">Alışverişe Dön</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const client = supabase.createClient("https://jpguymicdiujhutnycvl.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I");
 const CART_KEY = "canakoglu_cart_v1";
@@ -118,6 +204,23 @@ const registerBtn = document.getElementById("registerBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
 let orderSubmitLock = false;
+
+function openSuccessModal(order, itemsPayload, totalAmount) {
+  const modal = document.getElementById("successModal");
+  document.getElementById("successOrderNo").textContent = order?.id || "-";
+  document.getElementById("successOrderTotal").textContent = money(totalAmount || 0);
+  document.getElementById("successOrderItems").innerHTML = (itemsPayload || []).map(item =>
+    `<div style="margin-bottom:6px;">${escapeHtml(item.product_name)} — ${item.quantity} adet</div>`
+  ).join("") || "-";
+  modal.classList.add("open");
+}
+
+function closeSuccessModal() {
+  const modal = document.getElementById("successModal");
+  modal.classList.remove("open");
+  const ordersBox = document.getElementById("ordersBox");
+  if (ordersBox) ordersBox.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 function setStatus(id, text, ok=false) {
   const el = document.getElementById(id);
@@ -316,7 +419,7 @@ async function createOrderFromCartIfNeeded() {
     localStorage.removeItem(CART_KEY);
     clearOrderIntent();
     setPageStatus("Siparişiniz oluşturuldu.", true);
-    alert("Siparişiniz oluşturuldu.");
+    openSuccessModal(order, itemsPayload, totalAmount);
     return true;
   } finally {
     orderSubmitLock = false;
@@ -386,6 +489,11 @@ tabRegister.addEventListener("click", showRegister);
 loginBtn.addEventListener("click", login);
 registerBtn.addEventListener("click", register);
 logoutBtn.addEventListener("click", logout);
+
+
+document.getElementById("successModal").addEventListener("click", (e) => {
+  if (e.target.id === "successModal") closeSuccessModal();
+});
 
 (async function init() {
   rememberOrderIntent();
