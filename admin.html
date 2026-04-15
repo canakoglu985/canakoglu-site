@@ -1274,11 +1274,20 @@ if(!url || !key){
       const countEl = document.getElementById('notif-count');
       const current = Number(countEl.textContent || 0);
       countEl.textContent = String(current + newOrders.length);
+      countEl.classList.add('pulse');
+      setTimeout(() => countEl.classList.remove('pulse'), 1800);
+
+      const first = newOrders[0] || {};
+      const customerName = first.customer_name || 'Yeni müşteri';
+      const totalText = money(first.total_amount ?? first.total ?? 0);
+
       showTopNote(`${newOrders.length} yeni sipariş geldi`);
-      playBeep();
+      showFloatingAlert(`${customerName} • ${totalText}`);
+      playNotifySound();
+
       if('Notification' in window && Notification.permission === 'granted'){
         new Notification('Çanakoğlu Market', {
-          body: `${newOrders.length} yeni sipariş geldi`,
+          body: `${newOrders.length} yeni sipariş geldi • ${customerName}`,
         });
       }
     }
@@ -1286,8 +1295,10 @@ if(!url || !key){
     function startOrderPolling(){
       clearInterval(window.__orderPollTimer);
       window.__orderPollTimer = setInterval(() => {
-        if(supabaseClient) loadOrders(true);
-      }, 20000);
+        if(!supabaseClient) return;
+        if(document.hidden) return;
+        loadOrders(true);
+      }, 5000);
     }
 
     function logoutAdmin(){
