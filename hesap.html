@@ -11,41 +11,19 @@
       --navy:#1d4678; --border:#dbe6f1; --shadow-soft:0 8px 18px rgba(18,50,85,.07);
       --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%); --danger:#c62828; --success:#39a852;
     }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
     header{background:linear-gradient(135deg, rgba(12,34,63,.98) 0%, rgba(20,55,94,.98) 45%, rgba(29,70,120,.98) 100%);color:#fff;padding:16px 20px;box-shadow:0 14px 34px rgba(10,28,52,.22)}
-    .header-inner,.wrap{max-width:1100px;margin:0 auto}
-    .header-inner{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-    .brand-title{font-size:28px;font-weight:900}
-    .brand-sub{font-size:14px;opacity:.9;margin-top:4px}
+    .header-inner,.wrap{max-width:1100px;margin:0 auto} .header-inner{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .brand-title{font-size:28px;font-weight:900} .brand-sub{font-size:14px;opacity:.9;margin-top:4px}
     .btn{border:none;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
-    .primary{background:var(--orange-gradient);color:#fff}
-    .secondary{background:#edf4fb;color:var(--navy);border:1px solid var(--border)}
-    .wrap{padding:20px}
-    .layout{display:grid;grid-template-columns:430px minmax(0,1fr);gap:18px;align-items:start}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow-soft)}
-    .tabs{display:flex;gap:10px;margin-bottom:14px}
-    .tab{border:none;background:#fff;border:1px solid var(--border);border-radius:999px;padding:10px 14px;cursor:pointer;font-weight:800;color:var(--navy)}
-    .tab.active{background:var(--orange-gradient);color:#fff;border-color:transparent}
-    .pane{display:none}
-    .pane.active{display:block}
-    .field{display:grid;gap:6px;margin-bottom:10px}
-    label{font-size:13px;color:var(--navy);font-weight:800}
-    input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14px;font:inherit;background:#fff}
-    textarea{min-height:90px;resize:vertical}
-    .status{margin-top:10px;font-size:13px;font-weight:800;min-height:18px;white-space:pre-wrap}
-    .status.error{color:var(--danger)}
-    .status.ok{color:var(--success)}
-    .muted{color:var(--muted);font-size:13px}
-    .profile-box{background:#fbfcfe;border:1px solid var(--border);border-radius:18px;padding:16px;display:grid;gap:8px}
-    .orders{display:grid;gap:12px}
-    .order{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px}
-    .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}
-    .meta-item{background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:10px}
-    .items{margin-top:12px;border:1px solid var(--border);border-radius:14px;background:#fbfcfe;padding:12px}
-    .empty{padding:24px;text-align:center;color:var(--muted)}
-    .sep{height:1px;background:var(--border);margin:16px 0}
-    .pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.2)}
+    .primary{background:var(--orange-gradient);color:#fff} .secondary{background:#edf4fb;color:var(--navy);border:1px solid var(--border)}
+    .btn:disabled{opacity:.7;cursor:not-allowed}
+    .wrap{padding:20px} .layout{display:grid;grid-template-columns:430px minmax(0,1fr);gap:18px;align-items:start} .card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow-soft)}
+    .tabs{display:flex;gap:10px;margin-bottom:14px} .tab{border:none;background:#fff;border:1px solid var(--border);border-radius:999px;padding:10px 14px;cursor:pointer;font-weight:800;color:var(--navy)} .tab.active{background:var(--orange-gradient);color:#fff;border-color:transparent}
+    .pane{display:none} .pane.active{display:block} .field{display:grid;gap:6px;margin-bottom:10px} label{font-size:13px;color:var(--navy);font-weight:800} input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14px;font:inherit;background:#fff} textarea{min-height:90px;resize:vertical}
+    .status{margin-top:10px;font-size:13px;font-weight:800;min-height:18px;white-space:pre-wrap} .status.error{color:var(--danger)} .status.ok{color:var(--success)} .muted{color:var(--muted);font-size:13px}
+    .profile-box{background:#fbfcfe;border:1px solid var(--border);border-radius:18px;padding:16px;display:grid;gap:8px} .orders{display:grid;gap:12px} .order{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px}
+    .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px} .meta-item{background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:10px} .items{margin-top:12px;border:1px solid var(--border);border-radius:14px;background:#fbfcfe;padding:12px} .empty{padding:24px;text-align:center;color:var(--muted)} .sep{height:1px;background:var(--border);margin:16px 0} .pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.2)}
     @media (max-width:920px){.layout{grid-template-columns:1fr}}
   </style>
 </head>
@@ -85,26 +63,11 @@
       </div>
 
       <div id="paneRegister" class="pane">
-        <div class="field">
-          <label for="registerName">Ad Soyad</label>
-          <input id="registerName" type="text" />
-        </div>
-        <div class="field">
-          <label for="registerPhone">Telefon</label>
-          <input id="registerPhone" type="text" />
-        </div>
-        <div class="field">
-          <label for="registerAddress">Adres</label>
-          <textarea id="registerAddress"></textarea>
-        </div>
-        <div class="field">
-          <label for="registerEmail">E-posta</label>
-          <input id="registerEmail" type="email" autocomplete="email" />
-        </div>
-        <div class="field">
-          <label for="registerPassword">Şifre</label>
-          <input id="registerPassword" type="password" autocomplete="new-password" />
-        </div>
+        <div class="field"><label for="registerName">Ad Soyad</label><input id="registerName" type="text" /></div>
+        <div class="field"><label for="registerPhone">Telefon</label><input id="registerPhone" type="text" /></div>
+        <div class="field"><label for="registerAddress">Adres</label><textarea id="registerAddress"></textarea></div>
+        <div class="field"><label for="registerEmail">E-posta</label><input id="registerEmail" type="email" autocomplete="email" /></div>
+        <div class="field"><label for="registerPassword">Şifre</label><input id="registerPassword" type="password" autocomplete="new-password" /></div>
         <button id="registerBtn" class="btn primary" type="button" style="width:100%;">Kayıt Ol</button>
         <div id="registerStatus" class="status"></div>
       </div>
@@ -140,6 +103,13 @@ const registerBtn = document.getElementById("registerBtn");
 
 let orderSubmitLock = false;
 
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(label + " zaman aşımına uğradı.")), ms))
+  ]);
+}
+
 function setTab(mode) {
   const login = mode === "login";
   tabLogin.classList.toggle("active", login);
@@ -154,9 +124,9 @@ function setStatus(id, text, ok=false) {
   el.className = "status " + (text ? (ok ? "ok" : "error") : "");
 }
 
-function setButtonLoading(btn, loading, textWhenIdle) {
+function setButtonLoading(btn, loading, idleText) {
   btn.disabled = loading;
-  btn.textContent = loading ? "Bekle..." : textWhenIdle;
+  btn.textContent = loading ? "Bekle..." : idleText;
 }
 
 function money(v) {
@@ -176,15 +146,12 @@ function escapeHtml(text) {
 }
 
 function readCart() {
-  try {
-    return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
+  catch { return []; }
 }
 
 async function getCurrentUser() {
-  const { data, error } = await client.auth.getUser();
+  const { data, error } = await withTimeout(client.auth.getUser(), 8000, "Kullanıcı sorgusu");
   if (error) return null;
   return data?.user || null;
 }
@@ -193,11 +160,11 @@ async function getCurrentProfile() {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const { data, error } = await client
-    .from("profiles")
-    .select("id, email, full_name, phone, address")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { data, error } = await withTimeout(
+    client.from("profiles").select("id, email, full_name, phone, address").eq("id", user.id).maybeSingle(),
+    8000,
+    "Profil sorgusu"
+  );
 
   if (error) {
     console.error("profile error:", error);
@@ -239,6 +206,7 @@ async function refreshHeaderInfo() {
 async function login() {
   setStatus("loginStatus", "");
   setStatus("pageStatus", "");
+
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
 
@@ -249,16 +217,32 @@ async function login() {
 
   setButtonLoading(loginBtn, true, "Giriş Yap");
   try {
-    const { error } = await client.auth.signInWithPassword({ email, password });
+    const { error } = await withTimeout(
+      client.auth.signInWithPassword({ email, password }),
+      10000,
+      "Giriş"
+    );
+
     if (error) {
       setStatus("loginStatus", error.message);
       return;
     }
 
     setStatus("loginStatus", "Giriş başarılı.", true);
-    setStatus("pageStatus", "Giriş yapıldı, hesap yükleniyor...", true);
-    await afterAuthSuccess();
-  } finally {
+    setStatus("pageStatus", "Giriş yapıldı. Hesap hazırlanıyor...", true);
+
+    setButtonLoading(loginBtn, false, "Giriş Yap");
+    queueMicrotask(async () => {
+      try {
+        await afterAuthSuccess();
+      } catch (err) {
+        console.error(err);
+        setStatus("pageStatus", "Giriş oldu ama devam işlemlerinde hata var: " + (err.message || err));
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    setStatus("loginStatus", err.message || "Giriş başarısız.");
     setButtonLoading(loginBtn, false, "Giriş Yap");
   }
 }
@@ -280,49 +264,72 @@ async function register() {
 
   setButtonLoading(registerBtn, true, "Kayıt Ol");
   try {
-    const { data, error } = await client.auth.signUp({
-      email,
-      password
-    });
+    const { data, error } = await withTimeout(
+      client.auth.signUp({ email, password }),
+      10000,
+      "Kayıt"
+    );
 
     if (error) {
       setStatus("registerStatus", error.message);
+      setButtonLoading(registerBtn, false, "Kayıt Ol");
       return;
     }
 
     const user = data?.user;
     if (!user) {
       setStatus("registerStatus", "Kullanıcı oluşturulamadı.");
+      setButtonLoading(registerBtn, false, "Kayıt Ol");
       return;
     }
 
-    const { error: profileError } = await client.from("profiles").upsert([{
-      id: user.id,
-      email,
-      full_name: fullName,
-      phone,
-      address
-    }]);
+    const { error: profileError } = await withTimeout(
+      client.from("profiles").upsert([{
+        id: user.id,
+        email,
+        full_name: fullName,
+        phone,
+        address
+      }]),
+      10000,
+      "Profil kaydı"
+    );
 
     if (profileError) {
       setStatus("registerStatus", profileError.message);
+      setButtonLoading(registerBtn, false, "Kayıt Ol");
       return;
     }
 
     setStatus("registerStatus", "Kayıt başarılı.", true);
-    setStatus("pageStatus", "Kayıt tamamlandı, hesap yükleniyor...", true);
-    await afterAuthSuccess();
-  } finally {
+    setStatus("pageStatus", "Kayıt tamamlandı. Hesap hazırlanıyor...", true);
+
+    setButtonLoading(registerBtn, false, "Kayıt Ol");
+    queueMicrotask(async () => {
+      try {
+        await afterAuthSuccess();
+      } catch (err) {
+        console.error(err);
+        setStatus("pageStatus", "Kayıt oldu ama devam işlemlerinde hata var: " + (err.message || err));
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    setStatus("registerStatus", err.message || "Kayıt başarısız.");
     setButtonLoading(registerBtn, false, "Kayıt Ol");
   }
 }
 
 async function logout() {
-  setStatus("pageStatus", "");
-  await client.auth.signOut();
-  await refreshHeaderInfo();
-  renderOrders([]);
-  setStatus("pageStatus", "Çıkış yapıldı.", true);
+  try {
+    await withTimeout(client.auth.signOut(), 8000, "Çıkış");
+    await refreshHeaderInfo();
+    renderOrders([]);
+    setStatus("pageStatus", "Çıkış yapıldı.", true);
+  } catch (err) {
+    console.error(err);
+    setStatus("pageStatus", err.message || "Çıkış başarısız.");
+  }
 }
 
 async function createOrderFromCartIfNeeded() {
@@ -363,11 +370,11 @@ async function createOrderFromCartIfNeeded() {
       total: totalAmount
     };
 
-    const { data: order, error: orderError } = await client
-      .from("orders")
-      .insert([orderPayload])
-      .select()
-      .single();
+    const { data: order, error: orderError } = await withTimeout(
+      client.from("orders").insert([orderPayload]).select().single(),
+      10000,
+      "Sipariş kaydı"
+    );
 
     if (orderError) {
       console.error("order error:", orderError);
@@ -383,7 +390,11 @@ async function createOrderFromCartIfNeeded() {
       line_total: Number(item.price || 0) * Number(item.quantity || 0)
     }));
 
-    const { error: itemsError } = await client.from("order_items").insert(itemsPayload);
+    const { error: itemsError } = await withTimeout(
+      client.from("order_items").insert(itemsPayload),
+      10000,
+      "Sipariş ürünleri kaydı"
+    );
 
     if (itemsError) {
       console.error("items error:", itemsError);
@@ -447,11 +458,14 @@ async function loadOrders() {
     return;
   }
 
-  const { data: orders, error } = await client
-    .from("orders")
-    .select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id")
-    .eq("customer_id", user.id)
-    .order("created_at", { ascending: false });
+  const { data: orders, error } = await withTimeout(
+    client.from("orders")
+      .select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id")
+      .eq("customer_id", user.id)
+      .order("created_at", { ascending: false }),
+    10000,
+    "Sipariş listeleme"
+  );
 
   if (error) {
     console.error("orders error:", error);
@@ -464,10 +478,13 @@ async function loadOrders() {
   let itemsByOrder = {};
 
   if (ids.length) {
-    const { data: items, error: itemsError } = await client
-      .from("order_items")
-      .select("order_id, product_name, quantity, unit_price, line_total")
-      .in("order_id", ids);
+    const { data: items, error: itemsError } = await withTimeout(
+      client.from("order_items")
+        .select("order_id, product_name, quantity, unit_price, line_total")
+        .in("order_id", ids),
+      10000,
+      "Sipariş ürünleri listeleme"
+    );
 
     if (!itemsError) {
       itemsByOrder = (items || []).reduce((acc, item) => {
@@ -500,13 +517,22 @@ registerBtn.addEventListener("click", register);
 logoutBtn.addEventListener("click", logout);
 
 client.auth.onAuthStateChange(async () => {
-  await refreshHeaderInfo();
-  await loadOrders();
+  try {
+    await refreshHeaderInfo();
+    await loadOrders();
+  } catch (err) {
+    console.error(err);
+  }
 });
 
 (async function init() {
-  await refreshHeaderInfo();
-  await afterAuthSuccess();
+  try {
+    await refreshHeaderInfo();
+    await loadOrders();
+  } catch (err) {
+    console.error(err);
+    setStatus("pageStatus", "Sayfa açılırken hata oldu: " + (err.message || err));
+  }
 })();
 </script>
 </body>
