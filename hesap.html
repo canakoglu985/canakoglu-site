@@ -1,69 +1,47 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hesabım - Çanakoğlu Online Market</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-      --bg:#eef3f9; --card:#ffffff; --text:#17324f; --muted:#6f8196; --primary:#f49a27;
-      --navy:#1d4678; --navy-dark:#16375e; --border:#dbe6f1; --shadow:0 12px 30px rgba(18,50,85,.10);
-      --shadow-soft:0 8px 18px rgba(18,50,85,.07); --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);
-      --success:#39a852; --danger:#c62828;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
-    header{background:linear-gradient(135deg, rgba(12,34,63,.98) 0%, rgba(20,55,94,.98) 45%, rgba(29,70,120,.98) 100%);color:#fff;padding:18px 20px;box-shadow:0 14px 34px rgba(10,28,52,.22)}
-    .header-inner,.wrap{max-width:1160px;margin:0 auto}
-    .header-inner{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
-    .brand-title{font-size:32px;font-weight:900}
-    .brand-sub{font-size:14px;opacity:.92;margin-top:6px}
-    .actions{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{border:none;border-radius:14px;padding:12px 16px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s ease}
-    .btn:hover{transform:translateY(-1px);filter:brightness(1.02)}
-    .primary{background:var(--orange-gradient);color:#fff;box-shadow:0 10px 20px rgba(244,154,39,.2)}
-    .secondary{background:#edf4fb;color:var(--navy);border:1px solid var(--border)}
-    .btn:disabled{opacity:.7;cursor:not-allowed;transform:none}
-    .wrap{padding:22px}
-    .top-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-bottom:18px}
-    .hero,.quick{background:var(--card);border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow);padding:22px}
-    .hero{background:linear-gradient(135deg, rgba(9,33,63,.96) 0%, rgba(22,55,94,.98) 52%, rgba(37,91,148,.95) 100%);color:#fff}
-    .hero h1{margin:0 0 10px;font-size:32px;line-height:1.1}
-    .hero p{margin:0;color:rgba(255,255,255,.9);line-height:1.65}
-    .hero-pills{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-    .pill-lite{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);font-size:12px;font-weight:900}
-    .quick h3{margin:0 0 10px;color:var(--navy)}
-    .quick .box{background:#fbfcfe;border:1px solid var(--border);border-radius:18px;padding:14px}
-    .layout{display:grid;grid-template-columns:430px minmax(0,1fr);gap:18px;align-items:start}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow-soft)}
-    .card h2{margin:0;color:var(--navy)}
-    .tabs{display:flex;gap:10px;margin-bottom:14px}
-    .tab{border:none;background:#fff;border:1px solid var(--border);border-radius:999px;padding:10px 14px;cursor:pointer;font-weight:800;color:var(--navy)}
-    .tab.active{background:var(--orange-gradient);color:#fff;border-color:transparent}
-    .pane{display:none}
-    .pane.active{display:block}
-    .field{display:grid;gap:6px;margin-bottom:10px}
-    label{font-size:13px;color:var(--navy);font-weight:800}
-    input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14px;font:inherit;background:#fff;outline:none}
-    textarea{min-height:92px;resize:vertical}
-    .muted{color:var(--muted);font-size:13px}
-    .status{margin-top:10px;font-size:13px;font-weight:800;min-height:18px;white-space:pre-wrap}
-    .status.error{color:var(--danger)}
-    .status.ok{color:var(--success)}
-    .profile-box{background:#fbfcfe;border:1px solid var(--border);border-radius:18px;padding:16px;display:grid;gap:8px}
-    .notice{padding:12px 14px;border-radius:14px;background:#f7f9fc;border:1px solid var(--border);font-size:13px;color:var(--navy);font-weight:700;line-height:1.6}
-    .orders{display:grid;gap:12px;margin-top:14px}
-    .order{background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:var(--shadow-soft)}
-    .order-top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
-    .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}
-    .meta-item{background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:10px}
-    .items{margin-top:12px;border:1px solid var(--border);border-radius:14px;background:#fbfcfe;padding:12px}
-    .empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:16px;background:#fbfcfe}
-    .sep{height:1px;background:var(--border);margin:16px 0}
-    .pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.2)}
-    @media (max-width:960px){.top-grid,.layout{grid-template-columns:1fr}}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hesabım</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:#eef3f9; --card:#fff; --text:#17324f; --muted:#6f8196; --primary:#f49a27;
+  --navy:#1d4678; --border:#dbe6f1; --shadow:0 12px 30px rgba(18,50,85,.10);
+  --shadow-soft:0 8px 18px rgba(18,50,85,.07); --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);
+  --success:#39a852; --danger:#c62828;
+}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg, rgba(12,34,63,.98) 0%, rgba(20,55,94,.98) 45%, rgba(29,70,120,.98) 100%);color:#fff;padding:18px 20px;box-shadow:0 14px 34px rgba(10,28,52,.22)}
+.header-inner,.wrap{max-width:1160px;margin:0 auto} .header-inner{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.brand-title{font-size:32px;font-weight:900} .brand-sub{font-size:14px;opacity:.92;margin-top:6px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:none;border-radius:14px;padding:12px 16px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.primary{background:var(--orange-gradient);color:#fff;box-shadow:0 10px 20px rgba(244,154,39,.2)} .secondary{background:#edf4fb;color:var(--navy);border:1px solid var(--border)}
+.btn:disabled{opacity:.7;cursor:not-allowed}
+.wrap{padding:22px}
+.layout{display:grid;grid-template-columns:430px minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow-soft)}
+.hero{background:linear-gradient(135deg, rgba(9,33,63,.96) 0%, rgba(22,55,94,.98) 52%, rgba(37,91,148,.95) 100%);color:#fff;border-radius:26px;padding:22px;box-shadow:var(--shadow);margin-bottom:18px}
+.hero h1{margin:0 0 10px;font-size:32px} .hero p{margin:0;color:rgba(255,255,255,.9);line-height:1.65}
+.tabs{display:flex;gap:10px;margin-bottom:14px} .tab{border:none;background:#fff;border:1px solid var(--border);border-radius:999px;padding:10px 14px;cursor:pointer;font-weight:800;color:var(--navy)} .tab.active{background:var(--orange-gradient);color:#fff;border-color:transparent}
+.pane{display:none} .pane.active{display:block}
+.field{display:grid;gap:6px;margin-bottom:10px} label{font-size:13px;color:var(--navy);font-weight:800}
+input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14px;font:inherit;background:#fff;outline:none} textarea{min-height:92px;resize:vertical}
+.status{margin-top:10px;font-size:13px;font-weight:800;min-height:18px;white-space:pre-wrap} .status.error{color:var(--danger)} .status.ok{color:var(--success)}
+.profile-box{background:#fbfcfe;border:1px solid var(--border);border-radius:18px;padding:16px;display:grid;gap:8px;margin-top:16px}
+.muted{color:var(--muted);font-size:13px}
+.orders{display:grid;gap:12px} .order{background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:var(--shadow-soft)}
+.order-top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px} .meta-item{background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:10px}
+.items{margin-top:12px;border:1px solid var(--border);border-radius:14px;background:#fbfcfe;padding:12px}
+.empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:16px;background:#fbfcfe}
+.sep{height:1px;background:var(--border);margin:16px 0}
+.pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.2)}
+.hide{display:none !important}
+@media (max-width:960px){.layout{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <header>
@@ -80,58 +58,37 @@
 </header>
 
 <div class="wrap">
-  <div class="top-grid">
-    <section class="hero">
-      <h1>Giriş yap, siparişini tamamla</h1>
-      <p>Hesabın zaten açıksa beklemeden sipariş hazırlanır. Giriş yoksa önce giriş istenir, sonra sipariş otomatik oluşturulur.</p>
-      <div class="hero-pills">
-        <span class="pill-lite">Otomatik sipariş</span>
-        <span class="pill-lite">Açık oturum algılama</span>
-        <span class="pill-lite">Sipariş geçmişi</span>
-      </div>
-    </section>
-    <section class="quick">
-      <h3>Durum</h3>
-      <div class="box">
-        <div id="pageStatus" class="status"></div>
-        <div class="notice" style="margin-top:10px;">
-          Sipariş akışı: Markette sepete ürün ekle → Sipariş Ver → Burada giriş yap veya mevcut oturumla devam et → Siparişlerim’de gör.
-        </div>
-      </div>
-    </section>
-  </div>
+  <section class="hero">
+    <h1>Giriş yap, siparişini tamamla</h1>
+    <p>Hesabın açıksa sayfa bunu hemen görür. Giriş yaptıktan sonra sepetten sipariş otomatik oluşturulur.</p>
+    <div id="pageStatus" class="status"></div>
+  </section>
 
   <div class="layout">
     <section class="card">
-      <div class="tabs">
-        <button id="tabLogin" class="tab active" type="button">Giriş Yap</button>
-        <button id="tabRegister" class="tab" type="button">Üye Ol</button>
-      </div>
-
-      <div id="paneLogin" class="pane active">
-        <div class="field">
-          <label for="loginEmail">E-posta</label>
-          <input id="loginEmail" type="email" autocomplete="email" />
+      <div id="authArea">
+        <div class="tabs">
+          <button id="tabLogin" class="tab active" type="button">Giriş Yap</button>
+          <button id="tabRegister" class="tab" type="button">Üye Ol</button>
         </div>
-        <div class="field">
-          <label for="loginPassword">Şifre</label>
-          <input id="loginPassword" type="password" autocomplete="current-password" />
+
+        <div id="paneLogin" class="pane active">
+          <div class="field"><label for="loginEmail">E-posta</label><input id="loginEmail" type="email" autocomplete="email"></div>
+          <div class="field"><label for="loginPassword">Şifre</label><input id="loginPassword" type="password" autocomplete="current-password"></div>
+          <button id="loginBtn" class="btn primary" type="button" style="width:100%">Giriş Yap</button>
+          <div id="loginStatus" class="status"></div>
         </div>
-        <button id="loginBtn" class="btn primary" type="button" style="width:100%;">Giriş Yap</button>
-        <div id="loginStatus" class="status"></div>
-      </div>
 
-      <div id="paneRegister" class="pane">
-        <div class="field"><label for="registerName">Ad Soyad</label><input id="registerName" type="text" /></div>
-        <div class="field"><label for="registerPhone">Telefon</label><input id="registerPhone" type="text" /></div>
-        <div class="field"><label for="registerAddress">Adres</label><textarea id="registerAddress"></textarea></div>
-        <div class="field"><label for="registerEmail">E-posta</label><input id="registerEmail" type="email" autocomplete="email" /></div>
-        <div class="field"><label for="registerPassword">Şifre</label><input id="registerPassword" type="password" autocomplete="new-password" /></div>
-        <button id="registerBtn" class="btn primary" type="button" style="width:100%;">Kayıt Ol</button>
-        <div id="registerStatus" class="status"></div>
+        <div id="paneRegister" class="pane">
+          <div class="field"><label for="registerName">Ad Soyad</label><input id="registerName" type="text"></div>
+          <div class="field"><label for="registerPhone">Telefon</label><input id="registerPhone" type="text"></div>
+          <div class="field"><label for="registerAddress">Adres</label><textarea id="registerAddress"></textarea></div>
+          <div class="field"><label for="registerEmail">E-posta</label><input id="registerEmail" type="email" autocomplete="email"></div>
+          <div class="field"><label for="registerPassword">Şifre</label><input id="registerPassword" type="password" autocomplete="new-password"></div>
+          <button id="registerBtn" class="btn primary" type="button" style="width:100%">Kayıt Ol</button>
+          <div id="registerStatus" class="status"></div>
+        </div>
       </div>
-
-      <div class="sep"></div>
 
       <div class="profile-box">
         <strong>Aktif Kullanıcı</strong>
@@ -140,7 +97,7 @@
     </section>
 
     <section class="card">
-      <h2>Siparişlerim</h2>
+      <h2 style="margin-top:0;color:var(--navy)">Siparişlerim</h2>
       <div id="ordersBox" class="orders"></div>
     </section>
   </div>
@@ -151,190 +108,106 @@ const client = supabase.createClient("https://jpguymicdiujhutnycvl.supabase.co",
 const CART_KEY = "canakoglu_cart_v1";
 const ORDER_PENDING_KEY = "canakoglu_pending_order_v1";
 
+const authArea = document.getElementById("authArea");
 const tabLogin = document.getElementById("tabLogin");
 const tabRegister = document.getElementById("tabRegister");
 const paneLogin = document.getElementById("paneLogin");
 const paneRegister = document.getElementById("paneRegister");
-const logoutBtn = document.getElementById("logoutBtn");
 const loginBtn = document.getElementById("loginBtn");
 const registerBtn = document.getElementById("registerBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
 let orderSubmitLock = false;
 
-function withTimeout(promise, ms, label) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(label + " zaman aşımına uğradı.")), ms))
-  ]);
-}
-
-function setTab(mode) {
-  const login = mode === "login";
-  tabLogin.classList.toggle("active", login);
-  tabRegister.classList.toggle("active", !login);
-  paneLogin.classList.toggle("active", login);
-  paneRegister.classList.toggle("active", !login);
-}
-
-function hideAuthPanels() {
-  tabLogin.classList.remove("active");
-  tabRegister.classList.remove("active");
-  paneLogin.classList.remove("active");
-  paneRegister.classList.remove("active");
-}
-
-function showLoginIfNeeded() {
-  setTab("login");
-}
-
 function setStatus(id, text, ok=false) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = text || "";
   el.className = "status " + (text ? (ok ? "ok" : "error") : "");
 }
-
-function setPageStatus(text, ok=false) {
-  setStatus("pageStatus", text, ok);
-}
-
-function setButtonLoading(btn, loading, idleText) {
-  btn.disabled = loading;
-  btn.textContent = loading ? "Bekle..." : idleText;
-}
-
-function money(v) {
-  return new Intl.NumberFormat("tr-TR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(Number(v || 0)) + " TL";
-}
-
-function escapeHtml(text) {
-  return String(text ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-}
-
-function readCart() {
-  try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
-  catch { return []; }
-}
-
+function setPageStatus(text, ok=false) { setStatus("pageStatus", text, ok); }
+function setButtonLoading(btn, loading, text) { btn.disabled = loading; btn.textContent = loading ? "Bekle..." : text; }
+function money(v) { return new Intl.NumberFormat("tr-TR", {minimumFractionDigits:2, maximumFractionDigits:2}).format(Number(v||0)) + " TL"; }
+function escapeHtml(text) { return String(text ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;"); }
+function readCart() { try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } }
 function hasOrderIntent() {
   const params = new URLSearchParams(window.location.search);
   return params.get("redirect") === "order" || sessionStorage.getItem(ORDER_PENDING_KEY) === "1";
 }
-
 function rememberOrderIntent() {
-  if (new URLSearchParams(window.location.search).get("redirect") === "order") {
-    sessionStorage.setItem(ORDER_PENDING_KEY, "1");
-  }
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("redirect") === "order") sessionStorage.setItem(ORDER_PENDING_KEY, "1");
 }
-
 function clearOrderIntent() {
   sessionStorage.removeItem(ORDER_PENDING_KEY);
   window.history.replaceState({}, "", window.location.pathname);
 }
+function showLogin() {
+  authArea.classList.remove("hide");
+  tabLogin.classList.add("active");
+  tabRegister.classList.remove("active");
+  paneLogin.classList.add("active");
+  paneRegister.classList.remove("active");
+}
+function showRegister() {
+  authArea.classList.remove("hide");
+  tabLogin.classList.remove("active");
+  tabRegister.classList.add("active");
+  paneLogin.classList.remove("active");
+  paneRegister.classList.add("active");
+}
+function hideAuth() { authArea.classList.add("hide"); }
 
-async function getCurrentUser() {
+async function getCurrentUserFast() {
   try {
     const { data: sessionData } = await client.auth.getSession();
-    const sessionUser = sessionData?.session?.user || null;
-    if (sessionUser) return sessionUser;
-  } catch (err) {
-    console.error("getSession error:", err);
-  }
-
-  try {
-    const { data, error } = await withTimeout(client.auth.getUser(), 8000, "Kullanıcı sorgusu");
-    if (error) return null;
-    return data?.user || null;
-  } catch (err) {
-    console.error("getUser error:", err);
+    return sessionData?.session?.user || null;
+  } catch {
     return null;
   }
 }
 
 async function getCurrentProfile() {
-  const user = await getCurrentUser();
+  const user = await getCurrentUserFast();
   if (!user) return null;
-
-  const { data, error } = await withTimeout(
-    client.from("profiles").select("id, email, full_name, phone, address").eq("id", user.id).maybeSingle(),
-    8000,
-    "Profil sorgusu"
-  );
-
+  const { data, error } = await client.from("profiles").select("id,email,full_name,phone,address").eq("id", user.id).maybeSingle();
   if (error) {
-    console.error("profile error:", error);
-    return {
-      id: user.id,
-      email: user.email || "",
-      full_name: "",
-      phone: "",
-      address: ""
-    };
+    return { id:user.id, email:user.email||"", full_name:"", phone:"", address:"" };
   }
-
-  return data || {
-    id: user.id,
-    email: user.email || "",
-    full_name: "",
-    phone: "",
-    address: ""
-  };
+  return data || { id:user.id, email:user.email||"", full_name:"", phone:"", address:"" };
 }
 
-async function refreshHeaderInfo() {
+async function refreshUserUI() {
   const profile = await getCurrentProfile();
-  const text = document.getElementById("activeUserText");
-
+  const userBox = document.getElementById("activeUserText");
   if (!profile) {
-    text.textContent = "Henüz giriş yapılmadı.";
-    showLoginIfNeeded();
-    return;
+    userBox.textContent = "Henüz giriş yapılmadı.";
+    showLogin();
+    return false;
   }
-
-  text.innerHTML = `
-    <strong>${escapeHtml(profile.full_name || profile.email || "Kullanıcı")}</strong><br>
-    ${escapeHtml(profile.email || "-")}<br>
-    ${escapeHtml(profile.phone || "-")}<br>
-    ${escapeHtml(profile.address || "-")}
-  `;
-  hideAuthPanels();
+  userBox.innerHTML = `<strong>${escapeHtml(profile.full_name || profile.email || "Kullanıcı")}</strong><br>${escapeHtml(profile.email || "-")}<br>${escapeHtml(profile.phone || "-")}<br>${escapeHtml(profile.address || "-")}`;
+  hideAuth();
+  return true;
 }
 
 async function login() {
   setStatus("loginStatus", "");
-  setPageStatus("");
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-
-  if (!email || !password) {
-    setStatus("loginStatus", "E-posta ve şifre gerekli.");
-    return;
-  }
-
   setButtonLoading(loginBtn, true, "Giriş Yap");
   try {
-    const { error } = await withTimeout(
-      client.auth.signInWithPassword({ email, password }),
-      10000,
-      "Giriş"
-    );
-
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    if (!email || !password) {
+      setStatus("loginStatus", "E-posta ve şifre gerekli.");
+      return;
+    }
+    const { error } = await client.auth.signInWithPassword({ email, password });
     if (error) {
       setStatus("loginStatus", error.message);
       return;
     }
-
     setStatus("loginStatus", "Giriş başarılı.", true);
-    await afterAuthSuccess();
+    await afterLoginOrExistingSession();
   } catch (err) {
-    console.error(err);
     setStatus("loginStatus", err.message || "Giriş başarısız.");
   } finally {
     setButtonLoading(loginBtn, false, "Giriş Yap");
@@ -343,59 +216,35 @@ async function login() {
 
 async function register() {
   setStatus("registerStatus", "");
-  setPageStatus("");
-
-  const fullName = document.getElementById("registerName").value.trim();
-  const phone = document.getElementById("registerPhone").value.trim();
-  const address = document.getElementById("registerAddress").value.trim();
-  const email = document.getElementById("registerEmail").value.trim();
-  const password = document.getElementById("registerPassword").value;
-
-  if (!fullName || !phone || !address || !email || !password) {
-    setStatus("registerStatus", "Tüm alanlar gerekli.");
-    return;
-  }
-
   setButtonLoading(registerBtn, true, "Kayıt Ol");
   try {
-    const { data, error } = await withTimeout(
-      client.auth.signUp({ email, password }),
-      10000,
-      "Kayıt"
-    );
-
+    const fullName = document.getElementById("registerName").value.trim();
+    const phone = document.getElementById("registerPhone").value.trim();
+    const address = document.getElementById("registerAddress").value.trim();
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value;
+    if (!fullName || !phone || !address || !email || !password) {
+      setStatus("registerStatus", "Tüm alanlar gerekli.");
+      return;
+    }
+    const { data, error } = await client.auth.signUp({ email, password });
     if (error) {
       setStatus("registerStatus", error.message);
       return;
     }
-
     const user = data?.user;
     if (!user) {
       setStatus("registerStatus", "Kullanıcı oluşturulamadı.");
       return;
     }
-
-    const { error: profileError } = await withTimeout(
-      client.from("profiles").upsert([{
-        id: user.id,
-        email,
-        full_name: fullName,
-        phone,
-        address
-      }]),
-      10000,
-      "Profil kaydı"
-    );
-
+    const { error: profileError } = await client.from("profiles").upsert([{ id:user.id, email, full_name:fullName, phone, address }]);
     if (profileError) {
       setStatus("registerStatus", profileError.message);
       return;
     }
-
     setStatus("registerStatus", "Kayıt başarılı.", true);
-    await afterAuthSuccess();
+    await afterLoginOrExistingSession();
   } catch (err) {
-    console.error(err);
     setStatus("registerStatus", err.message || "Kayıt başarısız.");
   } finally {
     setButtonLoading(registerBtn, false, "Kayıt Ol");
@@ -403,21 +252,16 @@ async function register() {
 }
 
 async function logout() {
-  try {
-    await withTimeout(client.auth.signOut({ scope: "local" }), 8000, "Çıkış");
-  } catch (err) {
-    console.error(err);
-  }
+  try { await client.auth.signOut({ scope: "local" }); } catch {}
   document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
   renderOrders([]);
-  showLoginIfNeeded();
+  showLogin();
   setPageStatus("Çıkış yapıldı.", true);
 }
 
 async function createOrderFromCartIfNeeded() {
   if (!hasOrderIntent() || orderSubmitLock) return false;
-
-  const user = await getCurrentUser();
+  const user = await getCurrentUserFast();
   if (!user) return false;
 
   const cart = readCart();
@@ -428,18 +272,17 @@ async function createOrderFromCartIfNeeded() {
   }
 
   const profile = await getCurrentProfile();
-  if (!profile || !profile.id) {
+  if (!profile) {
     setPageStatus("Profil bilgisi bulunamadı.", false);
     return false;
   }
 
   orderSubmitLock = true;
-  setPageStatus("Sipariş oluşturuluyor...", true);
-
   try {
-    const totalAmount = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+    setPageStatus("Sipariş oluşturuluyor...", true);
 
-    const orderPayload = {
+    const totalAmount = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+    const { data: order, error: orderError } = await client.from("orders").insert([{
       customer_id: user.id,
       customer_name: profile.full_name || profile.email || "Müşteri",
       phone: profile.phone || "",
@@ -449,16 +292,9 @@ async function createOrderFromCartIfNeeded() {
       status: "Yeni",
       total_amount: totalAmount,
       total: totalAmount
-    };
-
-    const { data: order, error: orderError } = await withTimeout(
-      client.from("orders").insert([orderPayload]).select().single(),
-      10000,
-      "Sipariş kaydı"
-    );
+    }]).select().single();
 
     if (orderError) {
-      console.error("order error:", orderError);
       setPageStatus("Sipariş oluşturulamadı: " + orderError.message);
       return false;
     }
@@ -471,14 +307,8 @@ async function createOrderFromCartIfNeeded() {
       line_total: Number(item.price || 0) * Number(item.quantity || 0)
     }));
 
-    const { error: itemsError } = await withTimeout(
-      client.from("order_items").insert(itemsPayload),
-      10000,
-      "Sipariş ürünleri kaydı"
-    );
-
+    const { error: itemsError } = await client.from("order_items").insert(itemsPayload);
     if (itemsError) {
-      console.error("items error:", itemsError);
       setPageStatus("Sipariş kalemleri kaydedilemedi: " + itemsError.message);
       return false;
     }
@@ -495,20 +325,14 @@ async function createOrderFromCartIfNeeded() {
 
 function renderOrders(orders, itemsByOrder={}) {
   const box = document.getElementById("ordersBox");
-
   if (!orders.length) {
     box.innerHTML = '<div class="empty">Henüz siparişin yok.</div>';
     return;
   }
-
   box.innerHTML = orders.map(order => {
     const total = order.total_amount ?? order.total ?? 0;
     const items = itemsByOrder[order.id] || [];
-    const itemsHtml = items.map(item => {
-      const line = item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0));
-      return `<li>${escapeHtml(item.product_name || "Ürün")} — ${item.quantity || 0} adet — ${money(line)}</li>`;
-    }).join("");
-
+    const itemsHtml = items.map(item => `<li>${escapeHtml(item.product_name || "Ürün")} — ${item.quantity || 0} adet — ${money(item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0)))}</li>`).join("");
     return `
       <div class="order">
         <div class="order-top">
@@ -522,147 +346,58 @@ function renderOrders(orders, itemsByOrder={}) {
           <div class="meta-item"><strong>Toplam</strong><div style="margin-top:4px;">${money(total)}</div></div>
           <div class="meta-item"><strong>Telefon</strong><div style="margin-top:4px;">${escapeHtml(order.phone || "-")}</div></div>
         </div>
-        <div class="items">
-          <strong>Ürünler</strong>
-          <ul style="margin-top:8px;">${itemsHtml || "<li>Ürün bilgisi bulunamadı.</li>"}</ul>
-        </div>
-      </div>
-    `;
+        <div class="items"><strong>Ürünler</strong><ul style="margin-top:8px;">${itemsHtml || "<li>Ürün bilgisi bulunamadı.</li>"}</ul></div>
+      </div>`;
   }).join("");
 }
 
 async function loadOrders() {
-  const user = await getCurrentUser();
-  if (!user) {
-    renderOrders([]);
-    return;
-  }
-
-  const { data: orders, error } = await withTimeout(
-    client.from("orders")
-      .select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id")
-      .eq("customer_id", user.id)
-      .order("created_at", { ascending: false }),
-    10000,
-    "Sipariş listeleme"
-  );
-
-  if (error) {
-    console.error("orders error:", error);
-    setPageStatus("Siparişler alınamadı: " + error.message);
-    renderOrders([]);
-    return;
-  }
-
+  const user = await getCurrentUserFast();
+  if (!user) { renderOrders([]); return; }
+  const { data: orders, error } = await client.from("orders").select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id").eq("customer_id", user.id).order("created_at", { ascending: false });
+  if (error) { setPageStatus("Siparişler alınamadı: " + error.message); renderOrders([]); return; }
   const ids = (orders || []).map(o => o.id).filter(Boolean);
   let itemsByOrder = {};
-
   if (ids.length) {
-    const { data: items, error: itemsError } = await withTimeout(
-      client.from("order_items")
-        .select("order_id, product_name, quantity, unit_price, line_total")
-        .in("order_id", ids),
-      10000,
-      "Sipariş ürünleri listeleme"
-    );
-
-    if (!itemsError) {
-      itemsByOrder = (items || []).reduce((acc, item) => {
-        if (!acc[item.order_id]) acc[item.order_id] = [];
-        acc[item.order_id].push(item);
-        return acc;
-      }, {});
-    }
+    const { data: items } = await client.from("order_items").select("order_id, product_name, quantity, unit_price, line_total").in("order_id", ids);
+    itemsByOrder = (items || []).reduce((acc, item) => {
+      if (!acc[item.order_id]) acc[item.order_id] = [];
+      acc[item.order_id].push(item);
+      return acc;
+    }, {});
   }
-
   renderOrders(orders || [], itemsByOrder);
 }
 
-async function afterAuthSuccess() {
-  await refreshHeaderInfo();
+async function afterLoginOrExistingSession() {
+  const loggedIn = await refreshUserUI();
+  if (!loggedIn) return;
   const created = await createOrderFromCartIfNeeded();
   await loadOrders();
-
-  const user = await getCurrentUser();
-  if (user) hideAuthPanels();
-
   if (created) {
-    setPageStatus("Sipariş oluşturuldu ve Siparişlerim bölümüne eklendi.", true);
     document.getElementById("ordersBox").scrollIntoView({ behavior: "smooth", block: "start" });
-  } else if (user) {
+  } else {
     setPageStatus("Hesabın açık.", true);
   }
 }
 
-tabLogin.addEventListener("click", () => setTab("login"));
-tabRegister.addEventListener("click", () => setTab("register"));
+tabLogin.addEventListener("click", showLogin);
+tabRegister.addEventListener("click", showRegister);
 loginBtn.addEventListener("click", login);
 registerBtn.addEventListener("click", register);
 logoutBtn.addEventListener("click", logout);
 
-client.auth.onAuthStateChange(async (_event, session) => {
-  try {
-    if (!session || !session.user) {
-      document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
-      renderOrders([]);
-      if (!hasOrderIntent()) showLoginIfNeeded();
-      return;
-    }
-    await refreshHeaderInfo();
-    if (hasOrderIntent()) {
-      await createOrderFromCartIfNeeded();
-    }
-    await loadOrders();
-  } catch (err) {
-    console.error(err);
-    setPageStatus("Oturum güncelleme hatası: " + (err.message || err));
-  }
-});
-
 (async function init() {
-  try {
-    rememberOrderIntent();
-
-    // İlk olarak session'dan hızlıca kullanıcıyı çek
-    const { data: sessionData } = await client.auth.getSession();
-    const sessionUser = sessionData?.session?.user || null;
-
-    if (sessionUser) {
-      await refreshHeaderInfo();
-      if (hasOrderIntent()) {
-        await createOrderFromCartIfNeeded();
-      }
-      await loadOrders();
-      return;
-    }
-
+  rememberOrderIntent();
+  const user = await getCurrentUserFast();
+  if (user) {
+    await afterLoginOrExistingSession();
+  } else {
     if (hasOrderIntent()) {
       setPageStatus("Sipariş verebilmek için önce giriş yapmalısın.", false);
-      showLoginIfNeeded();
-    } else {
-      showLoginIfNeeded();
-      await refreshHeaderInfo();
     }
-
-    // Kısa gecikmeyle bir kez daha kontrol et: bazı tarayıcılarda session biraz sonra hazır olur
-    setTimeout(async () => {
-      try {
-        const user = await getCurrentUser();
-        if (user) {
-          await refreshHeaderInfo();
-          if (hasOrderIntent()) {
-            await createOrderFromCartIfNeeded();
-          }
-          await loadOrders();
-        }
-      } catch (err) {
-        console.error("delayed session check error:", err);
-      }
-    }, 800);
-
-  } catch (err) {
-    console.error(err);
-    setPageStatus("Sayfa açılırken hata oldu: " + (err.message || err));
+    showLogin();
+    await refreshUserUI();
   }
 })();
 </script>
