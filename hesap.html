@@ -152,6 +152,23 @@ const client = supabase.createClient("https://jpguymicdiujhutnycvl.supabase.co",
 const CART_KEY = "canakoglu_cart_v2";
 const ORDER_PENDING_KEY = "canakoglu_pending_order_v1";
 
+function scrollToOrders() {
+  const box = document.getElementById("ordersBox");
+  if (box) box.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function syncAuthView(isLoggedIn) {
+  if (isLoggedIn) {
+    setPageStatus(hasOrderIntent() ? "Siparişin hazırlanıyor..." : "Hesabın açık.", true);
+    tabLogin.classList.remove("active");
+    tabRegister.classList.remove("active");
+    paneLogin.classList.remove("active");
+    paneRegister.classList.remove("active");
+  } else {
+    setTab("login");
+  }
+}
+
 const tabLogin = document.getElementById("tabLogin");
 const tabRegister = document.getElementById("tabRegister");
 const paneLogin = document.getElementById("paneLogin");
@@ -269,6 +286,7 @@ async function refreshHeaderInfo() {
 
   if (!profile) {
     text.textContent = "Henüz giriş yapılmadı.";
+    syncAuthView(false);
     return;
   }
 
@@ -278,6 +296,7 @@ async function refreshHeaderInfo() {
     ${escapeHtml(profile.phone || "-")}<br>
     ${escapeHtml(profile.address || "-")}
   `;
+  syncAuthView(true);
 }
 
 async function login() {
@@ -463,6 +482,8 @@ async function createOrderFromCartIfNeeded() {
     localStorage.removeItem(CART_KEY);
     clearOrderIntent();
     setPageStatus("Sipariş başarıyla oluşturuldu.", true);
+    alert("Siparişiniz oluşturuldu.");
+    scrollToOrders();
     return true;
   } finally {
     orderSubmitLock = false;
@@ -563,10 +584,12 @@ async function afterAuthSuccess() {
 
   if (created) {
     setPageStatus("Sipariş oluşturuldu ve Siparişlerim bölümüne eklendi.", true);
+    scrollToOrders();
   } else {
     const user = await getCurrentUser();
     if (user) {
-      setPageStatus(hasOrderIntent() ? "Giriş yapıldı. Sipariş hazırlanıyor..." : "Hesap hazır.", true);
+      syncAuthView(true);
+      setPageStatus("Hesap hazır.", true);
     }
   }
 }
@@ -582,6 +605,7 @@ client.auth.onAuthStateChange(async (_event, session) => {
     if (!session || !session.user) {
       document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
       renderOrders([]);
+      syncAuthView(false);
       return;
     }
     await refreshHeaderInfo();
@@ -601,11 +625,15 @@ client.auth.onAuthStateChange(async (_event, session) => {
     await refreshHeaderInfo();
     const user = await getCurrentUser();
     if (hasOrderIntent() && !user) {
-      setPageStatus("Siparişini tamamlamak için giriş yap.", false);
+      setPageStatus("Sipariş verebilmek için önce giriş yapmalısın.", false);
       setTab("login");
     }
     if (user && hasOrderIntent()) {
+      syncAuthView(true);
       await createOrderFromCartIfNeeded();
+    }
+    if (user && !hasOrderIntent()) {
+      syncAuthView(true);
     }
     await loadOrders();
   } catch (err) {
