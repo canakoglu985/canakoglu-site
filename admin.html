@@ -890,7 +890,7 @@ if(!url || !key){
             </td>
             <td>
               <div class="row">
-                <button class="btn primary" onclick="saveOrderStatus('${String(o.id)}')">Kaydet</button>
+                <button class="btn primary" onclick="saveOrderStatus('${String(o.id)}', this)">Kaydet</button>
                 <button class="btn secondary" onclick="sendOrderWhatsapp('${String(o.id)}')">WP</button>
               </div>
             </td>
@@ -903,22 +903,67 @@ if(!url || !key){
       }
     }
 
+    async function saveOrderStatus(orderId, btnEl){
+      const select = document.getElementById('order-status-' + orderId);
+      if(!select){
+        alert('Durum seçimi bulunamadı.');
+        return;
+      }
+
+      const btn = btnEl || null;
+      const originalText = btn ? btn.textContent : '';
+      if(btn){
+        btn.disabled = true;
+        btn.textContent = 'Kaydediliyor...';
+      }
+
+      try{
+        await updateOrderStatus(orderId, select.value);
+      } finally {
+        if(btn){
+          btn.disabled = false;
+          btn.textContent = originalText || 'Kaydet';
+        }
+      }
+    }
+
     async function updateOrderStatus(orderId, status){
       try{
-        const { error } = await supabaseClient.from('orders').update({ status }).eq('id', orderId);
+        const normalizedId = isNaN(Number(orderId)) ? orderId : Number(orderId);
+
+        const { data, error } = await supabaseClient
+          .from('orders')
+          .update({ status: status })
+          .eq('id', normalizedId)
+          .select('id,status')
+          .limit(1);
+
         if(error){
           console.error(error);
           alert('HATA: ' + error.message);
           setStatus('global-status', 'Sipariş durumu güncellenemedi: ' + error.message, false);
-          return;
+          return false;
         }
+
+        if(!data || !data.length){
+          alert('Sipariş güncellenmedi.');
+          setStatus('global-status', 'Sipariş güncellenmedi.', false);
+          return false;
+        }
+
+        orders = orders.map(o => String(o.id) === String(orderId) ? { ...o, status: status } : o);
+        renderOrders();
+        updateStats();
+        renderReports();
+
         setStatus('global-status', 'Sipariş durumu güncellendi.', true);
         showTopNote('Sipariş durumu güncellendi');
-        await loadOrders(false);
+        return true;
       }catch(err){
         console.error(err);
         alert('HATA: ' + err.message);
         setStatus('global-status', 'Sipariş durumu güncellenemedi: ' + err.message, false);
+        return false;
       }
     }
 
