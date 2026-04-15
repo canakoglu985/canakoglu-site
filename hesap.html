@@ -10,14 +10,14 @@
       --bg:#eef3f9; --card:#ffffff; --text:#17324f; --muted:#6f8196; --primary:#f49a27;
       --navy:#1d4678; --navy-dark:#16375e; --border:#dbe6f1; --shadow:0 12px 30px rgba(18,50,85,.10);
       --shadow-soft:0 8px 18px rgba(18,50,85,.07); --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);
-      --success:#39a852; --danger:#c62828; --soft:#f7f9fc;
+      --success:#39a852; --danger:#c62828;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,sans-serif;background:radial-gradient(circle at top left, rgba(244,154,39,.08), transparent 20%), var(--bg);color:var(--text)}
+    body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
     header{background:linear-gradient(135deg, rgba(12,34,63,.98) 0%, rgba(20,55,94,.98) 45%, rgba(29,70,120,.98) 100%);color:#fff;padding:18px 20px;box-shadow:0 14px 34px rgba(10,28,52,.22)}
     .header-inner,.wrap{max-width:1160px;margin:0 auto}
     .header-inner{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
-    .brand-title{font-size:32px;font-weight:900;letter-spacing:-.4px}
+    .brand-title{font-size:32px;font-weight:900}
     .brand-sub{font-size:14px;opacity:.92;margin-top:6px}
     .actions{display:flex;gap:10px;flex-wrap:wrap}
     .btn{border:none;border-radius:14px;padding:12px 16px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s ease}
@@ -46,7 +46,6 @@
     .field{display:grid;gap:6px;margin-bottom:10px}
     label{font-size:13px;color:var(--navy);font-weight:800}
     input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14px;font:inherit;background:#fff;outline:none}
-    input:focus,textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(29,70,120,.10)}
     textarea{min-height:92px;resize:vertical}
     .muted{color:var(--muted);font-size:13px}
     .status{margin-top:10px;font-size:13px;font-weight:800;min-height:18px;white-space:pre-wrap}
@@ -63,7 +62,7 @@
     .empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:16px;background:#fbfcfe}
     .sep{height:1px;background:var(--border);margin:16px 0}
     .pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.2)}
-    @media (max-width:960px){.top-grid,.layout{grid-template-columns:1fr} .brand-title{font-size:28px}}
+    @media (max-width:960px){.top-grid,.layout{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -84,10 +83,10 @@
   <div class="top-grid">
     <section class="hero">
       <h1>Giriş yap, siparişini tamamla</h1>
-      <p>Marketten sepete ürün ekledikten sonra buraya gelirsin. Giriş yaptıysan sipariş otomatik oluşturulur ve hemen Siparişlerim bölümüne düşer.</p>
+      <p>Hesabın zaten açıksa beklemeden sipariş hazırlanır. Giriş yoksa önce giriş istenir, sonra sipariş otomatik oluşturulur.</p>
       <div class="hero-pills">
         <span class="pill-lite">Otomatik sipariş</span>
-        <span class="pill-lite">Güvenli giriş</span>
+        <span class="pill-lite">Açık oturum algılama</span>
         <span class="pill-lite">Sipariş geçmişi</span>
       </div>
     </section>
@@ -96,7 +95,7 @@
       <div class="box">
         <div id="pageStatus" class="status"></div>
         <div class="notice" style="margin-top:10px;">
-          Sipariş akışı: Markette sepete ürün ekle → Sipariş Ver → Burada giriş yap → Siparişlerim’de gör.
+          Sipariş akışı: Markette sepete ürün ekle → Sipariş Ver → Burada giriş yap veya mevcut oturumla devam et → Siparişlerim’de gör.
         </div>
       </div>
     </section>
@@ -149,25 +148,8 @@
 
 <script>
 const client = supabase.createClient("https://jpguymicdiujhutnycvl.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I");
-const CART_KEY = "canakoglu_cart_v2";
+const CART_KEY = "canakoglu_cart_v1";
 const ORDER_PENDING_KEY = "canakoglu_pending_order_v1";
-
-function scrollToOrders() {
-  const box = document.getElementById("ordersBox");
-  if (box) box.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function syncAuthView(isLoggedIn) {
-  if (isLoggedIn) {
-    setPageStatus(hasOrderIntent() ? "Siparişin hazırlanıyor..." : "Hesabın açık.", true);
-    tabLogin.classList.remove("active");
-    tabRegister.classList.remove("active");
-    paneLogin.classList.remove("active");
-    paneRegister.classList.remove("active");
-  } else {
-    setTab("login");
-  }
-}
 
 const tabLogin = document.getElementById("tabLogin");
 const tabRegister = document.getElementById("tabRegister");
@@ -192,6 +174,17 @@ function setTab(mode) {
   tabRegister.classList.toggle("active", !login);
   paneLogin.classList.toggle("active", login);
   paneRegister.classList.toggle("active", !login);
+}
+
+function hideAuthPanels() {
+  tabLogin.classList.remove("active");
+  tabRegister.classList.remove("active");
+  paneLogin.classList.remove("active");
+  paneRegister.classList.remove("active");
+}
+
+function showLoginIfNeeded() {
+  setTab("login");
 }
 
 function setStatus(id, text, ok=false) {
@@ -236,7 +229,9 @@ function hasOrderIntent() {
 }
 
 function rememberOrderIntent() {
-  if (hasOrderIntent()) sessionStorage.setItem(ORDER_PENDING_KEY, "1");
+  if (new URLSearchParams(window.location.search).get("redirect") === "order") {
+    sessionStorage.setItem(ORDER_PENDING_KEY, "1");
+  }
 }
 
 function clearOrderIntent() {
@@ -286,7 +281,7 @@ async function refreshHeaderInfo() {
 
   if (!profile) {
     text.textContent = "Henüz giriş yapılmadı.";
-    syncAuthView(false);
+    showLoginIfNeeded();
     return;
   }
 
@@ -296,13 +291,12 @@ async function refreshHeaderInfo() {
     ${escapeHtml(profile.phone || "-")}<br>
     ${escapeHtml(profile.address || "-")}
   `;
-  syncAuthView(true);
+  hideAuthPanels();
 }
 
 async function login() {
   setStatus("loginStatus", "");
   setPageStatus("");
-
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
 
@@ -325,7 +319,6 @@ async function login() {
     }
 
     setStatus("loginStatus", "Giriş başarılı.", true);
-    setPageStatus("Giriş yapıldı. Hesap hazırlanıyor...", true);
     await afterAuthSuccess();
   } catch (err) {
     console.error(err);
@@ -387,7 +380,6 @@ async function register() {
     }
 
     setStatus("registerStatus", "Kayıt başarılı.", true);
-    setPageStatus("Kayıt tamamlandı. Hesap hazırlanıyor...", true);
     await afterAuthSuccess();
   } catch (err) {
     console.error(err);
@@ -400,14 +392,13 @@ async function register() {
 async function logout() {
   try {
     await withTimeout(client.auth.signOut({ scope: "local" }), 8000, "Çıkış");
-    document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
-    renderOrders([]);
-    setTab("login");
-    setPageStatus("Çıkış yapıldı.", true);
   } catch (err) {
     console.error(err);
-    setPageStatus(err.message || "Çıkış başarısız.");
   }
+  document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
+  renderOrders([]);
+  showLoginIfNeeded();
+  setPageStatus("Çıkış yapıldı.", true);
 }
 
 async function createOrderFromCartIfNeeded() {
@@ -481,9 +472,8 @@ async function createOrderFromCartIfNeeded() {
 
     localStorage.removeItem(CART_KEY);
     clearOrderIntent();
-    setPageStatus("Sipariş başarıyla oluşturuldu.", true);
+    setPageStatus("Siparişiniz oluşturuldu.", true);
     alert("Siparişiniz oluşturuldu.");
-    scrollToOrders();
     return true;
   } finally {
     orderSubmitLock = false;
@@ -513,14 +503,12 @@ function renderOrders(orders, itemsByOrder={}) {
           <span class="pill">${escapeHtml(order.status || "Yeni")}</span>
         </div>
         <div class="muted" style="margin-top:6px;">${new Date(order.created_at).toLocaleString("tr-TR")}</div>
-
         <div class="meta">
           <div class="meta-item"><strong>Ödeme</strong><div style="margin-top:4px;">${escapeHtml(order.payment_method || "-")}</div></div>
           <div class="meta-item"><strong>Teslimat</strong><div style="margin-top:4px;">${escapeHtml(order.delivery_slot || "-")}</div></div>
           <div class="meta-item"><strong>Toplam</strong><div style="margin-top:4px;">${money(total)}</div></div>
           <div class="meta-item"><strong>Telefon</strong><div style="margin-top:4px;">${escapeHtml(order.phone || "-")}</div></div>
         </div>
-
         <div class="items">
           <strong>Ürünler</strong>
           <ul style="margin-top:8px;">${itemsHtml || "<li>Ürün bilgisi bulunamadı.</li>"}</ul>
@@ -582,15 +570,14 @@ async function afterAuthSuccess() {
   const created = await createOrderFromCartIfNeeded();
   await loadOrders();
 
+  const user = await getCurrentUser();
+  if (user) hideAuthPanels();
+
   if (created) {
     setPageStatus("Sipariş oluşturuldu ve Siparişlerim bölümüne eklendi.", true);
-    scrollToOrders();
-  } else {
-    const user = await getCurrentUser();
-    if (user) {
-      syncAuthView(true);
-      setPageStatus("Hesap hazır.", true);
-    }
+    document.getElementById("ordersBox").scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (user) {
+    setPageStatus("Hesabın açık.", true);
   }
 }
 
@@ -605,7 +592,7 @@ client.auth.onAuthStateChange(async (_event, session) => {
     if (!session || !session.user) {
       document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
       renderOrders([]);
-      syncAuthView(false);
+      showLoginIfNeeded();
       return;
     }
     await refreshHeaderInfo();
@@ -622,20 +609,23 @@ client.auth.onAuthStateChange(async (_event, session) => {
 (async function init() {
   try {
     rememberOrderIntent();
-    await refreshHeaderInfo();
     const user = await getCurrentUser();
-    if (hasOrderIntent() && !user) {
+    if (user) {
+      await refreshHeaderInfo();
+      if (hasOrderIntent()) {
+        await createOrderFromCartIfNeeded();
+      }
+      await loadOrders();
+      return;
+    }
+
+    if (hasOrderIntent()) {
       setPageStatus("Sipariş verebilmek için önce giriş yapmalısın.", false);
-      setTab("login");
+      showLoginIfNeeded();
+    } else {
+      showLoginIfNeeded();
+      await refreshHeaderInfo();
     }
-    if (user && hasOrderIntent()) {
-      syncAuthView(true);
-      await createOrderFromCartIfNeeded();
-    }
-    if (user && !hasOrderIntent()) {
-      syncAuthView(true);
-    }
-    await loadOrders();
   } catch (err) {
     console.error(err);
     setPageStatus("Sayfa açılırken hata oldu: " + (err.message || err));
