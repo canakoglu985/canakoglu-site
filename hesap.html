@@ -321,14 +321,31 @@ async function register() {
 }
 
 async function logout() {
+  setStatus("pageStatus", "");
   try {
-    await withTimeout(client.auth.signOut(), 8000, "Çıkış");
-    await refreshHeaderInfo();
-    renderOrders([]);
-    setStatus("pageStatus", "Çıkış yapıldı.", true);
+    await withTimeout(client.auth.signOut({ scope: "local" }), 8000, "Çıkış");
+  } catch (err) {
+    console.error("logout error:", err);
+  }
+
+  try {
+    document.getElementById("loginEmail").value = "";
+    document.getElementById("loginPassword").value = "";
+  } catch (err) {}
+
+  setStatus("loginStatus", "", false);
+  setStatus("registerStatus", "", false);
+
+  document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
+  renderOrders([]);
+  setTab("login");
+  setStatus("pageStatus", "Çıkış yapıldı.", true);
+
+  try {
+    const userCheck = await client.auth.getUser();
+    console.log("logout sonrası user:", userCheck?.data?.user || null);
   } catch (err) {
     console.error(err);
-    setStatus("pageStatus", err.message || "Çıkış başarısız.");
   }
 }
 
@@ -516,10 +533,16 @@ loginBtn.addEventListener("click", login);
 registerBtn.addEventListener("click", register);
 logoutBtn.addEventListener("click", logout);
 
-client.auth.onAuthStateChange(async () => {
+client.auth.onAuthStateChange(async (_event, session) => {
   try {
-    await refreshHeaderInfo();
-    await loadOrders();
+    if (!session || !session.user) {
+      document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
+      renderOrders([]);
+      setTab("login");
+    } else {
+      await refreshHeaderInfo();
+      await loadOrders();
+    }
   } catch (err) {
     console.error(err);
   }
