@@ -590,7 +590,7 @@
     }
 
     function orderStatusLabel(status=''){
-      const s = String(status || 'yeni').toLowerCase();
+      const s = String(status || 'yeni').trim().toLowerCase();
       if(s === 'hazirlaniyor') return 'Hazırlanıyor';
       if(s === 'yolda') return 'Yolda';
       if(s === 'teslim') return 'Teslim';
@@ -599,7 +599,7 @@
     }
 
     function orderStatusClass(status=''){
-      const s = String(status || 'yeni').toLowerCase();
+      const s = String(status || 'yeni').trim().toLowerCase();
       return 'status-' + s;
     }
 
