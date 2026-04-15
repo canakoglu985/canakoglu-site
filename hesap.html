@@ -240,9 +240,22 @@ function clearOrderIntent() {
 }
 
 async function getCurrentUser() {
-  const { data, error } = await withTimeout(client.auth.getUser(), 8000, "Kullanıcı sorgusu");
-  if (error) return null;
-  return data?.user || null;
+  try {
+    const { data: sessionData } = await client.auth.getSession();
+    const sessionUser = sessionData?.session?.user || null;
+    if (sessionUser) return sessionUser;
+  } catch (err) {
+    console.error("getSession error:", err);
+  }
+
+  try {
+    const { data, error } = await withTimeout(client.auth.getUser(), 8000, "Kullanıcı sorgusu");
+    if (error) return null;
+    return data?.user || null;
+  } catch (err) {
+    console.error("getUser error:", err);
+    return null;
+  }
 }
 
 async function getCurrentProfile() {
@@ -592,7 +605,7 @@ client.auth.onAuthStateChange(async (_event, session) => {
     if (!session || !session.user) {
       document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
       renderOrders([]);
-      showLoginIfNeeded();
+      if (!hasOrderIntent()) showLoginIfNeeded();
       return;
     }
     await refreshHeaderInfo();
@@ -609,8 +622,12 @@ client.auth.onAuthStateChange(async (_event, session) => {
 (async function init() {
   try {
     rememberOrderIntent();
-    const user = await getCurrentUser();
-    if (user) {
+
+    // İlk olarak session'dan hızlıca kullanıcıyı çek
+    const { data: sessionData } = await client.auth.getSession();
+    const sessionUser = sessionData?.session?.user || null;
+
+    if (sessionUser) {
       await refreshHeaderInfo();
       if (hasOrderIntent()) {
         await createOrderFromCartIfNeeded();
@@ -626,6 +643,23 @@ client.auth.onAuthStateChange(async (_event, session) => {
       showLoginIfNeeded();
       await refreshHeaderInfo();
     }
+
+    // Kısa gecikmeyle bir kez daha kontrol et: bazı tarayıcılarda session biraz sonra hazır olur
+    setTimeout(async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          await refreshHeaderInfo();
+          if (hasOrderIntent()) {
+            await createOrderFromCartIfNeeded();
+          }
+          await loadOrders();
+        }
+      } catch (err) {
+        console.error("delayed session check error:", err);
+      }
+    }, 800);
+
   } catch (err) {
     console.error(err);
     setPageStatus("Sayfa açılırken hata oldu: " + (err.message || err));
