@@ -105,6 +105,32 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
   font-weight:900;
 }
 
+
+    .pill.status-yeni{background:#fff5e7;color:#c97507;border-color:rgba(244,154,39,.2)}
+    .pill.status-hazirlaniyor{background:#eef4ff;color:#225996;border-color:#cddcf7}
+    .pill.status-yolda{background:#f3efff;color:#6a36c7;border-color:#ddd0ff}
+    .pill.status-teslim{background:#edf9f0;color:#1e7b36;border-color:#c6e7cf}
+    .pill.status-iptal{background:#fff1f1;color:#c62828;border-color:#f0c9c9}
+
+
+    .detail-link{
+      border:none;background:#edf4fb;color:#1d4678;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer
+    }
+    .detail-modal{
+      position:fixed; inset:0; background:rgba(9,26,47,.40); display:none; align-items:center; justify-content:center; z-index:6000; padding:20px;
+    }
+    .detail-modal.open{ display:flex; }
+    .detail-card{
+      width:min(760px,100%); max-height:88vh; overflow:auto; background:#fff; border:1px solid #dbe6f1; border-radius:26px; box-shadow:0 24px 60px rgba(18,50,85,.20);
+      padding:22px;
+    }
+    .detail-grid{
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin:14px 0;
+    }
+    .detail-mini{
+      background:#f7f9fc; border:1px solid #dbe6f1; border-radius:14px; padding:12px;
+    }
+
 </style>
 </head>
 <body>
@@ -208,6 +234,17 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
         <a class="btn secondary" href="index.html">Alışverişe Dön</a>
       </div>
     </div>
+  </div>
+</div>
+
+
+<div id="orderDetailModal" class="detail-modal">
+  <div class="detail-card">
+    <div class="row" style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+      <h2 style="margin:0;color:#1d4678;">Sipariş Detayı</h2>
+      <button class="btn secondary" type="button" onclick="closeOrderDetail()">Kapat</button>
+    </div>
+    <div id="orderDetailContent" style="margin-top:14px;"></div>
   </div>
 </div>
 
@@ -488,7 +525,7 @@ function renderOrders(orders, itemsByOrder={}) {
       <div class="order">
         <div class="order-top">
           <strong>Sipariş #${order.id}</strong>
-          <span class="pill">${escapeHtml(order.status || "Yeni")}</span>
+          <span class="pill ${orderStatusClass(order.status)}">${escapeHtml(orderStatusLabel(order.status))}</span>
         </div>
         <div class="muted" style="margin-top:6px;">${new Date(order.created_at).toLocaleString("tr-TR")}</div>
         <div class="meta">
@@ -541,6 +578,10 @@ logoutBtn.addEventListener("click", logout);
 
 document.getElementById("successModal").addEventListener("click", (e) => {
   if (e.target.id === "successModal") closeSuccessModal();
+});
+
+document.getElementById("orderDetailModal").addEventListener("click", (e) => {
+  if (e.target.id === "orderDetailModal") closeOrderDetail();
 });
 
 (async function init() {
