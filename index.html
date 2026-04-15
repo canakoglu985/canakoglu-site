@@ -173,6 +173,13 @@
       font-size:15px;
     }
 
+
+    .cart-badge{
+      min-width:28px;height:28px;border-radius:999px;background:#fff;color:#c62828;
+      display:inline-flex;align-items:center;justify-content:center;font-weight:900;padding:0 8px;
+      border:1px solid rgba(29,70,120,.12)
+    }
+
 </style>
 </head>
 <body>
@@ -184,6 +191,7 @@
       </div>
       <div class="header-actions">
         <a class="btn secondary" href="hesap.html">Hesabım</a>
+        <button class="btn secondary" type="button" onclick="document.getElementById('cartItems').scrollIntoView({behavior:'smooth', block:'start'})">🛒 Sepet <span id="headerCartBadge" class="cart-badge">0</span></button>
       </div>
     </div>
   </header>
@@ -314,6 +322,22 @@ function stepAmount(unit) {
   return String(unit || "").includes("kg") ? 0.25 : 1;
 }
 
+function updateHeaderCartBadge() {
+  const badge = document.getElementById("headerCartBadge");
+  if (!badge) return;
+  const totalQty = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  if (totalQty <= 0) {
+    badge.textContent = "0";
+  } else {
+    badge.textContent = String(String(totalQty).includes(".") ? Math.round(totalQty * 100) / 100 : totalQty);
+  }
+}
+
+function maxStockFor(product) {
+  if (product.stock === null || product.stock === undefined) return Infinity;
+  return Number(product.stock || 0);
+}
+
 function categoryOptions(products) {
   const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
   const select = document.getElementById("categoryFilter");
@@ -404,9 +428,17 @@ function addToCart(productId) {
   if (!product) return;
 
   const step = stepAmount(product.unit);
-  const existing = cart.find(item => String(item.id) === String(product.id));
-  if (existing) {
-    existing.quantity = Number(existing.quantity || 0) + step;
+  const current = cart.find(item => String(item.id) === String(product.id));
+  const max = maxStockFor(product);
+  const nextQty = Number(current?.quantity || 0) + step;
+
+  if (max !== Infinity && nextQty > max) {
+    alert("Bu ürün için stok sınırına ulaştın.");
+    return;
+  }
+
+  if (current) {
+    current.quantity = nextQty;
   } else {
     cart.push({
       id: product.id,
@@ -424,10 +456,21 @@ function addToCart(productId) {
 function updateCartItem(productId, delta) {
   const item = cart.find(x => String(x.id) === String(productId));
   if (!item) return;
-  item.quantity = Number(item.quantity || 0) + Number(delta || 0);
+
+  const product = allProducts.find(p => String(p.id) === String(productId));
+  const max = product ? maxStockFor(product) : Infinity;
+  let nextQty = Number(item.quantity || 0) + Number(delta || 0);
+
   if (String(item.unit || "").includes("kg")) {
-    item.quantity = Math.round(item.quantity * 100) / 100;
+    nextQty = Math.round(nextQty * 100) / 100;
   }
+
+  if (max !== Infinity && nextQty > max) {
+    alert("Bu ürün için stok sınırına ulaştın.");
+    return;
+  }
+
+  item.quantity = nextQty;
   if (item.quantity <= 0) {
     cart = cart.filter(x => String(x.id) !== String(productId));
   }
@@ -455,6 +498,7 @@ function totals() {
 function renderCart() {
   const box = document.getElementById("cartItems");
   const t = totals();
+  updateHeaderCartBadge();
 
   document.getElementById("subtotalText").textContent = money(t.subtotal);
   document.getElementById("deliveryText").textContent = money(t.delivery);
@@ -516,6 +560,7 @@ async function goToAccountForOrder() {
     return;
   }
   writeCart();
+  alert("Siparişi tamamlamak için hesap sayfasına yönlendiriliyorsun.");
   window.location.href = "hesap.html?redirect=order";
 }
 
