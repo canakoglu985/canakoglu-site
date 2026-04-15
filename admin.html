@@ -836,7 +836,10 @@ if(!url || !key){
           const newOnes = nextOrders.filter(o => !knownOrderIds.includes(String(o.id)));
           if(newOnes.length) handleNewOrders(newOnes);
         }
-        orders = nextOrders;
+        orders = nextOrders.map(o => ({
+          ...o,
+          status: String(o.status || 'yeni').trim().toLowerCase()
+        }));
         knownOrderIds = orders.map(o => String(o.id));
         buildCustomerRows();
         renderOrders();
@@ -880,11 +883,11 @@ if(!url || !key){
               <div class="row" style="align-items:center">
                 <span class="pill ${orderStatusClass(o.status)}">${orderStatusLabel(o.status)}</span>
                 <select id="order-status-${String(o.id)}">
-                  <option value="yeni" ${o.status === 'yeni' ? 'selected' : ''}>Yeni</option>
-                  <option value="hazirlaniyor" ${o.status === 'hazirlaniyor' ? 'selected' : ''}>Hazırlanıyor</option>
-                  <option value="yolda" ${o.status === 'yolda' ? 'selected' : ''}>Yolda</option>
-                  <option value="teslim" ${o.status === 'teslim' ? 'selected' : ''}>Teslim</option>
-                  <option value="iptal" ${o.status === 'iptal' ? 'selected' : ''}>İptal</option>
+                  <option value="yeni" ${String(o.status || '').trim().toLowerCase() === 'yeni' ? 'selected' : ''}>Yeni</option>
+                  <option value="hazirlaniyor" ${String(o.status || '').trim().toLowerCase() === 'hazirlaniyor' ? 'selected' : ''}>Hazırlanıyor</option>
+                  <option value="yolda" ${String(o.status || '').trim().toLowerCase() === 'yolda' ? 'selected' : ''}>Yolda</option>
+                  <option value="teslim" ${String(o.status || '').trim().toLowerCase() === 'teslim' ? 'selected' : ''}>Teslim</option>
+                  <option value="iptal" ${String(o.status || '').trim().toLowerCase() === 'iptal' ? 'selected' : ''}>İptal</option>
                 </select>
               </div>
             </td>
@@ -930,12 +933,13 @@ if(!url || !key){
     async function updateOrderStatus(orderId, status){
       try{
         const normalizedId = isNaN(Number(orderId)) ? orderId : Number(orderId);
+        const normalizedStatus = String(status || 'yeni').trim().toLowerCase();
 
         const { data, error } = await supabaseClient
           .from('orders')
-          .update({ status: status })
+          .update({ status: normalizedStatus })
           .eq('id', normalizedId)
-          .select('id,status')
+          .select('id,status,customer_name')
           .limit(1);
 
         if(error){
@@ -951,13 +955,9 @@ if(!url || !key){
           return false;
         }
 
-        orders = orders.map(o => String(o.id) === String(orderId) ? { ...o, status: status } : o);
-        renderOrders();
-        updateStats();
-        renderReports();
-
+        await loadOrders(false);
         setStatus('global-status', 'Sipariş durumu güncellendi.', true);
-        showTopNote('Sipariş durumu güncellendi');
+        showTopNote('Durum: ' + orderStatusLabel(normalizedStatus));
         return true;
       }catch(err){
         console.error(err);
