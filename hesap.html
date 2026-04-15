@@ -131,6 +131,27 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
       background:#f7f9fc; border:1px solid #dbe6f1; border-radius:14px; padding:12px;
     }
 
+
+    .reorder-btn{
+      border:none;background:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);color:#fff;
+      border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer
+    }
+    @media (max-width: 640px){
+      header{padding:12px 14px}
+      .wrap{padding:12px}
+      .brand-title{font-size:24px}
+      .hero{padding:16px;border-radius:20px}
+      .hero h1{font-size:26px}
+      .card{padding:14px;border-radius:18px}
+      .order{padding:12px;border-radius:16px}
+      .meta{grid-template-columns:1fr 1fr}
+      .detail-card{padding:16px;border-radius:20px}
+      .success-card{border-radius:20px}
+      .success-top{padding:18px 16px 14px}
+      .success-body{padding:16px}
+      .success-actions .btn{width:100%}
+    }
+
 </style>
 </head>
 <body>
@@ -512,6 +533,8 @@ async function createOrderFromCartIfNeeded() {
 }
 
 function renderOrders(orders, itemsByOrder={}) {
+  window.__lastRenderedOrders = orders || [];
+  window.__lastItemsByOrder = itemsByOrder || {};
   const box = document.getElementById("ordersBox");
   if (!orders.length) {
     box.innerHTML = '<div class="empty">Henüz siparişin yok.</div>';
