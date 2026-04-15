@@ -318,6 +318,10 @@
       <div class="stat"><div class="label">Toplam Sipariş</div><div id="stat-orders" class="value">0</div></div>
       <div class="stat"><div class="label">Yeni Sipariş</div><div id="stat-new-orders" class="value">0</div></div>
       <div class="stat"><div class="label">Kritik Stok</div><div id="stat-critical" class="value">0</div></div>
+      <div class="stat"><div class="label">Bugün Sipariş</div><div id="stat-today-orders" class="value">0</div></div>
+      <div class="stat"><div class="label">Bugün Ciro</div><div id="stat-today-revenue" class="value">0 TL</div></div>
+      <div class="stat"><div class="label">Teslim Edilen</div><div id="stat-delivered" class="value">0</div></div>
+      <div class="stat"><div class="label">Ortalama Sepet</div><div id="stat-avg-basket" class="value">0 TL</div></div>
     </div>
 
     <div class="tabs">
@@ -1124,6 +1128,17 @@ if(!url || !key){
       document.getElementById('stat-products').textContent = String(products.length);
       document.getElementById('stat-orders').textContent = String(orders.length);
       document.getElementById('stat-new-orders').textContent = String(orders.filter(o => String(o.status || 'yeni').toLowerCase() === 'yeni').length);
+
+      const today = new Date().toISOString().slice(0,10);
+      const todayOrders = orders.filter(o => String(o.created_at || '').slice(0,10) === today);
+      const todayRevenue = todayOrders.reduce((sum,o) => sum + Number(o.total_amount ?? o.total ?? 0), 0);
+      const deliveredCount = orders.filter(o => String(o.status || '').trim().toLowerCase() === 'teslim').length;
+      const avgBasket = orders.length ? orders.reduce((sum,o) => sum + Number(o.total_amount ?? o.total ?? 0), 0) / orders.length : 0;
+
+      document.getElementById('stat-today-orders').textContent = String(todayOrders.length);
+      document.getElementById('stat-today-revenue').textContent = money(todayRevenue);
+      document.getElementById('stat-delivered').textContent = String(deliveredCount);
+      document.getElementById('stat-avg-basket').textContent = money(avgBasket);
     }
 
     function normalizeBool(v){
