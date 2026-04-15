@@ -4,25 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Çanakoğlu Admin Panel</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-
-    loadConfigLocal();
-    const autoLogged = tryAutoLogin();
-    if(localStorage.getItem('canakoglu_admin_url') && localStorage.getItem('canakoglu_admin_key') && autoLogged){
-      setTimeout(() => connectSupabase(), 250);
-    }
-
-
-
-document.addEventListener('DOMContentLoaded', function(){
-  const savedUser = localStorage.getItem('canakoglu_admin_login_user') || 'admin';
-  const u = document.getElementById('login-username');
-  const chk = document.getElementById('remember-admin');
-  if(u) u.value = savedUser;
-  if(chk) chk.checked = localStorage.getItem('canakoglu_admin_login_ok') === '1';
-});
-
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     :root{
@@ -245,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <input id="login-username" placeholder="Kullanıcı adı">
       <input id="login-password" type="password" placeholder="Şifre">
       <label class="remember"><input id="remember-login" type="checkbox"> Beni hatırla</label>
-      <label style="display:flex;align-items:center;gap:8px;margin:8px 0 14px;color:#5d6f86;font-weight:700"><input id="remember-admin" type="checkbox" style="width:18px;height:18px"> Beni hatırla</label><button onclick="loginAdmin()">Giriş Yap</button>
+      <button onclick="loginAdmin()">Giriş Yap</button>
       <div id="login-error" class="login-error">Hatalı giriş</div>
     </div>
   </div>
@@ -270,6 +252,8 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
     </div>
   </header>
+
+  <div id="top-note" class="top-note"></div>
 
   <div class="wrap">
     <div class="panel">
@@ -563,14 +547,6 @@ document.addEventListener('DOMContentLoaded', function(){
       return true;
     }
 
-    function logoutAdmin(){
-      localStorage.removeItem('canakoglu_admin_login_ok');
-      localStorage.removeItem('canakoglu_admin_login_user');
-      stopAutoRefresh();
-      location.reload();
-    }
-
-
     let autoRefreshTimer = null;
     let products = [];
     let orders = [];
@@ -675,6 +651,7 @@ if(!url || !key){
         setStatus('global-status', 'Supabase bağlantısı başarılı.', true);
         setStatus('live-status-box', 'Sistem bağlı. Veriler yüklenebilir.', true);
         await loadAllData();
+        subscribeRealtime();
         startAutoRefresh();
       }catch(err){
         setStatus('global-status', 'Bağlantı hatası: ' + err.message, false);
@@ -875,7 +852,7 @@ if(!url || !key){
             <td>${escapeHtml(o.customer_name || '')}<div class="tiny">${itemsHtml || ''}</div></td>
             <td>${escapeHtml(o.phone || '')}</td>
             <td>${escapeHtml(o.address || '')}</td>
-            <td>${money(o.total_amount)}</td>
+            <td>${money(o.total_amount ?? o.total ?? 0)}</td>
             <td>${escapeHtml(o.payment_method || '')}</td>
             <td>
               <select onchange="updateOrderStatus('${String(o.id)}', this.value)">
@@ -934,7 +911,7 @@ if(!url || !key){
         'Ürünler:',
         items,
         '',
-        `Toplam: ${money(o.total_amount)}`
+        `Toplam: ${money(o.total_amount ?? o.total ?? 0)}`
       ].join('\n');
 
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
@@ -1041,7 +1018,7 @@ if(!url || !key){
     function updateStats(){
       document.getElementById('stat-products').textContent = String(products.length);
       document.getElementById('stat-orders').textContent = String(orders.length);
-      document.getElementById('stat-new-orders').textContent = String(orders.filter(o => String(o.status || '').toLowerCase() === 'yeni').length);
+      document.getElementById('stat-new-orders').textContent = String(orders.filter(o => String(o.status || 'yeni').toLowerCase() === 'yeni').length);
     }
 
     function normalizeBool(v){
@@ -1125,14 +1102,21 @@ if(!url || !key){
       const u = document.getElementById('login-username').value.trim();
       const p = document.getElementById('login-password').value.trim();
       const remember = document.getElementById('remember-login').checked;
+
       if(u === 'admin' && p === '1234'){
         localStorage.setItem('canakoglu_admin_login', 'true');
         localStorage.setItem('canakoglu_admin_remember', remember ? 'true' : 'false');
+        localStorage.setItem('canakoglu_admin_login_user', u || 'admin');
         document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('login-error').style.display = 'none';
+
         const savedUrl = localStorage.getItem('canakoglu_admin_url');
         const savedKey = localStorage.getItem('canakoglu_admin_key');
-        if(savedUrl && savedKey){ setTimeout(() => connectSupabase(), 200); }
-        document.getElementById('login-error').style.display = 'none';
+        if(savedUrl && savedKey){
+          setTimeout(() => connectSupabase(), 150);
+        } else {
+          setStatus('global-status', 'Giriş başarılı. Supabase URL ve anon key girip Bağlan butonuna bas.', true);
+        }
       }else{
         document.getElementById('login-error').style.display = 'block';
       }
@@ -1204,7 +1188,14 @@ if(!url || !key){
     function logoutAdmin(){
       localStorage.removeItem('canakoglu_admin_login');
       localStorage.removeItem('canakoglu_admin_remember');
+      stopAutoRefresh();
+      if(window.__orderPollTimer) clearInterval(window.__orderPollTimer);
+      if(window.__ordersChannel){
+        try{ supabaseClient.removeChannel(window.__ordersChannel); }catch(e){}
+        window.__ordersChannel = null;
+      }
       document.getElementById('login-screen').style.display = 'flex';
+      setStatus('global-status', 'Çıkış yapıldı.', true);
     }
 
     function buildCustomerRows(){
@@ -1330,7 +1321,9 @@ if(!url || !key){
       const remembered = localStorage.getItem('canakoglu_admin_remember') === 'true';
       const loggedIn = localStorage.getItem('canakoglu_admin_login') === 'true';
       const checkbox = document.getElementById('remember-login');
+      const username = document.getElementById('login-username');
       if(checkbox) checkbox.checked = remembered;
+      if(username) username.value = localStorage.getItem('canakoglu_admin_login_user') || 'admin';
       if(remembered && loggedIn){
         document.getElementById('login-screen').style.display = 'none';
       }
@@ -1344,7 +1337,26 @@ if(!url || !key){
       document.getElementById('supabase-url').value = savedUrlAuto;
       document.getElementById('supabase-key').value = savedKeyAuto;
     }
-    hydrateRememberedLogin();
+    function subscribeRealtime(){
+      if(!supabaseClient) return;
+      if(window.__ordersChannel){
+        try{ supabaseClient.removeChannel(window.__ordersChannel); }catch(e){}
+      }
+      window.__ordersChannel = supabaseClient
+        .channel('admin-orders-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+          await loadOrders(true);
+          updateStats();
+          renderReports();
+          renderCustomers();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, async () => {
+          await loadOrders(false);
+        })
+        .subscribe();
+    }
+
+hydrateRememberedLogin();
     setReportRange(7);
   </script>
   <div id="floating-alert" class="floating-alert"></div>
