@@ -96,6 +96,15 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
   .success-grid{ grid-template-columns:1fr; }
 }
 
+
+.success-mini.status-badge{
+  background:#fff5e7;
+}
+.success-mini.status-badge div{
+  color:#c97507;
+  font-weight:900;
+}
+
 </style>
 </head>
 <body>
@@ -176,6 +185,18 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
           <strong>Toplam</strong>
           <div id="successOrderTotal">-</div>
         </div>
+        <div class="success-mini">
+          <strong>Teslimat</strong>
+          <div id="successOrderDelivery">-</div>
+        </div>
+        <div class="success-mini">
+          <strong>Ödeme</strong>
+          <div id="successOrderPayment">-</div>
+        </div>
+        <div class="success-mini status-badge">
+          <strong>Durum</strong>
+          <div id="successOrderStatus">Yeni</div>
+        </div>
       </div>
       <div class="success-list">
         <strong style="display:block;color:#1d4678;margin-bottom:8px;">Ürünler</strong>
@@ -183,6 +204,7 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
       </div>
       <div class="success-actions">
         <button class="btn primary" type="button" onclick="closeSuccessModal()">Siparişlerime Git</button>
+        <button class="btn secondary" type="button" onclick="sendOrderToWhatsApp()">WhatsApp'a Gönder</button>
         <a class="btn secondary" href="index.html">Alışverişe Dön</a>
       </div>
     </div>
@@ -204,11 +226,16 @@ const registerBtn = document.getElementById("registerBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
 let orderSubmitLock = false;
+let lastSuccessOrder = null;
 
 function openSuccessModal(order, itemsPayload, totalAmount) {
+  lastSuccessOrder = { order, itemsPayload, totalAmount };
   const modal = document.getElementById("successModal");
   document.getElementById("successOrderNo").textContent = order?.id || "-";
   document.getElementById("successOrderTotal").textContent = money(totalAmount || 0);
+  document.getElementById("successOrderDelivery").textContent = order?.delivery_slot || "-";
+  document.getElementById("successOrderPayment").textContent = order?.payment_method || "-";
+  document.getElementById("successOrderStatus").textContent = order?.status || "Yeni";
   document.getElementById("successOrderItems").innerHTML = (itemsPayload || []).map(item =>
     `<div style="margin-bottom:6px;">${escapeHtml(item.product_name)} — ${item.quantity} adet</div>`
   ).join("") || "-";
@@ -220,6 +247,27 @@ function closeSuccessModal() {
   modal.classList.remove("open");
   const ordersBox = document.getElementById("ordersBox");
   if (ordersBox) ordersBox.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function sendOrderToWhatsApp() {
+  if (!lastSuccessOrder?.order) return;
+  const profile = await getCurrentProfile();
+  const phone = "905382998400";
+  const lines = [];
+  lines.push("Merhaba, siparişim oluşturuldu.");
+  lines.push("Sipariş No: " + (lastSuccessOrder.order.id || "-"));
+  lines.push("Müşteri: " + (profile?.full_name || profile?.email || "-"));
+  lines.push("Telefon: " + (profile?.phone || "-"));
+  lines.push("Adres: " + (profile?.address || "-"));
+  lines.push("Teslimat: " + (lastSuccessOrder.order.delivery_slot || "-"));
+  lines.push("Ödeme: " + (lastSuccessOrder.order.payment_method || "-"));
+  lines.push("Toplam: " + money(lastSuccessOrder.totalAmount || 0));
+  lines.push("");
+  (lastSuccessOrder.itemsPayload || []).forEach(item => {
+    lines.push(item.product_name + " — " + item.quantity + " adet");
+  });
+  const text = encodeURIComponent(lines.join("\n"));
+  window.open("https://wa.me/" + phone + "?text=" + text, "_blank");
 }
 
 function setStatus(id, text, ok=false) {
