@@ -239,7 +239,7 @@
             <option value="Kapıda Kart">Kapıda Kart</option>
           </select>
 
-          <button id="placeOrderBtn" class="btn primary" type="button">Sipariş Ver</button>
+          <button id="placeOrderBtn" class="btn primary" type="button" style="width:100%;padding:14px 16px;font-size:16px;border-radius:16px;">Sipariş Ver</button>
           <button id="clearCartBtn" class="btn secondary" type="button">Sepeti Temizle</button>
         </div>
       </aside>
@@ -293,6 +293,25 @@ function readCart() {
 
 function writeCart() {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
+}
+
+function cartItemFor(productId) {
+  return cart.find(i => String(i.id) === String(productId)) || null;
+}
+
+function qtyText(item) {
+  return String(item.unit || "adet").includes("kg")
+    ? (Number(item.quantity || 0).toFixed(2) + " kg")
+    : (Number(item.quantity || 0) + " adet");
+}
+
+function cartQtyFor(productId) {
+  const item = cartItemFor(productId);
+  return item ? qtyText(item) : "";
+}
+
+function stepAmount(unit) {
+  return String(unit || "").includes("kg") ? 0.25 : 1;
 }
 
 function categoryOptions(products) {
@@ -357,9 +376,24 @@ function renderProducts() {
         <div class="price">${money(product.price)}</div>
         <div class="muted">${escapeHtml(product.unit)}</div>
         <div class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</div>
-        <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${String(product.id).replaceAll("'", "\\'")}')">
-          ${disabled ? "Tükendi" : "Sepete Ekle"}
-        </button>
+        <div class="card-actions">
+          ${disabled
+            ? `<button class="btn primary add-first-btn" type="button" disabled>Tükendi</button>`
+            : (cartItemFor(product.id)
+              ? `
+              <div class="market-stepper">
+                <button class="stepper-minus" type="button" onclick="updateCartItem('${String(product.id).replaceAll("'", "\\'")}', -stepAmount('${String(product.unit).replaceAll("'", "\\'")}'))">−</button>
+                <div class="stepper-value">
+                  ${cartQtyFor(product.id)}
+                  <span class="stepper-sub">Sepette</span>
+                </div>
+                <button class="stepper-plus" type="button" onclick="updateCartItem('${String(product.id).replaceAll("'", "\\'")}', stepAmount('${String(product.unit).replaceAll("'", "\\'")}'))">+</button>
+              </div>
+              `
+              : `<button class="btn primary add-first-btn" type="button" onclick="addToCart('${String(product.id).replaceAll("'", "\\'")}')">Sepete Ekle</button>`
+            )
+          }
+        </div>
       </div>
     `;
   }).join("");
@@ -369,31 +403,37 @@ function addToCart(productId) {
   const product = allProducts.find(p => String(p.id) === String(productId));
   if (!product) return;
 
+  const step = stepAmount(product.unit);
   const existing = cart.find(item => String(item.id) === String(product.id));
   if (existing) {
-    existing.quantity += 1;
+    existing.quantity = Number(existing.quantity || 0) + step;
   } else {
     cart.push({
       id: product.id,
       name: product.name,
       price: product.price,
       unit: product.unit,
-      quantity: 1
+      quantity: step
     });
   }
   writeCart();
   renderCart();
+  renderProducts();
 }
 
 function updateCartItem(productId, delta) {
   const item = cart.find(x => String(x.id) === String(productId));
   if (!item) return;
-  item.quantity += delta;
+  item.quantity = Number(item.quantity || 0) + Number(delta || 0);
+  if (String(item.unit || "").includes("kg")) {
+    item.quantity = Math.round(item.quantity * 100) / 100;
+  }
   if (item.quantity <= 0) {
     cart = cart.filter(x => String(x.id) !== String(productId));
   }
   writeCart();
   renderCart();
+  renderProducts();
 }
 
 function clearCart() {
@@ -435,9 +475,9 @@ function renderCart() {
         </div>
         <div class="muted">${escapeHtml(item.unit || "adet")} • ${money(item.price)}</div>
         <div class="qty">
-          <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', -1)">−</button>
-          <strong>${item.quantity}</strong>
-          <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', 1)">+</button>
+          <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', -stepAmount('${String(item.unit).replaceAll("'", "\\'")}'))">−</button>
+          <strong>${qtyText(item)}</strong>
+          <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', stepAmount('${String(item.unit).replaceAll("'", "\\'")}'))">+</button>
         </div>
       </div>
     `;
