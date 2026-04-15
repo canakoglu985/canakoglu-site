@@ -4950,160 +4950,259 @@ document.addEventListener('DOMContentLoaded', async function(){
 </script>
 
 
-
-<div id="final-user-orders-modal" class="order-summary-modal">
+<div id="my-orders-modal" class="order-summary-modal">
   <div class="order-summary-card">
     <div class="row">
       <h2 style="margin:0">Siparişlerim</h2>
-      <button class="btn secondary" type="button" onclick="closeFinalUserOrdersModal()">Kapat</button>
+      <button class="btn secondary" type="button" onclick="closeMyOrdersModal()">Kapat</button>
     </div>
-    <div id="final-user-orders-list" style="margin-top:14px"></div>
+    <div id="my-orders-list" style="margin-top:14px"></div>
   </div>
 </div>
 
 <script>
 (function(){
-  if(window.__singleOrdersLogoutFix) return;
-  window.__singleOrdersLogoutFix = true;
+  if(window.__customerOrdersFixApplied) return;
+  window.__customerOrdersFixApplied = true;
 
-  function formatMoney(value){
-    return new Intl.NumberFormat('tr-TR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(Number(value || 0)) + ' TL';
+  function safeMoney(v){
+    return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v || 0)) + ' TL';
   }
 
-  async function getAuthUser(){
+  async function getSafeUser(){
     try{
-      if(!window.client?.auth?.getUser) return null;
-      const { data, error } = await window.client.auth.getUser();
-      if(error){
-        console.error('getAuthUser error:', error);
-        return null;
-      }
+      const { data } = await client.auth.getUser();
       return data?.user || null;
     }catch(err){
-      console.error('getAuthUser catch:', err);
+      console.error(err);
       return null;
     }
   }
 
-  async function getActiveIdentity(){
-    const authUser = await getAuthUser();
-    if(authUser){
-      return { id: authUser.id, email: authUser.email || null, source: 'auth' };
-    }
-
-    if(window.currentCustomerProfile?.id){
-      return {
-        id: window.currentCustomerProfile.id,
-        email: window.currentCustomerProfile.email || null,
-        source: 'profile'
-      };
-    }
-
-    try{
-      if(typeof window.loadCurrentCustomerProfile === 'function'){
-        const profile = await window.loadCurrentCustomerProfile();
-        if(profile?.id){
-          return {
-            id: profile.id,
-            email: profile.email || null,
-            source: 'profile'
-          };
-        }
-      }
-    }catch(err){
-      console.error('loadCurrentCustomerProfile error:', err);
-    }
-
-    return null;
-  }
-
-  async function refreshCustomerUIAfterAuth(){
-    try{
-      if(typeof window.loadCurrentCustomerProfile === 'function'){
-        await window.loadCurrentCustomerProfile();
-      }
-    }catch(err){
-      console.error(err);
-    }
-
-    try{
-      if(typeof window.refreshCustomerProfileSummary === 'function'){
-        await window.refreshCustomerProfileSummary();
-      }
-    }catch(err){
-      console.error(err);
-    }
-
-    try{
-      const identity = await getActiveIdentity();
-      const label = document.getElementById('account-auth-action-label');
-      if(label){
-        label.textContent = identity ? 'Bilgilerim / Giriş Durumu' : 'Giriş Yap / Üye Ol';
-      }
-    }catch(err){
-      console.error(err);
-    }
-  }
-
-  window.closeFinalUserOrdersModal = function(){
-    const modal = document.getElementById('final-user-orders-modal');
+  window.closeMyOrdersModal = function(){
+    const modal = document.getElementById('my-orders-modal');
     if(modal) modal.classList.remove('open');
   };
 
-  async function loadOrdersForActiveIdentity(){
-    const list = document.getElementById('final-user-orders-list');
-    if(!list) return;
+  async function loadMyOrdersForCurrentUser(){
+    const box = document.getElementById('my-orders-list');
+    if(!box) return;
 
-    list.innerHTML = '<div class="empty">Siparişler yükleniyor...</div>';
+    box.innerHTML = '<div class="empty">Siparişler yükleniyor...</div>';
 
-    const identity = await getActiveIdentity();
-    if(!identity){
-      list.innerHTML = '<div class="admin-empty">Siparişlerini görmek için önce giriş yap.</div>';
-      return false;
+    const user = await getSafeUser();
+    if(!user){
+      box.innerHTML = '<div class="admin-empty">Siparişlerini görmek için önce normal kullanıcı girişi yap.</div>';
+      return;
     }
 
-    let orders = [];
-    let firstError = null;
-
-    const byUser = await window.client
+    const { data: orders, error } = await client
       .from('orders')
-      .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, user_id, customer_id')
-      .eq('user_id', identity.id)
-      .order('created_at', { ascending: false });
+      .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id')
+      .eq('customer_id', user.id)
+      .order('created_at', { ascending:false });
 
-    if(byUser.error){
-      console.error('orders by user_id error:', byUser.error);
-      firstError = byUser.error;
-    }else{
-      orders = byUser.data || [];
+    if(error){
+      console.error(error);
+      box.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + error.message + '</div>';
+      return;
     }
 
-    if(!orders.length){
-      const byCustomer = await window.client
-        .from('orders')
-        .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, user_id, customer_id')
-        .eq('customer_id', identity.id)
-        .order('created_at', { ascending: false });
+    if(!orders || !orders.length){
+      box.innerHTML = '<div class="admin-empty">Bu kullanıcıya ait sipariş bulunamadı.</div>';
+      return;
+    }
 
-      if(byCustomer.error){
-        console.error('orders by customer_id error:', byCustomer.error);
-        if(!firstError) firstError = byCustomer.error;
+    const orderIds = orders.map(o => o.id);
+    const { data: items, error: itemsError } = await client
+      .from('order_items')
+      .select('order_id, product_name, quantity, unit_price, line_total')
+      .in('order_id', orderIds);
+
+    if(itemsError){
+      console.error(itemsError);
+    }
+
+    const itemsMap = {};
+    (items || []).forEach(item => {
+      if(!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+      itemsMap[item.order_id].push(item);
+    });
+
+    box.innerHTML = orders.map(order => {
+      const total = order.total_amount ?? order.total ?? 0;
+      const rows = (itemsMap[order.id] || []).map(item => {
+        const line = item.line_total ?? ((Number(item.unit_price || 0)) * Number(item.quantity || 0));
+        return '<li>' + (item.product_name || 'Ürün') + ' — ' + (item.quantity || 0) + ' adet — ' + safeMoney(line) + '</li>';
+      }).join('');
+
+      return `
+        <div class="admin-card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+            <strong>Sipariş #${order.id}</strong>
+            <span class="pill">${(order.status || 'Yeni')}</span>
+          </div>
+          <div class="muted" style="margin-top:6px">${new Date(order.created_at).toLocaleString('tr-TR')}</div>
+
+          <div class="admin-meta" style="margin-top:12px">
+            <div class="mini"><strong>Ödeme</strong><div style="margin-top:4px">${order.payment_method || '-'}</div></div>
+            <div class="mini"><strong>Teslimat</strong><div style="margin-top:4px">${order.delivery_slot || '-'}</div></div>
+            <div class="mini"><strong>Toplam</strong><div style="margin-top:4px">${safeMoney(total)}</div></div>
+            <div class="mini"><strong>Telefon</strong><div style="margin-top:4px">${order.phone || '-'}</div></div>
+          </div>
+
+          <div class="admin-items">
+            <strong>Ürünler</strong>
+            <ul style="margin-top:8px">${rows || '<li>Ürün bilgisi bulunamadı.</li>'}</ul>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.openMyOrdersModal = async function(){
+    const user = await getSafeUser();
+    if(!user){
+      openCustomerRegisterModal();
+      return;
+    }
+    const modal = document.getElementById('my-orders-modal');
+    if(modal) modal.classList.add('open');
+    await loadMyOrdersForCurrentUser();
+  };
+
+  window.accountMenuAction = async function(sectionId){
+    closeAccountDropdown();
+
+    if(sectionId === 'giris'){
+      openCustomerRegisterModal();
+      return;
+    }
+
+    if(sectionId === 'siparis-takip'){
+      await openMyOrdersModal();
+      return;
+    }
+
+    if(sectionId === 'adresler' || sectionId === 'ayarlar'){
+      openCustomerRegisterModal();
+      return;
+    }
+
+    if(sectionId === 'favoriler'){
+      alert('Favori Ürünlerim bölümü sonraki adımda aktif edilebilir.');
+      return;
+    }
+
+    if(sectionId === 'cikis'){
+      await signOutCustomer();
+      return;
+    }
+  };
+
+  const originalSignOut = window.signOutCustomer;
+  window.signOutCustomer = async function(){
+    try{
+      if(typeof originalSignOut === 'function'){
+        await originalSignOut();
       }else{
-        orders = byCustomer.data || [];
+        await client.auth.signOut();
+        currentCustomerProfile = null;
+        refreshCustomerProfileSummary();
       }
+    }catch(err){
+      console.error(err);
+      alert('Çıkış yapılırken hata oluştu.');
+      return;
     }
 
-    if(firstError && !orders.length){
-      list.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + firstError.message + '</div>';
-      return true;
+    try{
+      const modal = document.getElementById('my-orders-modal');
+      if(modal) modal.classList.remove('open');
+    }catch(err){}
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const modal = document.getElementById('my-orders-modal');
+    if(modal){
+      modal.addEventListener('click', function(e){
+        if(e.target === modal) closeMyOrdersModal();
+      });
+    }
+  });
+})();
+</script>
+
+
+<div id="my-orders-modal-final" class="order-summary-modal">
+  <div class="order-summary-card">
+    <div class="row">
+      <h2 style="margin:0">Siparişlerim</h2>
+      <button type="button" class="btn secondary" onclick="closeMyOrdersFinal()">Kapat</button>
+    </div>
+    <div id="my-orders-final-list" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  if(window.__ordersFinalOnlyUserFix) return;
+  window.__ordersFinalOnlyUserFix = true;
+
+  function tl(v){
+    return new Intl.NumberFormat('tr-TR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Number(v || 0)) + ' TL';
+  }
+
+  async function getLoggedUser(){
+    try{
+      if(!window.client?.auth?.getUser) return null;
+      const { data, error } = await window.client.auth.getUser();
+      if(error){
+        console.error('auth getUser error:', error);
+        return null;
+      }
+      return data?.user || null;
+    }catch(err){
+      console.error(err);
+      return null;
+    }
+  }
+
+  window.closeMyOrdersFinal = function(){
+    const modal = document.getElementById('my-orders-modal-final');
+    if(modal) modal.classList.remove('open');
+  };
+
+  async function loadOrdersForLoggedUserOnly(){
+    const box = document.getElementById('my-orders-final-list');
+    if(!box) return;
+
+    box.innerHTML = '<div class="empty">Siparişler yükleniyor...</div>';
+
+    const user = await getLoggedUser();
+    if(!user){
+      box.innerHTML = '<div class="admin-empty">Siparişlerini görmek için önce giriş yap.</div>';
+      return;
     }
 
-    if(!orders.length){
-      list.innerHTML = '<div class="admin-empty">Bu hesaba ait sipariş bulunamadı.</div>';
-      return true;
+    const { data: orders, error } = await window.client
+      .from('orders')
+      .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, user_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending:false });
+
+    if(error){
+      console.error('orders read error:', error);
+      box.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + error.message + '</div>';
+      return;
+    }
+
+    if(!orders || !orders.length){
+      box.innerHTML = '<div class="admin-empty">Bu giriş yapan kullanıcıya ait sipariş bulunamadı.</div>';
+      return;
     }
 
     const orderIds = orders.map(o => o.id).filter(Boolean);
@@ -5116,7 +5215,7 @@ document.addEventListener('DOMContentLoaded', async function(){
         .in('order_id', orderIds);
 
       if(itemsError){
-        console.error('order_items error:', itemsError);
+        console.error('order_items read error:', itemsError);
       }else{
         (items || []).forEach(item => {
           if(!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
@@ -5125,15 +5224,15 @@ document.addEventListener('DOMContentLoaded', async function(){
       }
     }
 
-    list.innerHTML = orders.map(order => {
+    box.innerHTML = orders.map(order => {
       const total = order.total_amount ?? order.total ?? 0;
-      const itemHtml = (itemsMap[order.id] || []).map(item => {
+      const itemsHtml = (itemsMap[order.id] || []).map(item => {
         const unitPrice = item.unit_price ?? item.price ?? 0;
         const lineTotal = item.line_total ?? (Number(unitPrice || 0) * Number(item.quantity || 0));
         return '<li>' +
           (item.product_name || 'Ürün') +
           ' — ' + (item.quantity || 0) + ' ' + (item.unit || 'adet') +
-          ' — ' + formatMoney(lineTotal) +
+          ' — ' + tl(lineTotal) +
           '</li>';
       }).join('');
 
@@ -5141,104 +5240,98 @@ document.addEventListener('DOMContentLoaded', async function(){
         <div class="admin-card" style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
             <strong>Sipariş #${order.id}</strong>
-            <span class="pill">${order.status || 'Yeni'}</span>
+            <span class="pill">${order.status || 'yeni'}</span>
           </div>
           <div class="muted" style="margin-top:6px">${new Date(order.created_at).toLocaleString('tr-TR')}</div>
 
           <div class="admin-meta" style="margin-top:12px">
             <div class="mini"><strong>Ödeme</strong><div style="margin-top:4px">${order.payment_method || '-'}</div></div>
             <div class="mini"><strong>Teslimat</strong><div style="margin-top:4px">${order.delivery_slot || '-'}</div></div>
-            <div class="mini"><strong>Toplam</strong><div style="margin-top:4px">${formatMoney(total)}</div></div>
+            <div class="mini"><strong>Toplam</strong><div style="margin-top:4px">${tl(total)}</div></div>
             <div class="mini"><strong>Telefon</strong><div style="margin-top:4px">${order.phone || '-'}</div></div>
           </div>
 
           <div class="admin-items">
             <strong>Ürünler</strong>
-            <ul style="margin-top:8px">${itemHtml || '<li>Ürün bilgisi bulunamadı.</li>'}</ul>
+            <ul style="margin-top:8px">
+              ${itemsHtml || '<li>Ürün bilgisi bulunamadı.</li>'}
+            </ul>
           </div>
         </div>
       `;
     }).join('');
-
-    return true;
   }
 
-  window.openFinalUserOrdersModal = async function(){
-    const identity = await getActiveIdentity();
-    if(!identity){
+  window.openMyOrdersFinal = async function(){
+    const user = await getLoggedUser();
+    if(!user){
       if(typeof window.openCustomerRegisterModal === 'function'){
         await window.openCustomerRegisterModal('login');
-      }else{
+      } else {
         alert('Önce giriş yap.');
       }
       return;
     }
 
-    const modal = document.getElementById('final-user-orders-modal');
+    const modal = document.getElementById('my-orders-modal-final');
     if(modal) modal.classList.add('open');
-    await loadOrdersForActiveIdentity();
+    await loadOrdersForLoggedUserOnly();
   };
 
   window.signOutCustomer = async function(){
-    const identity = await getActiveIdentity();
-    if(!identity){
-      if(typeof window.openCustomerRegisterModal === 'function'){
-        await window.openCustomerRegisterModal('login');
-      }else{
-        alert('Önce giriş yap.');
+    try{
+      await window.client.auth.signOut();
+      window.currentCustomerProfile = null;
+      if(typeof window.refreshCustomerProfileSummary === 'function'){
+        await window.refreshCustomerProfileSummary();
       }
-      return;
-    }
-
-    try{
-      if(window.client?.auth?.signOut){
-        await window.client.auth.signOut();
-      }
-    }catch(err){
-      console.error('signOut error:', err);
-    }
-
-    window.currentCustomerProfile = null;
-
-    try{
-      localStorage.removeItem('user_name');
-      localStorage.removeItem('user_phone');
-      localStorage.removeItem('user_address');
-    }catch(err){}
-
-    await refreshCustomerUIAfterAuth();
-
-    try{
       if(typeof window.closeAccountDropdown === 'function'){
         window.closeAccountDropdown();
       }
-    }catch(err){}
-
-    window.closeFinalUserOrdersModal();
-    alert('Çıkış yapıldı.');
+      window.closeMyOrdersFinal();
+      alert('Çıkış yapıldı.');
+    }catch(err){
+      console.error(err);
+      alert('Çıkış yapılamadı: ' + (err.message || err));
+    }
   };
 
   window.accountMenuAction = async function(sectionId){
-    try{
-      if(typeof window.closeAccountDropdown === 'function'){
-        window.closeAccountDropdown();
-      }
-    }catch(err){}
+    if(typeof window.closeAccountDropdown === 'function'){
+      window.closeAccountDropdown();
+    }
 
     if(sectionId === 'siparis-takip'){
-      await window.openFinalUserOrdersModal();
+      await window.openMyOrdersFinal();
       return;
     }
 
     if(sectionId === 'cikis'){
+      const user = await getLoggedUser();
+      if(!user){
+        if(typeof window.openCustomerRegisterModal === 'function'){
+          await window.openCustomerRegisterModal('login');
+        } else {
+          alert('Önce giriş yap.');
+        }
+        return;
+      }
       await window.signOutCustomer();
       return;
     }
 
-    if(sectionId === 'giris' || sectionId === 'adresler' || sectionId === 'ayarlar'){
-      const identity = await getActiveIdentity();
+    if(sectionId === 'giris'){
+      const user = await getLoggedUser();
       if(typeof window.openCustomerRegisterModal === 'function'){
-        await window.openCustomerRegisterModal(identity ? 'profile' : 'login');
+        await window.openCustomerRegisterModal(user ? 'profile' : 'login');
+      }
+      return;
+    }
+
+    if(sectionId === 'adresler' || sectionId === 'ayarlar'){
+      const user = await getLoggedUser();
+      if(typeof window.openCustomerRegisterModal === 'function'){
+        await window.openCustomerRegisterModal(user ? 'profile' : 'login');
       }
       return;
     }
@@ -5250,31 +5343,323 @@ document.addEventListener('DOMContentLoaded', async function(){
   };
 
   document.addEventListener('DOMContentLoaded', function(){
-    const modal = document.getElementById('final-user-orders-modal');
-    if(modal && !modal.dataset.singleFixBound){
-      modal.dataset.singleFixBound = '1';
+    const modal = document.getElementById('my-orders-modal-final');
+    if(modal){
       modal.addEventListener('click', function(e){
-        if(e.target === modal){
-          window.closeFinalUserOrdersModal();
+        if(e.target === modal) window.closeMyOrdersFinal();
+      });
+    }
+  });
+})();
+</script>
+
+
+<div id="orders-modal-clean" class="order-summary-modal">
+  <div class="order-summary-card">
+    <div class="row">
+      <h2 style="margin:0">Siparişlerim</h2>
+      <button type="button" class="btn secondary" onclick="closeOrdersModalClean()">Kapat</button>
+    </div>
+    <div id="orders-modal-clean-list" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  if (window.__realFinalMenuFix) return;
+  window.__realFinalMenuFix = true;
+
+  function fmtMoney(value) {
+    return new Intl.NumberFormat('tr-TR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Number(value || 0)) + ' TL';
+  }
+
+  async function getAuthUserNow() {
+    try {
+      if (!window.client || !window.client.auth || !window.client.auth.getUser) return null;
+      const result = await window.client.auth.getUser();
+      return result && result.data ? (result.data.user || null) : null;
+    } catch (err) {
+      console.error('getAuthUserNow error:', err);
+      return null;
+    }
+  }
+
+  function clearVisibleCustomerUI() {
+    try {
+      window.currentCustomerProfile = null;
+    } catch (err) {}
+
+    try {
+      const names = document.querySelectorAll('.account-name');
+      names.forEach(function (el) { el.textContent = 'Hesabım'; });
+    } catch (err) {}
+
+    try {
+      const note = document.getElementById('cart-rule-note');
+      if (note) {
+        note.innerHTML = '<strong>Sipariş Hesabı</strong><br><span class="tiny-note">Sipariş vermek için önce giriş yap veya kayıt ol.</span>';
+      }
+    } catch (err) {}
+
+    try {
+      const btn = document.getElementById('account-auth-action-label');
+      if (btn) btn.textContent = 'Giriş Yap / Üye Ol';
+    } catch (err) {}
+
+    try {
+      const profileBtn = document.getElementById('auth-mode-profile-btn');
+      if (profileBtn) profileBtn.style.display = 'none';
+    } catch (err) {}
+  }
+
+  async function getActiveIdentityClean() {
+    const authUser = await getAuthUserNow();
+    if (authUser) {
+      return { id: authUser.id, email: authUser.email || '', source: 'auth' };
+    }
+
+    if (window.currentCustomerProfile && window.currentCustomerProfile.id) {
+      return {
+        id: window.currentCustomerProfile.id,
+        email: window.currentCustomerProfile.email || '',
+        source: 'profile'
+      };
+    }
+
+    return null;
+  }
+
+  window.closeOrdersModalClean = function () {
+    const modal = document.getElementById('orders-modal-clean');
+    if (modal) modal.classList.remove('open');
+  };
+
+  async function renderOrdersForIdentity(identity) {
+    const box = document.getElementById('orders-modal-clean-list');
+    if (!box) return;
+
+    box.innerHTML = '<div class="empty">Siparişler yükleniyor...</div>';
+
+    if (!identity) {
+      box.innerHTML = '<div class="admin-empty">Siparişlerini görmek için önce giriş yap.</div>';
+      return;
+    }
+
+    let orders = [];
+    let errorText = '';
+
+    try {
+      const q1 = await window.client
+        .from('orders')
+        .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, user_id, customer_id')
+        .eq('user_id', identity.id)
+        .order('created_at', { ascending: false });
+
+      if (q1.error) {
+        errorText = q1.error.message || '';
+      } else {
+        orders = q1.data || [];
+      }
+
+      if (!orders.length) {
+        const q2 = await window.client
+          .from('orders')
+          .select('id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, user_id, customer_id')
+          .eq('customer_id', identity.id)
+          .order('created_at', { ascending: false });
+
+        if (!q2.error) {
+          orders = q2.data || [];
+        } else if (!errorText) {
+          errorText = q2.error.message || '';
         }
+      }
+    } catch (err) {
+      console.error('orders query error:', err);
+      errorText = String(err && err.message ? err.message : err);
+    }
+
+    if (!orders.length && errorText) {
+      box.innerHTML = '<div class="admin-empty">Siparişler alınamadı: ' + errorText + '</div>';
+      return;
+    }
+
+    if (!orders.length) {
+      box.innerHTML = '<div class="admin-empty">Bu hesaba ait sipariş bulunamadı.</div>';
+      return;
+    }
+
+    let itemsMap = {};
+    try {
+      const ids = orders.map(function (o) { return o.id; }).filter(Boolean);
+      if (ids.length) {
+        const itemsRes = await window.client
+          .from('order_items')
+          .select('order_id, product_name, quantity, unit_price, line_total, price, unit')
+          .in('order_id', ids);
+
+        if (!itemsRes.error) {
+          (itemsRes.data || []).forEach(function (item) {
+            if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+            itemsMap[item.order_id].push(item);
+          });
+        }
+      }
+    } catch (err) {
+      console.error('order items query error:', err);
+    }
+
+    box.innerHTML = orders.map(function (order) {
+      const total = order.total_amount != null ? order.total_amount : (order.total != null ? order.total : 0);
+      const itemsHtml = (itemsMap[order.id] || []).map(function (item) {
+        const unitPrice = item.unit_price != null ? item.unit_price : (item.price != null ? item.price : 0);
+        const lineTotal = item.line_total != null ? item.line_total : (Number(unitPrice || 0) * Number(item.quantity || 0));
+        return '<li>' +
+          (item.product_name || 'Ürün') +
+          ' — ' + (item.quantity || 0) + ' ' + (item.unit || 'adet') +
+          ' — ' + fmtMoney(lineTotal) +
+          '</li>';
+      }).join('');
+
+      return '' +
+        '<div class="admin-card" style="margin-bottom:12px">' +
+          '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">' +
+            '<strong>Sipariş #' + order.id + '</strong>' +
+            '<span class="pill">' + (order.status || 'Yeni') + '</span>' +
+          '</div>' +
+          '<div class="muted" style="margin-top:6px">' + new Date(order.created_at).toLocaleString('tr-TR') + '</div>' +
+          '<div class="admin-meta" style="margin-top:12px">' +
+            '<div class="mini"><strong>Ödeme</strong><div style="margin-top:4px">' + (order.payment_method || '-') + '</div></div>' +
+            '<div class="mini"><strong>Teslimat</strong><div style="margin-top:4px">' + (order.delivery_slot || '-') + '</div></div>' +
+            '<div class="mini"><strong>Toplam</strong><div style="margin-top:4px">' + fmtMoney(total) + '</div></div>' +
+            '<div class="mini"><strong>Telefon</strong><div style="margin-top:4px">' + (order.phone || '-') + '</div></div>' +
+          '</div>' +
+          '<div class="admin-items">' +
+            '<strong>Ürünler</strong>' +
+            '<ul style="margin-top:8px">' + (itemsHtml || '<li>Ürün bilgisi bulunamadı.</li>') + '</ul>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  window.openOrdersModalClean = async function () {
+    const identity = await getActiveIdentityClean();
+    if (!identity) {
+      if (typeof window.openCustomerRegisterModal === 'function') {
+        await window.openCustomerRegisterModal('login');
+      } else {
+        alert('Önce giriş yap.');
+      }
+      return;
+    }
+
+    const modal = document.getElementById('orders-modal-clean');
+    if (modal) modal.classList.add('open');
+    await renderOrdersForIdentity(identity);
+  };
+
+  window.signOutCustomer = async function () {
+    const identity = await getActiveIdentityClean();
+    if (!identity) {
+      if (typeof window.openCustomerRegisterModal === 'function') {
+        await window.openCustomerRegisterModal('login');
+      } else {
+        alert('Önce giriş yap.');
+      }
+      return;
+    }
+
+    try {
+      if (window.client && window.client.auth && window.client.auth.signOut) {
+        await window.client.auth.signOut({ scope: 'local' });
+      }
+    } catch (err) {
+      console.error('signOutCustomer error:', err);
+    }
+
+    try {
+      localStorage.removeItem('user_name');
+      localStorage.removeItem('user_phone');
+      localStorage.removeItem('user_address');
+    } catch (err) {}
+
+    clearVisibleCustomerUI();
+
+    try {
+      if (typeof window.closeAccountDropdown === 'function') {
+        window.closeAccountDropdown();
+      } else {
+        const dropdown = document.querySelector('.account-dropdown');
+        if (dropdown) dropdown.removeAttribute('open');
+      }
+    } catch (err) {}
+
+    window.closeOrdersModalClean();
+    alert('Çıkış yapıldı.');
+  };
+
+  window.accountMenuAction = async function (sectionId) {
+    try {
+      if (typeof window.closeAccountDropdown === 'function') {
+        window.closeAccountDropdown();
+      } else {
+        const dropdown = document.querySelector('.account-dropdown');
+        if (dropdown) dropdown.removeAttribute('open');
+      }
+    } catch (err) {}
+
+    if (sectionId === 'siparis-takip') {
+      await window.openOrdersModalClean();
+      return;
+    }
+
+    if (sectionId === 'cikis') {
+      await window.signOutCustomer();
+      return;
+    }
+
+    if (sectionId === 'giris' || sectionId === 'adresler' || sectionId === 'ayarlar') {
+      const identity = await getActiveIdentityClean();
+      if (typeof window.openCustomerRegisterModal === 'function') {
+        await window.openCustomerRegisterModal(identity ? 'profile' : 'login');
+      }
+      return;
+    }
+
+    if (sectionId === 'favoriler') {
+      alert('Favori Ürünlerim bölümü sonraki adımda aktif edilebilir.');
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('orders-modal-clean');
+    if (modal && !modal.dataset.boundClean) {
+      modal.dataset.boundClean = '1';
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) window.closeOrdersModalClean();
       });
     }
 
-    const buttons = document.querySelectorAll('.account-menu-item');
-    buttons.forEach(btn => {
-      const text = (btn.textContent || '').trim();
-      if(text.includes('Siparişlerim')){
-        btn.onclick = function(){ window.openFinalUserOrdersModal(); };
+    const menuButtons = document.querySelectorAll('.account-menu-item');
+    menuButtons.forEach(function (btn) {
+      const label = (btn.textContent || '').trim();
+      if (label.indexOf('Siparişlerim') !== -1) {
+        btn.onclick = function () { window.openOrdersModalClean(); };
       }
-      if(text.includes('Çıkış Yap')){
-        btn.onclick = function(){ window.signOutCustomer(); };
+      if (label.indexOf('Çıkış Yap') !== -1) {
+        btn.onclick = function () { window.signOutCustomer(); };
       }
     });
   });
 
-  if(window.client?.auth?.onAuthStateChange){
-    window.client.auth.onAuthStateChange(async function(){
-      await refreshCustomerUIAfterAuth();
+  if (window.client && window.client.auth && window.client.auth.onAuthStateChange) {
+    window.client.auth.onAuthStateChange(async function (_event, session) {
+      if (!session || !session.user) {
+        clearVisibleCustomerUI();
+      }
     });
   }
 })();
