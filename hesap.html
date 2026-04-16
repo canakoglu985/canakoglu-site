@@ -764,7 +764,7 @@ async function getCurrentUser() {
 
 async function getCurrentProfile() {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user || !user.id || !user.email) return null;
 
   const { data, error } = await client
     .from("profiles")
@@ -801,17 +801,20 @@ async function refreshHeaderInfo() {
   const toggleSub = document.getElementById("accountToggleSub");
   const toggleAvatar = document.getElementById("accountToggleAvatar");
   const heroAvatar = document.getElementById("accountHeroAvatar");
+  const toggleBtn = document.getElementById("accountToggleBtn");
 
   const avatarText = (name) => String(name || "H").trim().charAt(0).toUpperCase();
 
-  if (!profile) {
+  if (!profile || !profile.email) {
     if (text) text.textContent = "Henüz giriş yapılmadı.";
     if (menuName) menuName.textContent = "Misafir Kullanıcı";
     if (menuMeta) menuMeta.textContent = "Giriş yapılmadı.";
-    if (toggleName) toggleName.textContent = "Hesabım";
+    if (toggleName) toggleName.textContent = "Giriş Yap";
     if (toggleSub) toggleSub.textContent = "Bilgiler ve siparişler";
-    if (toggleAvatar) toggleAvatar.textContent = "H";
-    if (heroAvatar) heroAvatar.textContent = "H";
+    if (toggleAvatar) toggleAvatar.textContent = "G";
+    if (heroAvatar) heroAvatar.textContent = "G";
+    if (toggleBtn) toggleBtn.classList.remove("logged-in");
+
     const profileName = document.getElementById("profileName");
     const profilePhone = document.getElementById("profilePhone");
     const profileAddress = document.getElementById("profileAddress");
@@ -842,6 +845,7 @@ async function refreshHeaderInfo() {
   if (toggleSub) toggleSub.textContent = "Bilgiler ve siparişler";
   if (toggleAvatar) toggleAvatar.textContent = avatarText(displayName);
   if (heroAvatar) heroAvatar.textContent = avatarText(displayName);
+  if (toggleBtn) toggleBtn.classList.add("logged-in");
 
   const profileName = document.getElementById("profileName");
   const profilePhone = document.getElementById("profilePhone");
@@ -1301,6 +1305,16 @@ document.getElementById("profileAddressDetail")?.addEventListener("input", updat
 document.getElementById("saveProfileBtn")?.addEventListener("click", saveProfile);
 document.getElementById("menuLogoutBtn")?.addEventListener("click", logout);
 document.getElementById("accountToggleBtn")?.addEventListener("click", () => toggleAccountMenu());
+
+document.getElementById("accountToggleBtn")?.addEventListener("click", async (e) => {
+  const user = await getCurrentUser();
+  if (!user) {
+    setTab("login");
+    toggleAccountMenu(true);
+    return;
+  }
+});
+
 
 document.addEventListener("click", (e) => {
   if (e.target.closest("#accountMenu")) return;
