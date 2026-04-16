@@ -8,10 +8,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{font-family:Arial;background:#eef3f9;margin:0}
-.wrap{max-width:800px;margin:auto;padding:20px}
-.card{background:#fff;padding:20px;border-radius:16px;margin-bottom:20px}
-input{width:100%;padding:10px;margin-bottom:10px;border-radius:10px;border:1px solid #ccc}
+body{font-family:Arial;background:#eef3f9;margin:0;padding:20px}
+.card{background:#fff;padding:20px;border-radius:12px;margin-bottom:20px}
+input{width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #ccc}
 button{width:100%;padding:12px;background:#f49a27;color:#fff;border:none;border-radius:10px;font-weight:bold}
 .order{border:1px solid #ddd;padding:10px;border-radius:10px;margin-bottom:10px}
 </style>
@@ -20,45 +19,50 @@ button{width:100%;padding:12px;background:#f49a27;color:#fff;border:none;border-
 
 <body>
 
-<div class="wrap">
-
 <div class="card">
 <h2>Giriş Yap</h2>
-<input id="loginEmail" placeholder="E-posta">
-<input id="loginPassword" type="password" placeholder="Şifre">
+<input id="email" placeholder="E-posta">
+<input id="password" type="password" placeholder="Şifre">
 <button onclick="login()">Giriş Yap</button>
-<div id="loginStatus"></div>
+<div id="status"></div>
 </div>
 
 <div class="card">
 <h2>Siparişlerim</h2>
-<div id="ordersBox"></div>
-</div>
-
+<div id="orders"></div>
 </div>
 
 <script>
 const supabase = window.supabase.createClient(
 "https://jpguymicdiujhutnycvl.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I"
 );
 
-const CART_KEY = "canakoglu_cart_v1";
+const CART_KEY_1 = "canakoglu_cart_v1";
+const CART_KEY_2 = "cart";
+
+/* CART */
+function getCart(){
+  let cart = JSON.parse(localStorage.getItem(CART_KEY_1) || "[]");
+  if(!cart.length){
+    cart = JSON.parse(localStorage.getItem(CART_KEY_2) || "[]");
+  }
+  return cart;
+}
 
 /* AUTH */
-
 async function login(){
-  const email = document.getElementById("loginEmail").value;
-  const password = document.getElementById("loginPassword").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if(error){
-    document.getElementById("loginStatus").innerText = error.message;
+    document.getElementById("status").innerText = error.message;
     return;
   }
 
-  document.getElementById("loginStatus").innerText = "Giriş başarılı";
+  document.getElementById("status").innerText = "Giriş başarılı";
   afterLogin();
 }
 
@@ -68,7 +72,6 @@ async function getUser(){
 }
 
 /* PROFILE */
-
 async function getProfile(){
   const user = await getUser();
   if(!user) return null;
@@ -82,16 +85,8 @@ async function getProfile(){
   return data;
 }
 
-/* ORDER */
-
-function getCart(){
-  return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-}
-
-async function createOrderIfNeeded(){
-  const params = new URLSearchParams(window.location.search);
-  if(params.get("redirect") !== "order") return;
-
+/* ORDER CREATE */
+async function createOrder(){
   const user = await getUser();
   if(!user) return;
 
@@ -101,36 +96,37 @@ async function createOrderIfNeeded(){
   const profile = await getProfile();
   if(!profile) return;
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = cart.reduce((s,i)=> s + (i.price*i.quantity),0);
 
   const { data: order } = await supabase
     .from("orders")
     .insert({
-      customer_id: user.id,
-      customer_name: profile.full_name,
-      phone: profile.phone,
-      address: profile.address,
-      status: "yeni",
-      total: total,
-      total_amount: total
+      customer_id:user.id,
+      customer_name:profile.full_name,
+      phone:profile.phone,
+      address:profile.address,
+      status:"yeni",
+      total:total,
+      total_amount:total
     })
     .select()
     .single();
 
-  const items = cart.map(i => ({
-    order_id: order.id,
-    product_name: i.name,
-    quantity: i.quantity,
-    unit_price: i.price
+  const items = cart.map(i=>({
+    order_id:order.id,
+    product_name:i.name,
+    quantity:i.quantity,
+    unit_price:i.price,
+    line_total:i.price*i.quantity
   }));
 
   await supabase.from("order_items").insert(items);
 
-  localStorage.removeItem(CART_KEY);
+  localStorage.removeItem(CART_KEY_1);
+  localStorage.removeItem(CART_KEY_2);
 }
 
 /* LOAD ORDERS */
-
 async function loadOrders(){
   const user = await getUser();
   if(!user) return;
@@ -141,14 +137,14 @@ async function loadOrders(){
     .eq("customer_id", user.id)
     .order("created_at",{ascending:false});
 
-  const box = document.getElementById("ordersBox");
+  const box = document.getElementById("orders");
 
   if(!data || !data.length){
     box.innerHTML = "Sipariş yok";
     return;
   }
 
-  box.innerHTML = data.map(o => `
+  box.innerHTML = data.map(o=>`
     <div class="order">
       <b>#${o.id}</b><br>
       ${o.status}<br>
@@ -158,19 +154,16 @@ async function loadOrders(){
 }
 
 /* FLOW */
-
 async function afterLogin(){
-  await createOrderIfNeeded();
+  await createOrder();
   await loadOrders();
 }
 
 /* INIT */
-
-(async () => {
+(async ()=>{
   await afterLogin();
 })();
 </script>
 
 </body>
 </html>
-
