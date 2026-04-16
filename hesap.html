@@ -1,565 +1,11 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Çanakoğlu Hesap</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-      --bg:#eef3f9; --card:#fff; --text:#17324f; --muted:#6f8196; --primary:#f49a27;
-      --navy:#1d4678; --border:#dbe6f1; --shadow:0 12px 30px rgba(18,50,85,.10);
-      --shadow-soft:0 8px 18px rgba(18,50,85,.07); --success:#39a852; --danger:#c62828;
-      --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);
-    }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text); }
-    header {
-      background:linear-gradient(135deg, rgba(12,34,63,.98) 0%, rgba(20,55,94,.98) 45%, rgba(29,70,120,.98) 100%);
-      color:#fff; padding:16px 20px; box-shadow:0 14px 34px rgba(10,28,52,.22);
-    }
-    .header-inner,.wrap { max-width:1080px; margin:0 auto; }
-    .header-inner { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    .brand-title { font-size:28px; font-weight:900; }
-    .brand-sub { font-size:14px; opacity:.9; margin-top:4px; }
-    .btn {
-      border:none; border-radius:14px; padding:12px 14px; font-weight:800; cursor:pointer;
-      text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;
-    }
-    .btn:hover { filter:brightness(1.03); transform:translateY(-1px); }
-    .primary { background:var(--orange-gradient); color:#fff; box-shadow:0 10px 20px rgba(244,154,39,.2); }
-    .secondary { background:#edf4fb; color:var(--navy); border:1px solid var(--border); }
-    .wrap { padding:20px; }
-    .layout { display:grid; grid-template-columns:420px minmax(0,1fr); gap:18px; align-items:start; }
-    .card {
-      background:var(--card); border:1px solid var(--border); border-radius:24px; padding:20px; box-shadow:var(--shadow-soft);
-    }
-    .tabs { display:flex; gap:10px; margin-bottom:14px; }
-    .tab {
-      border:none; background:#fff; border:1px solid var(--border); border-radius:999px; padding:10px 14px; cursor:pointer; font-weight:800; color:var(--navy);
-    }
-    .tab.active { background:var(--orange-gradient); color:#fff; border-color:transparent; }
-    .pane { display:none; }
-    .pane.active { display:block; }
-    .field { display:grid; gap:6px; margin-bottom:10px; }
-    label { font-size:13px; color:var(--navy); font-weight:800; }
-    input, textarea, select {
-      width:100%; padding:12px; border:1px solid #c9d7e6; border-radius:14px; font:inherit; background:#fff;
-    }
-    textarea { min-height:90px; resize:vertical; }
-    .muted { color:var(--muted); font-size:13px; }
-    .status { margin-top:10px; font-size:13px; font-weight:800; min-height:18px; }
-    .status.error { color:var(--danger); }
-    .status.ok { color:var(--success); }
-    .profile-box {
-      background:#fbfcfe; border:1px solid var(--border); border-radius:18px; padding:16px; display:grid; gap:8px;
-    }
-    .orders { display:grid; gap:12px; }
-    .order {
-      background:#fff; border:1px solid var(--border); border-radius:18px; padding:16px;
-    }
-    .meta {
-      display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:8px; margin-top:10px;
-    }
-    .meta-item {
-      background:#f7f9fc; border:1px solid var(--border); border-radius:12px; padding:10px;
-    }
-    .items {
-      margin-top:12px; border:1px solid var(--border); border-radius:14px; background:#fbfcfe; padding:12px;
-    }
-    .empty { padding:24px; text-align:center; color:var(--muted); }
-    .sep {
-      height:1px; background:var(--border); margin:16px 0;
-    }
-    @media (max-width: 920px) {
-      .layout { grid-template-columns:1fr; }
-    }
-  
-    .selector-group{display:grid;gap:8px;margin-bottom:10px}
-    .selector-label{font-size:13px;color:var(--navy);font-weight:800}
-    .chip-grid{display:flex;flex-wrap:wrap;gap:8px}
-    .chip-btn{
-      border:none;background:#fff;border:1px solid var(--border);border-radius:999px;
-      padding:10px 12px;cursor:pointer;font-weight:800;color:var(--navy);transition:.18s ease;
-    }
-    .chip-btn.active{background:var(--orange-gradient);color:#fff;border-color:transparent;box-shadow:0 8px 18px rgba(244,154,39,.16)}
-    .address-preview{
-      padding:12px 14px;border-radius:14px;background:#f7f9fc;border:1px solid var(--border);
-      color:var(--navy);font-size:13px;font-weight:700;line-height:1.6;margin-bottom:10px;
-    }
-
-  
-    .header-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .account-shell{position:relative}
-    .account-toggle{
-      border:none;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer;
-      background:#fff;color:#1d4678;border:1px solid rgba(255,255,255,.22);
-      box-shadow:0 10px 20px rgba(10,28,52,.14)
-    }
-    .account-menu{
-      position:absolute;top:calc(100% + 10px);right:0;width:min(420px,92vw);display:none;
-      background:#fff;border:1px solid var(--border);border-radius:22px;padding:16px;
-      box-shadow:0 18px 40px rgba(10,28,52,.18);z-index:90;color:var(--text)
-    }
-    .account-menu.open{display:block}
-    .account-summary{
-      padding:14px;border:1px solid var(--border);background:#fbfcfe;border-radius:16px;margin-bottom:12px
-    }
-    .menu-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-    .menu-actions .btn{flex:1}
-    .profile-form{
-      display:grid;gap:10px;padding-top:12px;border-top:1px solid var(--border)
-    }
-    .profile-form textarea{
-      min-height:86px;resize:vertical
-    }
-    .profile-mini{
-      font-size:13px;color:var(--muted);font-weight:700
-    }
-
-  
-    .header-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .account-shell{position:relative}
-    .account-toggle{
-      border:none;
-      border-radius:18px;
-      padding:10px 14px;
-      font-weight:900;
-      cursor:pointer;
-      background:linear-gradient(135deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.10) 100%);
-      color:#fff;
-      border:1px solid rgba(255,255,255,.18);
-      box-shadow:0 14px 28px rgba(8,24,46,.18), inset 0 1px 0 rgba(255,255,255,.10);
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:220px;
-      justify-content:space-between;
-      backdrop-filter: blur(8px);
-    }
-    .account-chip{
-      display:flex;align-items:center;gap:10px;min-width:0;
-    }
-    .account-avatar{
-      width:42px;height:42px;border-radius:50%;
-      background:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);
-      color:#fff;display:flex;align-items:center;justify-content:center;
-      font-weight:900;font-size:16px;flex:0 0 42px;
-      box-shadow:0 10px 20px rgba(244,154,39,.22);
-    }
-    .account-chip-text{
-      min-width:0;text-align:left;
-    }
-    .account-chip-name{
-      font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      max-width:130px;
-    }
-    .account-chip-sub{
-      font-size:11px;opacity:.88;font-weight:700;
-    }
-    .account-menu{
-      position:absolute;top:calc(100% + 12px);right:0;width:min(470px,94vw);display:none;
-      background:rgba(255,255,255,.96);
-      border:1px solid rgba(219,230,241,.95);
-      border-radius:28px;
-      padding:18px;
-      box-shadow:0 24px 60px rgba(10,28,52,.22);
-      z-index:90;color:var(--text);
-      backdrop-filter: blur(12px);
-    }
-    .account-menu.open{display:block}
-    .account-hero{
-      background:linear-gradient(135deg, rgba(9,33,63,.96) 0%, rgba(22,55,94,.98) 52%, rgba(37,91,148,.95) 100%);
-      color:#fff;border-radius:22px;padding:18px;display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center;
-      box-shadow:0 16px 34px rgba(10,28,52,.18);margin-bottom:14px;
-    }
-    .account-hero-avatar{
-      width:64px;height:64px;border-radius:22px;background:rgba(255,255,255,.12);
-      display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;
-      border:1px solid rgba(255,255,255,.14);
-    }
-    .account-hero-name{
-      font-size:22px;font-weight:900;line-height:1.1;
-    }
-    .account-hero-meta{
-      margin-top:6px;font-size:13px;line-height:1.6;color:rgba(255,255,255,.9);font-weight:700
-    }
-    .account-quick-grid{
-      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px;
-    }
-    .quick-tile{
-      border:none;border-radius:18px;padding:14px 14px;cursor:pointer;text-align:left;
-      background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid var(--border);
-      box-shadow:var(--shadow-soft);color:var(--navy);
-    }
-    .quick-tile strong{display:block;font-size:15px;margin-bottom:4px}
-    .quick-tile span{font-size:12px;color:var(--muted);font-weight:700}
-    .profile-form{
-      display:grid;gap:12px;padding:16px;border:1px solid var(--border);border-radius:22px;background:#fbfcfe
-    }
-    .profile-form-head{
-      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
-    }
-    .profile-form-head strong{color:var(--navy);font-size:17px}
-    .profile-form textarea{min-height:90px;resize:vertical}
-    .save-row{display:flex;gap:10px;flex-wrap:wrap}
-    .save-row .btn{flex:1}
-    @media (max-width:640px){
-      .account-toggle{min-width:auto;width:100%;justify-content:space-between}
-      .account-menu{right:auto;left:0;width:min(96vw,470px)}
-      .account-hero{grid-template-columns:1fr;text-align:center}
-      .account-hero-avatar{margin:0 auto}
-      .account-quick-grid{grid-template-columns:1fr}
-    }
-
-  
-    .profile-address-builder{
-      display:grid;
-      gap:10px;
-      padding:12px;
-      border:1px solid var(--border);
-      border-radius:18px;
-      background:#fff;
-    }
-
-  </style>
-</head>
-<body>
-  <header>
-    <div class="header-inner">
-      <div>
-        <div class="brand-title">Hesabım</div>
-        <div class="brand-sub">Giriş • kayıt • çıkış • siparişlerim</div>
-      </div>
-      <div class="header-actions">
-        <a class="btn secondary" href="index.html">Markete Dön</a>
-        <div class="account-shell">
-          <button id="accountToggleBtn" class="account-toggle" type="button">
-            <span class="account-chip">
-              <span id="accountToggleAvatar" class="account-avatar">H</span>
-              <span class="account-chip-text">
-                <span id="accountToggleName" class="account-chip-name">Hesabım</span>
-                <span id="accountToggleSub" class="account-chip-sub">Bilgiler ve siparişler</span>
-              </span>
-            </span>
-            <span>▼</span>
-          </button>
-
-          <div id="accountMenu" class="account-menu">
-            <div class="account-hero">
-              <div id="accountHeroAvatar" class="account-hero-avatar">H</div>
-              <div>
-                <div id="accountMenuName" class="account-hero-name">Misafir Kullanıcı</div>
-                <div id="accountMenuMeta" class="account-hero-meta">Giriş yapılmadı.</div>
-              </div>
-            </div>
-
-            <div class="account-quick-grid">
-              <button class="quick-tile" type="button" onclick="scrollToOrders()">
-                <strong>Siparişlerim</strong>
-                <span>Geçmiş siparişlerini görüntüle</span>
-              </button>
-              <button id="menuLogoutBtn" class="quick-tile" type="button">
-                <strong>Çıkış Yap</strong>
-                <span>Güvenli şekilde oturumu kapat</span>
-              </button>
-            </div>
-
-            <div class="profile-form">
-              <div class="profile-form-head">
-                <strong>Hesap Bilgilerim</strong>
-                <span class="profile-mini">Bilgilerini buradan güncelleyebilirsin</span>
-              </div>
-
-              <div class="field" style="margin:0;">
-                <label for="profileName">Ad Soyad</label>
-                <input id="profileName" type="text" />
-              </div>
-
-              <div class="field" style="margin:0;">
-                <label for="profilePhone">Telefon</label>
-                <input id="profilePhone" type="text" />
-              </div>
-
-              <div class="field" style="margin:0;">
-                <label>Adres Bilgisi</label>
-                <div class="profile-address-builder">
-                  <div class="selector-group" style="margin:0;">
-                    <div class="selector-label">İlçe Seç</div>
-                    <div id="profileDistrictChips" class="chip-grid"></div>
-                  </div>
-
-                  <div class="selector-group" style="margin:0;">
-                    <div class="selector-label">Mahalle / Bölge Seç</div>
-                    <div id="profileNeighborhoodChips" class="chip-grid"></div>
-                  </div>
-
-                  <div class="field" style="margin:0;">
-                    <label for="profileAddressDetail">Açık Adres</label>
-                    <textarea id="profileAddressDetail" placeholder="Sokak, bina no, daire, kat, apartman adı..."></textarea>
-                  </div>
-
-                  <div id="profileAddressPreview" class="address-preview">İlçe ve mahalle seçildiğinde adres burada oluşacak.</div>
-                  <textarea id="profileAddress" style="display:none;"></textarea>
-                </div>
-              </div>
-
-              <div class="save-row">
-                <button id="saveProfileBtn" class="btn primary" type="button">Bilgileri Güncelle</button>
-              </div>
-
-              <div id="saveProfileStatus" class="status"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <div class="wrap">
-    <div class="layout">
-      <section class="card">
-        <div class="tabs">
-          <button id="tabLogin" class="tab active" type="button">Giriş Yap</button>
-          <button id="tabRegister" class="tab" type="button">Üye Ol</button>
-        </div>
-
-        <div id="paneLogin" class="pane active">
-          <div class="field">
-            <label for="loginEmail">E-posta</label>
-            <input id="loginEmail" type="email" autocomplete="email" />
-          </div>
-          <div class="field">
-            <label for="loginPassword">Şifre</label>
-            <input id="loginPassword" type="password" autocomplete="current-password" />
-          </div>
-          <button id="loginBtn" class="btn primary" type="button" style="width:100%;">Giriş Yap</button>
-          <div id="loginStatus" class="status"></div>
-        </div>
-
-        <div id="paneRegister" class="pane">
-          <div class="field">
-            <label for="registerName">Ad Soyad</label>
-            <input id="registerName" type="text" />
-          </div>
-          <div class="field">
-            <label for="registerPhone">Telefon</label>
-            <input id="registerPhone" type="text" />
-          </div>
-          <div class="selector-group">
-            <div class="selector-label">İl</div>
-            <input id="registerCity" type="text" value="Denizli" readonly />
-          </div>
-
-          <div class="selector-group">
-            <div class="selector-label">İlçe Seç</div>
-            <div id="districtChips" class="chip-grid"></div>
-          </div>
-
-          <div class="selector-group">
-            <div class="selector-label">Mahalle / Bölge Seç</div>
-            <div id="neighborhoodChips" class="chip-grid"></div>
-          </div>
-
-          <div class="field">
-            <label for="registerAddressDetail">Açık Adres</label>
-            <textarea id="registerAddressDetail" placeholder="Sokak, bina no, daire, apartman, tarif"></textarea>
-          </div>
-
-          <div class="address-preview" id="registerAddressPreview">İlçe ve mahalle seçildiğinde adres burada oluşacak.</div>
-          <textarea id="registerAddress" style="display:none;"></textarea>
-          <div class="field">
-            <label for="registerEmail">E-posta</label>
-            <input id="registerEmail" type="email" autocomplete="email" />
-          </div>
-          <div class="field">
-            <label for="registerPassword">Şifre</label>
-            <input id="registerPassword" type="password" autocomplete="new-password" />
-          </div>
-          <button id="registerBtn" class="btn primary" type="button" style="width:100%;">Kayıt Ol</button>
-          <div id="registerStatus" class="status"></div>
-        </div>
-
-        <div class="sep"></div>
-
-        <div class="profile-box">
-          <strong>Aktif Kullanıcı</strong>
-          <div id="activeUserText" class="muted">Henüz giriş yapılmadı.</div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2 style="margin-top:0; color:#1d4678;">Siparişlerim</h2>
-        <div id="profileStatus" class="status"></div>
-        <div id="ordersBox" class="orders"></div>
-      </section>
-    </div>
-  </div>
-
 <script>
 const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
+
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const CART_KEYS = ["canakoglu_cart_v1", "cart"];
-const SERVICE_SETTINGS_KEY = "service_areas_v1";
+const CART_KEY = "canakoglu_cart_v1";
 
-const tabLogin = document.getElementById("tabLogin");
-const tabRegister = document.getElementById("tabRegister");
-const paneLogin = document.getElementById("paneLogin");
-const paneRegister = document.getElementById("paneRegister");
-
-const ADDRESS_DATA = {
-  "Pamukkale": ["Akhan", "Güzelköy", "Kocadere", "Pınarkent", "Karakova", "Kale"],
-  "Merkezefendi": ["Sırakapılar", "Altıntop", "Yenişehir", "Şemikler", "Selçukbey"],
-  "Honaz": ["Honaz Merkez", "Kaklık", "Kocabaş", "Dereçiftlik", "Aksu"],
-  "Sarayköy": ["Sarayköy Merkez", "Kumluca", "Duacılı", "Sığma"],
-  "Tavas": ["Tavas Merkez", "Nikfer", "Kızılcabölük", "Karahisar"]
-};
-
-let selectedDistrict = "";
-let selectedNeighborhood = "";
-let selectedProfileDistrict = "";
-let selectedProfileNeighborhood = "";
-
-function escapeInline(value) {
-  return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-}
-
-function normalizeText(value) {
-  return String(value || "")
-    .toLocaleLowerCase("tr-TR")
-    .replace(/ı/g, "i")
-    .replace(/İ/g, "i")
-    .trim();
-}
-
-function renderAddressChips() {
-  const districtBox = document.getElementById("districtChips");
-  const neighborhoodBox = document.getElementById("neighborhoodChips");
-  if (!districtBox || !neighborhoodBox) return;
-
-  districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
-    <button type="button" class="chip-btn ${selectedDistrict === name ? "active" : ""}" onclick="selectDistrict('${escapeInline(name)}')">${name}</button>
-  `).join("");
-
-  const neighborhoods = ADDRESS_DATA[selectedDistrict] || [];
-  neighborhoodBox.innerHTML = neighborhoods.length
-    ? neighborhoods.map(name => `
-        <button type="button" class="chip-btn ${selectedNeighborhood === name ? "active" : ""}" onclick="selectNeighborhood('${escapeInline(name)}')">${name}</button>
-      `).join("")
-    : '<div class="muted">Önce ilçe seç.</div>';
-
-  updateRegisterAddress();
-}
-
-function selectDistrict(name) {
-  selectedDistrict = name;
-  selectedNeighborhood = "";
-  renderAddressChips();
-}
-
-function selectNeighborhood(name) {
-  selectedNeighborhood = name;
-  renderAddressChips();
-}
-
-function updateRegisterAddress() {
-  const city = document.getElementById("registerCity")?.value || "Denizli";
-  const detail = document.getElementById("registerAddressDetail")?.value.trim() || "";
-  const hidden = document.getElementById("registerAddress");
-  const preview = document.getElementById("registerAddressPreview");
-
-  const parts = [selectedNeighborhood, selectedDistrict, city].filter(Boolean);
-  const shortText = parts.join(" / ");
-  const fullText = [detail, shortText].filter(Boolean).join(" - ");
-
-  if (hidden) hidden.value = fullText;
-  if (preview) preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
-}
-
-function renderProfileAddressChips() {
-  const districtBox = document.getElementById("profileDistrictChips");
-  const neighborhoodBox = document.getElementById("profileNeighborhoodChips");
-  if (!districtBox || !neighborhoodBox) return;
-
-  districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
-    <button type="button" class="chip-btn ${selectedProfileDistrict === name ? "active" : ""}" onclick="selectProfileDistrict('${escapeInline(name)}')">${name}</button>
-  `).join("");
-
-  const neighborhoods = ADDRESS_DATA[selectedProfileDistrict] || [];
-  neighborhoodBox.innerHTML = neighborhoods.length
-    ? neighborhoods.map(name => `
-        <button type="button" class="chip-btn ${selectedProfileNeighborhood === name ? "active" : ""}" onclick="selectProfileNeighborhood('${escapeInline(name)}')">${name}</button>
-      `).join("")
-    : '<div class="muted">Önce ilçe seç.</div>';
-
-  updateProfileAddress();
-}
-
-function selectProfileDistrict(name) {
-  selectedProfileDistrict = name;
-  selectedProfileNeighborhood = "";
-  renderProfileAddressChips();
-}
-
-function selectProfileNeighborhood(name) {
-  selectedProfileNeighborhood = name;
-  renderProfileAddressChips();
-}
-
-function updateProfileAddress() {
-  const city = "Denizli";
-  const detail = document.getElementById("profileAddressDetail")?.value.trim() || "";
-  const hidden = document.getElementById("profileAddress");
-  const preview = document.getElementById("profileAddressPreview");
-
-  const parts = [selectedProfileNeighborhood, selectedProfileDistrict, city].filter(Boolean);
-  const shortText = parts.join(" / ");
-  const fullText = [detail, shortText].filter(Boolean).join(" - ");
-
-  if (hidden) hidden.value = fullText;
-  if (preview) preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
-}
-
-function hydrateProfileAddress(addressText) {
-  const text = String(addressText || "");
-  const lower = text.toLocaleLowerCase("tr-TR");
-
-  selectedProfileDistrict = "";
-  selectedProfileNeighborhood = "";
-
-  for (const district of Object.keys(ADDRESS_DATA)) {
-    if (lower.includes(district.toLocaleLowerCase("tr-TR"))) {
-      selectedProfileDistrict = district;
-      const neighborhoods = ADDRESS_DATA[district] || [];
-      for (const n of neighborhoods) {
-        if (lower.includes(n.toLocaleLowerCase("tr-TR"))) {
-          selectedProfileNeighborhood = n;
-          break;
-        }
-      }
-      break;
-    }
-  }
-
-  let detail = text;
-  if (selectedProfileDistrict) detail = detail.replace(selectedProfileDistrict, "");
-  if (selectedProfileNeighborhood) detail = detail.replace(selectedProfileNeighborhood, "");
-  detail = detail.replace(/Denizli/gi, "").replace(/[\-\/]/g, " ").replace(/\s+/g, " ").trim();
-
-  const detailEl = document.getElementById("profileAddressDetail");
-  if (detailEl) detailEl.value = detail;
-  renderProfileAddressChips();
-}
-
-function setTab(mode) {
-  const login = mode === "login";
-  tabLogin.classList.toggle("active", login);
-  tabRegister.classList.toggle("active", !login);
-  paneLogin.classList.toggle("active", login);
-  paneRegister.classList.toggle("active", !login);
-}
+/* ---------------- BASIC ---------------- */
 
 function setStatus(id, text, ok=false) {
   const el = document.getElementById(id);
@@ -568,484 +14,185 @@ function setStatus(id, text, ok=false) {
   el.className = "status " + (text ? (ok ? "ok" : "error") : "");
 }
 
-function toggleAccountMenu(forceOpen=null) {
-  const menu = document.getElementById("accountMenu");
-  if (!menu) return;
-  const shouldOpen = forceOpen === null ? !menu.classList.contains("open") : forceOpen;
-  menu.classList.toggle("open", shouldOpen);
+function money(v){
+  return Number(v||0).toLocaleString("tr-TR") + " TL";
 }
 
-function closeAccountMenu() {
-  toggleAccountMenu(false);
-}
+/* ---------------- AUTH ---------------- */
 
-function scrollToOrders() {
-  document.getElementById("ordersBox")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  closeAccountMenu();
-}
-
-function money(value) {
-  return new Intl.NumberFormat('tr-TR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(Number(value || 0)) + " TL";
-}
-
-function escapeHtml(text) {
-  return String(text ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-async function getCurrentUser() {
-  const { data, error } = await client.auth.getUser();
-  if (error) {
-    console.error(error);
-    return null;
-  }
+async function getUser(){
+  const { data } = await client.auth.getUser();
   return data?.user || null;
 }
 
-async function getCurrentProfile() {
-  const user = await getCurrentUser();
-  if (!user) return null;
+async function login(){
+  setStatus("loginStatus","");
+  const email = document.getElementById("loginEmail").value;
+  const pass = document.getElementById("loginPassword").value;
 
-  const { data, error } = await client
-    .from("profiles")
-    .select("id, email, full_name, phone, address")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { error } = await client.auth.signInWithPassword({ email, password: pass });
 
-  if (error) {
-    console.error(error);
-    return {
-      id: user.id,
-      email: user.email || "",
-      full_name: "",
-      phone: "",
-      address: ""
-    };
-  }
-
-  return data || {
-    id: user.id,
-    email: user.email || "",
-    full_name: "",
-    phone: "",
-    address: ""
-  };
-}
-
-async function getServiceSettings() {
-  const { data, error } = await client
-    .from("site_settings")
-    .select("*")
-    .eq("key", SERVICE_SETTINGS_KEY)
-    .maybeSingle();
-
-  if (error) {
-    console.warn("Hizmet alanı ayarı okunamadı:", error.message);
-    return null;
-  }
-
-  return data?.value || null;
-}
-
-function isAddressInServiceArea(address, settings) {
-  if (!settings) return true;
-  if (settings.enabled === false) return true;
-  const areas = Array.isArray(settings.areas) ? settings.areas : [];
-  if (!areas.length) return true;
-
-  const adr = normalizeText(address);
-  return areas.some(area => adr.includes(normalizeText(area)));
-}
-
-function readCart() {
-  for (const key of CART_KEYS) {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(key) || "[]");
-      if (Array.isArray(parsed) && parsed.length) {
-        return { key, items: parsed };
-      }
-    } catch (_) {}
-  }
-  return { key: CART_KEYS[0], items: [] };
-}
-
-function clearCart() {
-  CART_KEYS.forEach(key => localStorage.removeItem(key));
-}
-
-async function refreshHeaderInfo() {
-  const profile = await getCurrentProfile();
-  const text = document.getElementById("activeUserText");
-  const menuName = document.getElementById("accountMenuName");
-  const menuMeta = document.getElementById("accountMenuMeta");
-  const toggleName = document.getElementById("accountToggleName");
-  const toggleSub = document.getElementById("accountToggleSub");
-  const avatarText = (name) => String(name || "H").trim().charAt(0).toUpperCase();
-
-  if (!profile) {
-    text.textContent = "Henüz giriş yapılmadı.";
-    menuName.textContent = "Misafir Kullanıcı";
-    menuMeta.textContent = "Giriş yapılmadı.";
-    toggleName.textContent = "Hesabım";
-    toggleSub.textContent = "Bilgiler ve siparişler";
-    document.getElementById("accountToggleAvatar").textContent = "H";
-    document.getElementById("accountHeroAvatar").textContent = "H";
-    document.getElementById("profileName").value = "";
-    document.getElementById("profilePhone").value = "";
-    document.getElementById("profileAddress").value = "";
-    const profileAddressDetail = document.getElementById("profileAddressDetail");
-    if (profileAddressDetail) profileAddressDetail.value = "";
-    selectedProfileDistrict = "";
-    selectedProfileNeighborhood = "";
-    renderProfileAddressChips();
-    return;
-  }
-
-  const displayName = profile.full_name || profile.email || "Kullanıcı";
-  text.innerHTML = `
-    <strong>${escapeHtml(displayName)}</strong><br>
-    ${escapeHtml(profile.email || "-")}<br>
-    ${escapeHtml(profile.phone || "-")}<br>
-    ${escapeHtml(profile.address || "-")}
-  `;
-
-  menuName.textContent = displayName;
-  menuMeta.innerHTML = `${escapeHtml(profile.email || "-")}<br>${escapeHtml(profile.phone || "-")}<br>${escapeHtml(profile.address || "-")}`;
-  toggleName.textContent = displayName;
-  toggleSub.textContent = "Bilgiler ve siparişler";
-  document.getElementById("accountToggleAvatar").textContent = avatarText(displayName);
-  document.getElementById("accountHeroAvatar").textContent = avatarText(displayName);
-  document.getElementById("profileName").value = profile.full_name || "";
-  document.getElementById("profilePhone").value = profile.phone || "";
-  hydrateProfileAddress(profile.address || "");
-}
-
-async function saveProfile() {
-  setStatus("saveProfileStatus", "");
-  const user = await getCurrentUser();
-  if (!user) {
-    setStatus("saveProfileStatus", "Önce giriş yapmalısın.");
-    return;
-  }
-
-  updateProfileAddress();
-
-  const full_name = document.getElementById("profileName").value.trim();
-  const phone = document.getElementById("profilePhone").value.trim();
-  const address = document.getElementById("profileAddress").value.trim();
-
-  if (!full_name || !phone || !address) {
-    setStatus("saveProfileStatus", "Tüm hesap alanları gerekli.");
-    return;
-  }
-
-  const { error } = await client.from("profiles").upsert([{
-    id: user.id,
-    email: user.email || "",
-    full_name,
-    phone,
-    address
-  }]);
-
-  if (error) {
-    setStatus("saveProfileStatus", error.message);
-    return;
-  }
-
-  setStatus("saveProfileStatus", "Bilgiler güncellendi.", true);
-  await refreshHeaderInfo();
-}
-
-async function login() {
-  setStatus("loginStatus", "");
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-
-  if (!email || !password) {
-    setStatus("loginStatus", "E-posta ve şifre gerekli.");
-    return;
-  }
-
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) {
+  if(error){
     setStatus("loginStatus", error.message);
     return;
   }
 
-  setStatus("loginStatus", "Giriş başarılı.", true);
-  await afterAuthSuccess();
+  setStatus("loginStatus","Giriş başarılı",true);
+  afterLogin();
 }
 
-async function register() {
-  setStatus("registerStatus", "");
-  const fullName = document.getElementById("registerName").value.trim();
-  const phone = document.getElementById("registerPhone").value.trim();
-  updateRegisterAddress();
-  const address = document.getElementById("registerAddress").value.trim();
-  const email = document.getElementById("registerEmail").value.trim();
-  const password = document.getElementById("registerPassword").value;
+async function register(){
+  setStatus("registerStatus","");
 
-  if (!selectedDistrict || !selectedNeighborhood) {
-    setStatus("registerStatus", "Lütfen ilçe ve mahalle seç.");
-    return;
-  }
+  const email = document.getElementById("registerEmail").value;
+  const pass = document.getElementById("registerPassword").value;
+  const name = document.getElementById("registerName").value;
+  const phone = document.getElementById("registerPhone").value;
+  const address = document.getElementById("registerAddress").value;
 
-  if (!fullName || !phone || !address || !email || !password) {
-    setStatus("registerStatus", "Tüm alanlar gerekli.");
-    return;
-  }
+  const { data, error } = await client.auth.signUp({ email, password: pass });
 
-  const { data, error } = await client.auth.signUp({ email, password });
-  if (error) {
+  if(error){
     setStatus("registerStatus", error.message);
     return;
   }
 
-  const user = data?.user;
-  if (!user) {
-    setStatus("registerStatus", "Kullanıcı oluşturulamadı.");
-    return;
-  }
-
-  const { error: profileError } = await client.from("profiles").upsert([{
-    id: user.id,
+  await client.from("profiles").upsert({
+    id: data.user.id,
     email,
-    full_name: fullName,
+    full_name: name,
     phone,
     address
-  }]);
+  });
 
-  if (profileError) {
-    setStatus("registerStatus", profileError.message);
-    return;
-  }
-
-  setStatus("registerStatus", "Kayıt başarılı.", true);
-  await afterAuthSuccess();
+  setStatus("registerStatus","Kayıt başarılı",true);
+  afterLogin();
 }
 
-async function logout() {
+async function logout(){
   await client.auth.signOut();
-  setStatus("loginStatus", "");
-  setStatus("registerStatus", "");
-  setStatus("saveProfileStatus", "");
-  setStatus("profileStatus", "");
-  closeAccountMenu();
-  await refreshHeaderInfo();
-  renderOrders([]);
+  location.reload();
 }
 
-async function createOrderFromCartIfNeeded() {
-  const params = new URLSearchParams(window.location.search);
-  const shouldOrder = params.get("redirect") === "order";
-  if (!shouldOrder) return;
+/* ---------------- PROFILE ---------------- */
 
-  const user = await getCurrentUser();
-  if (!user) return;
+async function getProfile(){
+  const user = await getUser();
+  if(!user) return null;
 
-  const { items: cart } = readCart();
-  if (!cart.length) return;
-
-  const profile = await getCurrentProfile();
-  if (!profile || !profile.id) {
-    setStatus("profileStatus", "Profil bilgileri bulunamadı.");
-    return;
-  }
-
-  const customerName = String(profile.full_name || "").trim();
-  const phone = String(profile.phone || "").trim();
-  const address = String(profile.address || "").trim();
-
-  if (!customerName || !phone || !address) {
-    setStatus("profileStatus", "Sipariş için ad soyad, telefon ve adres bilgisi gerekli.");
-    toggleAccountMenu(true);
-    return;
-  }
-
-  const serviceSettings = await getServiceSettings();
-  if (!isAddressInServiceArea(address, serviceSettings)) {
-    setStatus("profileStatus", "Adresiniz hizmet bölgesi dışında görünüyor.");
-    toggleAccountMenu(true);
-    return;
-  }
-
-  const totalAmount = cart.reduce((sum, item) => {
-    const qty = Number(item.quantity || 1);
-    const price = Number(item.price || item.unit_price || 0);
-    return sum + (qty * price);
-  }, 0);
-
-  if (totalAmount <= 0) {
-    setStatus("profileStatus", "Sepet toplamı hesaplanamadı.");
-    return;
-  }
-
-  const orderPayload = {
-    customer_id: user.id,
-    customer_name: customerName,
-    phone,
-    address,
-    delivery_slot: "Hemen",
-    payment_method: "Kapıda Nakit",
-    status: "yeni",
-    total_amount: totalAmount,
-    total: totalAmount
-  };
-
-  const { data: order, error: orderError } = await client
-    .from("orders")
-    .insert([orderPayload])
-    .select()
+  const { data } = await client
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
     .single();
 
-  if (orderError) {
-    console.error(orderError);
-    setStatus("profileStatus", "Sipariş oluşturulamadı: " + orderError.message);
-    return;
-  }
+  return data;
+}
 
-  const itemsPayload = cart.map(item => ({
-    order_id: order.id,
-    product_id: item.id || item.product_id || null,
-    product_name: item.name || item.product_name || "Ürün",
-    quantity: Number(item.quantity || 1),
-    unit_price: Number(item.price || item.unit_price || 0),
-    line_total: Number(item.price || item.unit_price || 0) * Number(item.quantity || 1)
+async function saveProfile(){
+  const user = await getUser();
+  if(!user) return;
+
+  await client.from("profiles").upsert({
+    id:user.id,
+    email:user.email,
+    full_name:document.getElementById("profileName").value,
+    phone:document.getElementById("profilePhone").value,
+    address:document.getElementById("profileAddress").value
+  });
+
+  setStatus("saveProfileStatus","Kaydedildi",true);
+}
+
+/* ---------------- ORDER ---------------- */
+
+function getCart(){
+  return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+}
+
+async function createOrderIfNeeded(){
+  const params = new URLSearchParams(location.search);
+  if(params.get("redirect") !== "order") return;
+
+  const user = await getUser();
+  if(!user) return;
+
+  const cart = getCart();
+  if(!cart.length) return;
+
+  const profile = await getProfile();
+  if(!profile) return;
+
+  const total = cart.reduce((s,i)=> s + i.price*i.quantity,0);
+
+  const { data: order } = await client.from("orders").insert({
+    customer_id:user.id,
+    customer_name:profile.full_name,
+    phone:profile.phone,
+    address:profile.address,
+    status:"yeni",
+    total,
+    total_amount:total
+  }).select().single();
+
+  const items = cart.map(i=>({
+    order_id:order.id,
+    product_name:i.name,
+    quantity:i.quantity,
+    unit_price:i.price,
+    line_total:i.price*i.quantity
   }));
 
-  const { error: itemsError } = await client.from("order_items").insert(itemsPayload);
-  if (itemsError) {
-    console.error(itemsError);
-    setStatus("profileStatus", "Sipariş kalemleri kaydedilemedi: " + itemsError.message);
-    return;
-  }
+  await client.from("order_items").insert(items);
 
-  clearCart();
-  setStatus("profileStatus", "Sipariş başarıyla oluşturuldu.", true);
-  window.history.replaceState({}, "", window.location.pathname);
+  localStorage.removeItem(CART_KEY);
 }
 
-function renderOrders(orders, itemsByOrder={}) {
-  const box = document.getElementById("ordersBox");
-  if (!box) return;
+/* ---------------- LOAD ORDERS ---------------- */
 
-  if (!orders.length) {
-    box.innerHTML = '<div class="empty">Henüz siparişin yok.</div>';
-    return;
-  }
+async function loadOrders(){
+  const user = await getUser();
+  if(!user) return;
 
-  box.innerHTML = orders.map(order => {
-    const total = order.total_amount ?? order.total ?? 0;
-    const items = itemsByOrder[order.id] || [];
-    const itemsHtml = items.map(item => {
-      const line = item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0));
-      return `<li>${escapeHtml(item.product_name || "Ürün")} — ${item.quantity || 0} adet — ${money(line)}</li>`;
-    }).join("");
-
-    return `
-      <div class="order">
-        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
-          <strong>Sipariş #${order.id}</strong>
-          <span style="font-weight:900;color:#c97507;">${escapeHtml(order.status || "yeni")}</span>
-        </div>
-        <div class="muted" style="margin-top:6px;">${order.created_at ? new Date(order.created_at).toLocaleString("tr-TR") : "-"}</div>
-
-        <div class="meta">
-          <div class="meta-item"><strong>Ödeme</strong><div style="margin-top:4px;">${escapeHtml(order.payment_method || "-")}</div></div>
-          <div class="meta-item"><strong>Teslimat</strong><div style="margin-top:4px;">${escapeHtml(order.delivery_slot || "-")}</div></div>
-          <div class="meta-item"><strong>Toplam</strong><div style="margin-top:4px;">${money(total)}</div></div>
-          <div class="meta-item"><strong>Telefon</strong><div style="margin-top:4px;">${escapeHtml(order.phone || "-")}</div></div>
-        </div>
-
-        <div class="items">
-          <strong>Ürünler</strong>
-          <ul style="margin-top:8px;">${itemsHtml || "<li>Ürün bilgisi bulunamadı.</li>"}</ul>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-async function loadOrders() {
-  const user = await getCurrentUser();
-  if (!user) {
-    renderOrders([]);
-    return;
-  }
-
-  const { data: orders, error } = await client
+  const { data: orders } = await client
     .from("orders")
-    .select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id")
+    .select("*")
     .eq("customer_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at",{ascending:false});
 
-  if (error) {
-    console.error(error);
-    setStatus("profileStatus", "Siparişler alınamadı: " + error.message);
-    renderOrders([]);
+  const box = document.getElementById("ordersBox");
+
+  if(!orders?.length){
+    box.innerHTML = "Sipariş yok";
     return;
   }
 
-  const ids = (orders || []).map(o => o.id).filter(Boolean);
-  let itemsByOrder = {};
-
-  if (ids.length) {
-    const { data: items, error: itemsError } = await client
-      .from("order_items")
-      .select("order_id, product_name, quantity, unit_price, line_total")
-      .in("order_id", ids);
-
-    if (!itemsError) {
-      itemsByOrder = (items || []).reduce((acc, item) => {
-        if (!acc[item.order_id]) acc[item.order_id] = [];
-        acc[item.order_id].push(item);
-        return acc;
-      }, {});
-    }
-  }
-
-  renderOrders(orders || [], itemsByOrder);
+  box.innerHTML = orders.map(o=>`
+    <div style="border:1px solid #ddd;padding:10px;margin-bottom:10px;">
+      <b>#${o.id}</b><br>
+      ${o.status}<br>
+      ${money(o.total)}
+    </div>
+  `).join("");
 }
 
-async function afterAuthSuccess() {
-  await refreshHeaderInfo();
-  await createOrderFromCartIfNeeded();
+/* ---------------- FLOW ---------------- */
+
+async function afterLogin(){
+  await createOrderIfNeeded();
   await loadOrders();
 }
 
-tabLogin.addEventListener("click", () => setTab("login"));
-tabRegister.addEventListener("click", () => setTab("register"));
-document.getElementById("loginBtn").addEventListener("click", login);
-document.getElementById("registerAddressDetail").addEventListener("input", updateRegisterAddress);
-document.getElementById("profileAddressDetail").addEventListener("input", updateProfileAddress);
-document.getElementById("registerBtn").addEventListener("click", register);
-document.getElementById("accountToggleBtn").addEventListener("click", () => toggleAccountMenu());
-document.getElementById("saveProfileBtn").addEventListener("click", saveProfile);
-document.getElementById("menuLogoutBtn").addEventListener("click", logout);
-document.addEventListener("click", (e) => {
-  const shell = document.querySelector(".account-shell");
-  if (shell && !shell.contains(e.target)) closeAccountMenu();
-});
+/* ---------------- EVENTS ---------------- */
 
-client.auth.onAuthStateChange(async () => {
-  await refreshHeaderInfo();
-  await loadOrders();
-});
+document.getElementById("loginBtn").onclick = login;
+document.getElementById("registerBtn").onclick = register;
+document.getElementById("saveProfileBtn").onclick = saveProfile;
+document.getElementById("menuLogoutBtn").onclick = logout;
 
-(async function init() {
-  renderAddressChips();
-  renderProfileAddressChips();
-  await refreshHeaderInfo();
-  await createOrderFromCartIfNeeded();
-  await loadOrders();
+/* ---------------- INIT ---------------- */
+
+(async ()=>{
+  await afterLogin();
 })();
 </script>
-</body>
-</html>
