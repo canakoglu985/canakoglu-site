@@ -256,7 +256,49 @@
     .bar-track{height:12px;border-radius:999px;background:#eef3f9;overflow:hidden}
     .bar-fill{height:100%;border-radius:999px;background:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%)}
 
-  </style>
+  
+    .password-card{
+      background:#fff;
+      border:1px solid #dbe6f1;
+      border-radius:20px;
+      padding:18px;
+      box-shadow:0 8px 18px rgba(18,50,85,.07);
+      margin-bottom:18px;
+    }
+    .password-card h3{
+      margin:0 0 12px;
+      color:#1d4678;
+    }
+    .password-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:10px;
+    }
+    .password-card input{
+      width:100%;
+      padding:12px;
+      border:1px solid #c9d7e6;
+      border-radius:14px;
+      font:inherit;
+      box-sizing:border-box;
+      background:#fff;
+    }
+    .password-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .password-status{
+      margin-top:10px;
+      font-size:13px;
+      font-weight:800;
+      min-height:18px;
+    }
+    .password-status.ok{ color:#1e7b36; }
+    .password-status.err{ color:#c62828; }
+
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -327,6 +369,19 @@ window.addEventListener('DOMContentLoaded', () => {
   <div id="top-note" class="top-note"></div>
 
   <div class="wrap">
+
+      <div class="password-card">
+        <h3>Admin Şifre Değiştir</h3>
+        <div class="password-grid">
+          <input id="new-admin-password" type="password" placeholder="Yeni şifre">
+          <input id="new-admin-password-repeat" type="password" placeholder="Yeni şifre tekrar">
+        </div>
+        <div class="password-actions">
+          <button class="btn primary" type="button" onclick="changeAdminPassword()">Şifreyi Güncelle</button>
+        </div>
+        <div id="admin-password-status" class="password-status"></div>
+      </div>
+
     <div class="panel">
       <h2>Bağlantı Ayarları</h2>
       <div class="config-grid">
@@ -1687,7 +1742,53 @@ hydrateRememberedLogin();
       }
     });
 
-  </script>
+  
+    async function changeAdminPassword(){
+      const statusEl = document.getElementById('admin-password-status');
+      const pass1 = document.getElementById('new-admin-password').value;
+      const pass2 = document.getElementById('new-admin-password-repeat').value;
+
+      statusEl.className = 'password-status';
+      statusEl.textContent = '';
+
+      if(!pass1 || !pass2){
+        statusEl.className = 'password-status err';
+        statusEl.textContent = 'İki alan da gerekli.';
+        return;
+      }
+
+      if(pass1.length < 6){
+        statusEl.className = 'password-status err';
+        statusEl.textContent = 'Şifre en az 6 karakter olmalı.';
+        return;
+      }
+
+      if(pass1 !== pass2){
+        statusEl.className = 'password-status err';
+        statusEl.textContent = 'Şifreler aynı değil.';
+        return;
+      }
+
+      try{
+        const { error } = await __authClient.auth.updateUser({ password: pass1 });
+        if(error){
+          statusEl.className = 'password-status err';
+          statusEl.textContent = 'Şifre güncellenemedi: ' + error.message;
+          return;
+        }
+
+        document.getElementById('new-admin-password').value = '';
+        document.getElementById('new-admin-password-repeat').value = '';
+        statusEl.className = 'password-status ok';
+        statusEl.textContent = 'Şifre başarıyla güncellendi.';
+      }catch(err){
+        statusEl.className = 'password-status err';
+        statusEl.textContent = 'Şifre güncellenemedi: ' + (err.message || err);
+      }
+    }
+
+
+</script>
   <div id="floating-alert" class="floating-alert"></div>
 </body>
 </html>
