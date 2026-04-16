@@ -721,12 +721,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadConfigLocal(){
-      const savedUrl = localStorage.getItem('canakoglu_admin_url');
-      const savedKey = localStorage.getItem('canakoglu_admin_key');
-      const savedPhone = localStorage.getItem('canakoglu_market_phone');
-      if(savedUrl) document.getElementById('supabase-url').value = savedUrl;
-      if(savedKey) document.getElementById('supabase-key').value = savedKey;
-      if(savedPhone) document.getElementById('market-phone').value = savedPhone;
+      const savedUrl = localStorage.getItem('canakoglu_admin_url') || 'https://jpguymicdiujhutnycvl.supabase.co';
+      const savedKey = localStorage.getItem('canakoglu_admin_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I';
+      const savedPhone = localStorage.getItem('canakoglu_market_phone') || '905518857099';
+      document.getElementById('supabase-url').value = savedUrl;
+      document.getElementById('supabase-key').value = savedKey;
+      document.getElementById('market-phone').value = savedPhone;
     }
 
 
@@ -1618,16 +1618,19 @@ if(!url || !key){
       const screen = document.getElementById('login-screen');
       if(screen) screen.style.display = 'none';
     }
-    }
 
 
 
-    const savedUrlAuto = localStorage.getItem('canakoglu_admin_url');
-    const savedKeyAuto = localStorage.getItem('canakoglu_admin_key');
-    if(savedUrlAuto && savedKeyAuto){
-      document.getElementById('supabase-url').value = savedUrlAuto;
-      document.getElementById('supabase-key').value = savedKeyAuto;
-    }
+    const savedUrlAuto = localStorage.getItem('canakoglu_admin_url') || 'https://jpguymicdiujhutnycvl.supabase.co';
+    const savedKeyAuto = localStorage.getItem('canakoglu_admin_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I';
+    const savedPhoneAuto = localStorage.getItem('canakoglu_market_phone') || '905518857099';
+    document.getElementById('supabase-url').value = savedUrlAuto;
+    document.getElementById('supabase-key').value = savedKeyAuto;
+    const phoneElAuto = document.getElementById('market-phone');
+    if(phoneElAuto) phoneElAuto.value = savedPhoneAuto;
+    localStorage.setItem('canakoglu_admin_url', savedUrlAuto);
+    localStorage.setItem('canakoglu_admin_key', savedKeyAuto);
+    localStorage.setItem('canakoglu_market_phone', savedPhoneAuto);
     function subscribeRealtime(){
       if(!supabaseClient) return;
       if(window.__ordersChannel){
@@ -1655,17 +1658,8 @@ hydrateRememberedLogin();
     });
 
     window.addEventListener('load', () => {
-      const savedUrlAuto = localStorage.getItem('canakoglu_admin_url');
-      const savedKeyAuto = localStorage.getItem('canakoglu_admin_key');
-      const loggedInAuto = localStorage.getItem('canakoglu_admin_login') === 'true';
-
-      if(savedUrlAuto && savedKeyAuto && loggedInAuto){
-        const urlEl = document.getElementById('supabase-url');
-        const keyEl = document.getElementById('supabase-key');
-        if(urlEl) urlEl.value = savedUrlAuto;
-        if(keyEl) keyEl.value = savedKeyAuto;
-        setTimeout(() => connectSupabase(), 350);
-      }
+      loadConfigLocal();
+      setTimeout(() => connectSupabase(), 350);
     });
 
   </script>
