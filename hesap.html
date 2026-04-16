@@ -213,6 +213,16 @@
       .account-quick-grid{grid-template-columns:1fr}
     }
 
+  
+    .profile-address-builder{
+      display:grid;
+      gap:10px;
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:#fff;
+    }
+
   </style>
 </head>
 <body>
@@ -273,8 +283,26 @@
               </div>
 
               <div class="field" style="margin:0;">
-                <label for="profileAddress">Adres</label>
-                <textarea id="profileAddress"></textarea>
+                <label>Adres Bilgisi</label>
+                <div class="profile-address-builder">
+                  <div class="selector-group" style="margin:0;">
+                    <div class="selector-label">İlçe Seç</div>
+                    <div id="profileDistrictChips" class="chip-grid"></div>
+                  </div>
+
+                  <div class="selector-group" style="margin:0;">
+                    <div class="selector-label">Mahalle / Bölge Seç</div>
+                    <div id="profileNeighborhoodChips" class="chip-grid"></div>
+                  </div>
+
+                  <div class="field" style="margin:0;">
+                    <label for="profileAddressDetail">Açık Adres</label>
+                    <textarea id="profileAddressDetail" placeholder="Sokak, bina no, daire, kat, apartman adı..."></textarea>
+                  </div>
+
+                  <div id="profileAddressPreview" class="address-preview">İlçe ve mahalle seçildiğinde adres burada oluşacak.</div>
+                  <textarea id="profileAddress" style="display:none;"></textarea>
+                </div>
               </div>
 
               <div class="save-row">
@@ -392,6 +420,9 @@ const ADDRESS_DATA = {
 let selectedDistrict = "";
 let selectedNeighborhood = "";
 
+let selectedProfileDistrict = "";
+let selectedProfileNeighborhood = "";
+
 function renderAddressChips() {
   const districtBox = document.getElementById("districtChips");
   const neighborhoodBox = document.getElementById("neighborhoodChips");
@@ -415,6 +446,7 @@ function selectDistrict(name) {
   selectedDistrict = name;
   selectedNeighborhood = "";
   renderAddressChips();
+  renderProfileAddressChips();
 }
 
 function selectNeighborhood(name) {
@@ -436,6 +468,87 @@ function updateRegisterAddress() {
   if (preview) {
     preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
   }
+}
+
+function renderProfileAddressChips() {
+  const districtBox = document.getElementById("profileDistrictChips");
+  const neighborhoodBox = document.getElementById("profileNeighborhoodChips");
+  if (!districtBox || !neighborhoodBox) return;
+
+  districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
+    <button type="button" class="chip-btn ${selectedProfileDistrict === name ? "active" : ""}" onclick="selectProfileDistrict('${name.replace(/'/g, "\'")}')">${name}</button>
+  `).join("");
+
+  const neighborhoods = ADDRESS_DATA[selectedProfileDistrict] || [];
+  neighborhoodBox.innerHTML = neighborhoods.length
+    ? neighborhoods.map(name => `
+        <button type="button" class="chip-btn ${selectedProfileNeighborhood === name ? "active" : ""}" onclick="selectProfileNeighborhood('${name.replace(/'/g, "\'")}')">${name}</button>
+      `).join("")
+    : '<div class="muted">Önce ilçe seç.</div>';
+
+  updateProfileAddress();
+}
+
+function selectProfileDistrict(name) {
+  selectedProfileDistrict = name;
+  selectedProfileNeighborhood = "";
+  renderProfileAddressChips();
+}
+
+function selectProfileNeighborhood(name) {
+  selectedProfileNeighborhood = name;
+  renderProfileAddressChips();
+}
+
+function updateProfileAddress() {
+  const city = "Denizli";
+  const detail = document.getElementById("profileAddressDetail")?.value.trim() || "";
+  const hidden = document.getElementById("profileAddress");
+  const preview = document.getElementById("profileAddressPreview");
+
+  const parts = [selectedProfileNeighborhood, selectedProfileDistrict, city].filter(Boolean);
+  const shortText = parts.join(" / ");
+  const fullText = [detail, shortText].filter(Boolean).join(" - ");
+
+  if (hidden) hidden.value = fullText;
+  if (preview) {
+    preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
+  }
+}
+
+function hydrateProfileAddress(addressText) {
+  const text = String(addressText || "");
+  const lower = text.toLocaleLowerCase("tr-TR");
+
+  selectedProfileDistrict = "";
+  selectedProfileNeighborhood = "";
+
+  for (const district of Object.keys(ADDRESS_DATA)) {
+    if (lower.includes(district.toLocaleLowerCase("tr-TR"))) {
+      selectedProfileDistrict = district;
+      const neighborhoods = ADDRESS_DATA[district] || [];
+      for (const n of neighborhoods) {
+        if (lower.includes(n.toLocaleLowerCase("tr-TR"))) {
+          selectedProfileNeighborhood = n;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  let detail = text;
+  if (selectedProfileDistrict) {
+    detail = detail.replace(selectedProfileDistrict, "");
+  }
+  if (selectedProfileNeighborhood) {
+    detail = detail.replace(selectedProfileNeighborhood, "");
+  }
+  detail = detail.replace(/Denizli/gi, "").replace(/[\-\/]/g, " ").replace(/\s+/g, " ").trim();
+
+  const detailEl = document.getElementById("profileAddressDetail");
+  if (detailEl) detailEl.value = detail;
+  renderProfileAddressChips();
 }
 
 
@@ -541,6 +654,11 @@ async function refreshHeaderInfo() {
     document.getElementById("profileName").value = "";
     document.getElementById("profilePhone").value = "";
     document.getElementById("profileAddress").value = "";
+    const profileAddressDetail = document.getElementById("profileAddressDetail");
+    if (profileAddressDetail) profileAddressDetail.value = "";
+    selectedProfileDistrict = "";
+    selectedProfileNeighborhood = "";
+    renderProfileAddressChips();
     return;
   }
 
@@ -560,7 +678,7 @@ async function refreshHeaderInfo() {
   document.getElementById("accountHeroAvatar").textContent = avatarText(displayName);
   document.getElementById("profileName").value = profile.full_name || "";
   document.getElementById("profilePhone").value = profile.phone || "";
-  document.getElementById("profileAddress").value = profile.address || "";
+  hydrateProfileAddress(profile.address || "");
 }
 
 
@@ -841,6 +959,7 @@ tabLogin.addEventListener("click", () => setTab("login"));
 tabRegister.addEventListener("click", () => setTab("register"));
 document.getElementById("loginBtn").addEventListener("click", login);
 document.getElementById("registerAddressDetail").addEventListener("input", updateRegisterAddress);
+document.getElementById("profileAddressDetail").addEventListener("input", updateProfileAddress);
 document.getElementById("registerBtn").addEventListener("click", register);
 document.getElementById("accountToggleBtn").addEventListener("click", () => toggleAccountMenu());
 document.getElementById("saveProfileBtn").addEventListener("click", saveProfile);
