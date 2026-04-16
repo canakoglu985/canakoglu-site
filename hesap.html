@@ -401,13 +401,13 @@
 const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const CART_KEY = "canakoglu_cart_v1";
+const CART_KEYS = ["canakoglu_cart_v1", "cart"];
+const SERVICE_SETTINGS_KEY = "service_areas_v1";
 
 const tabLogin = document.getElementById("tabLogin");
 const tabRegister = document.getElementById("tabRegister");
 const paneLogin = document.getElementById("paneLogin");
 const paneRegister = document.getElementById("paneRegister");
-const logoutBtn = document.getElementById("logoutBtn");
 
 const ADDRESS_DATA = {
   "Pamukkale": ["Akhan", "Güzelköy", "Kocadere", "Pınarkent", "Karakova", "Kale"],
@@ -419,9 +419,20 @@ const ADDRESS_DATA = {
 
 let selectedDistrict = "";
 let selectedNeighborhood = "";
-
 let selectedProfileDistrict = "";
 let selectedProfileNeighborhood = "";
+
+function escapeInline(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLocaleLowerCase("tr-TR")
+    .replace(/ı/g, "i")
+    .replace(/İ/g, "i")
+    .trim();
+}
 
 function renderAddressChips() {
   const districtBox = document.getElementById("districtChips");
@@ -429,13 +440,13 @@ function renderAddressChips() {
   if (!districtBox || !neighborhoodBox) return;
 
   districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
-    <button type="button" class="chip-btn ${selectedDistrict === name ? "active" : ""}" onclick="selectDistrict('${name.replace(/'/g, "\'")}')">${name}</button>
+    <button type="button" class="chip-btn ${selectedDistrict === name ? "active" : ""}" onclick="selectDistrict('${escapeInline(name)}')">${name}</button>
   `).join("");
 
   const neighborhoods = ADDRESS_DATA[selectedDistrict] || [];
   neighborhoodBox.innerHTML = neighborhoods.length
     ? neighborhoods.map(name => `
-        <button type="button" class="chip-btn ${selectedNeighborhood === name ? "active" : ""}" onclick="selectNeighborhood('${name.replace(/'/g, "\'")}')">${name}</button>
+        <button type="button" class="chip-btn ${selectedNeighborhood === name ? "active" : ""}" onclick="selectNeighborhood('${escapeInline(name)}')">${name}</button>
       `).join("")
     : '<div class="muted">Önce ilçe seç.</div>';
 
@@ -446,7 +457,6 @@ function selectDistrict(name) {
   selectedDistrict = name;
   selectedNeighborhood = "";
   renderAddressChips();
-  renderProfileAddressChips();
 }
 
 function selectNeighborhood(name) {
@@ -465,9 +475,7 @@ function updateRegisterAddress() {
   const fullText = [detail, shortText].filter(Boolean).join(" - ");
 
   if (hidden) hidden.value = fullText;
-  if (preview) {
-    preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
-  }
+  if (preview) preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
 }
 
 function renderProfileAddressChips() {
@@ -476,13 +484,13 @@ function renderProfileAddressChips() {
   if (!districtBox || !neighborhoodBox) return;
 
   districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
-    <button type="button" class="chip-btn ${selectedProfileDistrict === name ? "active" : ""}" onclick="selectProfileDistrict('${name.replace(/'/g, "\'")}')">${name}</button>
+    <button type="button" class="chip-btn ${selectedProfileDistrict === name ? "active" : ""}" onclick="selectProfileDistrict('${escapeInline(name)}')">${name}</button>
   `).join("");
 
   const neighborhoods = ADDRESS_DATA[selectedProfileDistrict] || [];
   neighborhoodBox.innerHTML = neighborhoods.length
     ? neighborhoods.map(name => `
-        <button type="button" class="chip-btn ${selectedProfileNeighborhood === name ? "active" : ""}" onclick="selectProfileNeighborhood('${name.replace(/'/g, "\'")}')">${name}</button>
+        <button type="button" class="chip-btn ${selectedProfileNeighborhood === name ? "active" : ""}" onclick="selectProfileNeighborhood('${escapeInline(name)}')">${name}</button>
       `).join("")
     : '<div class="muted">Önce ilçe seç.</div>';
 
@@ -511,9 +519,7 @@ function updateProfileAddress() {
   const fullText = [detail, shortText].filter(Boolean).join(" - ");
 
   if (hidden) hidden.value = fullText;
-  if (preview) {
-    preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
-  }
+  if (preview) preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
 }
 
 function hydrateProfileAddress(addressText) {
@@ -538,19 +544,14 @@ function hydrateProfileAddress(addressText) {
   }
 
   let detail = text;
-  if (selectedProfileDistrict) {
-    detail = detail.replace(selectedProfileDistrict, "");
-  }
-  if (selectedProfileNeighborhood) {
-    detail = detail.replace(selectedProfileNeighborhood, "");
-  }
+  if (selectedProfileDistrict) detail = detail.replace(selectedProfileDistrict, "");
+  if (selectedProfileNeighborhood) detail = detail.replace(selectedProfileNeighborhood, "");
   detail = detail.replace(/Denizli/gi, "").replace(/[\-\/]/g, " ").replace(/\s+/g, " ").trim();
 
   const detailEl = document.getElementById("profileAddressDetail");
   if (detailEl) detailEl.value = detail;
   renderProfileAddressChips();
 }
-
 
 function setTab(mode) {
   const login = mode === "login";
@@ -562,6 +563,7 @@ function setTab(mode) {
 
 function setStatus(id, text, ok=false) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = text || "";
   el.className = "status " + (text ? (ok ? "ok" : "error") : "");
 }
@@ -600,7 +602,10 @@ function escapeHtml(text) {
 
 async function getCurrentUser() {
   const { data, error } = await client.auth.getUser();
-  if (error) return null;
+  if (error) {
+    console.error(error);
+    return null;
+  }
   return data?.user || null;
 }
 
@@ -632,6 +637,47 @@ async function getCurrentProfile() {
     phone: "",
     address: ""
   };
+}
+
+async function getServiceSettings() {
+  const { data, error } = await client
+    .from("site_settings")
+    .select("*")
+    .eq("key", SERVICE_SETTINGS_KEY)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("Hizmet alanı ayarı okunamadı:", error.message);
+    return null;
+  }
+
+  return data?.value || null;
+}
+
+function isAddressInServiceArea(address, settings) {
+  if (!settings) return true;
+  if (settings.enabled === false) return true;
+  const areas = Array.isArray(settings.areas) ? settings.areas : [];
+  if (!areas.length) return true;
+
+  const adr = normalizeText(address);
+  return areas.some(area => adr.includes(normalizeText(area)));
+}
+
+function readCart() {
+  for (const key of CART_KEYS) {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+      if (Array.isArray(parsed) && parsed.length) {
+        return { key, items: parsed };
+      }
+    } catch (_) {}
+  }
+  return { key: CART_KEYS[0], items: [] };
+}
+
+function clearCart() {
+  CART_KEYS.forEach(key => localStorage.removeItem(key));
 }
 
 async function refreshHeaderInfo() {
@@ -681,7 +727,6 @@ async function refreshHeaderInfo() {
   hydrateProfileAddress(profile.address || "");
 }
 
-
 async function saveProfile() {
   setStatus("saveProfileStatus", "");
   const user = await getCurrentUser();
@@ -689,6 +734,8 @@ async function saveProfile() {
     setStatus("saveProfileStatus", "Önce giriş yapmalısın.");
     return;
   }
+
+  updateProfileAddress();
 
   const full_name = document.getElementById("profileName").value.trim();
   const phone = document.getElementById("profilePhone").value.trim();
@@ -755,11 +802,7 @@ async function register() {
     return;
   }
 
-  const { data, error } = await client.auth.signUp({
-    email,
-    password
-  });
-
+  const { data, error } = await client.auth.signUp({ email, password });
   if (error) {
     setStatus("registerStatus", error.message);
     return;
@@ -784,26 +827,19 @@ async function register() {
     return;
   }
 
-  setStatus("registerStatus", "Kayıt başarılı. Giriş yapıldıysa siparişlerin görünecek.", true);
+  setStatus("registerStatus", "Kayıt başarılı.", true);
   await afterAuthSuccess();
 }
 
 async function logout() {
   await client.auth.signOut();
-  setStatus("loginStatus", "", false);
-  setStatus("registerStatus", "", false);
-  setStatus("saveProfileStatus", "", false);
+  setStatus("loginStatus", "");
+  setStatus("registerStatus", "");
+  setStatus("saveProfileStatus", "");
+  setStatus("profileStatus", "");
   closeAccountMenu();
   await refreshHeaderInfo();
   renderOrders([]);
-}
-
-async function readCart() {
-  try {
-    return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-  } catch {
-    return [];
-  }
 }
 
 async function createOrderFromCartIfNeeded() {
@@ -814,22 +850,51 @@ async function createOrderFromCartIfNeeded() {
   const user = await getCurrentUser();
   if (!user) return;
 
-  const cart = await readCart();
+  const { items: cart } = readCart();
   if (!cart.length) return;
 
   const profile = await getCurrentProfile();
-  if (!profile || !profile.id) return;
+  if (!profile || !profile.id) {
+    setStatus("profileStatus", "Profil bilgileri bulunamadı.");
+    return;
+  }
 
-  const totalAmount = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+  const customerName = String(profile.full_name || "").trim();
+  const phone = String(profile.phone || "").trim();
+  const address = String(profile.address || "").trim();
+
+  if (!customerName || !phone || !address) {
+    setStatus("profileStatus", "Sipariş için ad soyad, telefon ve adres bilgisi gerekli.");
+    toggleAccountMenu(true);
+    return;
+  }
+
+  const serviceSettings = await getServiceSettings();
+  if (!isAddressInServiceArea(address, serviceSettings)) {
+    setStatus("profileStatus", "Adresiniz hizmet bölgesi dışında görünüyor.");
+    toggleAccountMenu(true);
+    return;
+  }
+
+  const totalAmount = cart.reduce((sum, item) => {
+    const qty = Number(item.quantity || 1);
+    const price = Number(item.price || item.unit_price || 0);
+    return sum + (qty * price);
+  }, 0);
+
+  if (totalAmount <= 0) {
+    setStatus("profileStatus", "Sepet toplamı hesaplanamadı.");
+    return;
+  }
 
   const orderPayload = {
     customer_id: user.id,
-    customer_name: profile.full_name || profile.email || "Müşteri",
-    phone: profile.phone || "",
-    address: profile.address || "",
+    customer_name: customerName,
+    phone,
+    address,
     delivery_slot: "Hemen",
     payment_method: "Kapıda Nakit",
-    status: "Yeni",
+    status: "yeni",
     total_amount: totalAmount,
     total: totalAmount
   };
@@ -848,10 +913,11 @@ async function createOrderFromCartIfNeeded() {
 
   const itemsPayload = cart.map(item => ({
     order_id: order.id,
-    product_name: item.name,
-    quantity: Number(item.quantity || 0),
-    unit_price: Number(item.price || 0),
-    line_total: Number(item.price || 0) * Number(item.quantity || 0)
+    product_id: item.id || item.product_id || null,
+    product_name: item.name || item.product_name || "Ürün",
+    quantity: Number(item.quantity || 1),
+    unit_price: Number(item.price || item.unit_price || 0),
+    line_total: Number(item.price || item.unit_price || 0) * Number(item.quantity || 1)
   }));
 
   const { error: itemsError } = await client.from("order_items").insert(itemsPayload);
@@ -861,15 +927,14 @@ async function createOrderFromCartIfNeeded() {
     return;
   }
 
-  localStorage.removeItem(CART_KEY);
+  clearCart();
   setStatus("profileStatus", "Sipariş başarıyla oluşturuldu.", true);
-
-  const cleanUrl = window.location.pathname;
-  window.history.replaceState({}, "", cleanUrl);
+  window.history.replaceState({}, "", window.location.pathname);
 }
 
 function renderOrders(orders, itemsByOrder={}) {
   const box = document.getElementById("ordersBox");
+  if (!box) return;
 
   if (!orders.length) {
     box.innerHTML = '<div class="empty">Henüz siparişin yok.</div>';
@@ -888,9 +953,9 @@ function renderOrders(orders, itemsByOrder={}) {
       <div class="order">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
           <strong>Sipariş #${order.id}</strong>
-          <span style="font-weight:900;color:#c97507;">${escapeHtml(order.status || "Yeni")}</span>
+          <span style="font-weight:900;color:#c97507;">${escapeHtml(order.status || "yeni")}</span>
         </div>
-        <div class="muted" style="margin-top:6px;">${new Date(order.created_at).toLocaleString("tr-TR")}</div>
+        <div class="muted" style="margin-top:6px;">${order.created_at ? new Date(order.created_at).toLocaleString("tr-TR") : "-"}</div>
 
         <div class="meta">
           <div class="meta-item"><strong>Ödeme</strong><div style="margin-top:4px;">${escapeHtml(order.payment_method || "-")}</div></div>
@@ -964,7 +1029,6 @@ document.getElementById("registerBtn").addEventListener("click", register);
 document.getElementById("accountToggleBtn").addEventListener("click", () => toggleAccountMenu());
 document.getElementById("saveProfileBtn").addEventListener("click", saveProfile);
 document.getElementById("menuLogoutBtn").addEventListener("click", logout);
-logoutBtn.addEventListener("click", logout);
 document.addEventListener("click", (e) => {
   const shell = document.querySelector(".account-shell");
   if (shell && !shell.contains(e.target)) closeAccountMenu();
@@ -976,6 +1040,8 @@ client.auth.onAuthStateChange(async () => {
 });
 
 (async function init() {
+  renderAddressChips();
+  renderProfileAddressChips();
   await refreshHeaderInfo();
   await createOrderFromCartIfNeeded();
   await loadOrders();
