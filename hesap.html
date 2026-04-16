@@ -425,11 +425,11 @@ let selectedProfileNeighborhood = "";
 let orderCreateLock = false;
 
 function setTab(mode) {
-  const isLogin = mode === "login";
-  tabLogin?.classList.toggle("active", isLogin);
-  tabRegister?.classList.toggle("active", !isLogin);
-  paneLogin?.classList.toggle("active", isLogin);
-  paneRegister?.classList.toggle("active", !isLogin);
+  const login = mode === "login";
+  tabLogin?.classList.toggle("active", login);
+  tabRegister?.classList.toggle("active", !login);
+  paneLogin?.classList.toggle("active", login);
+  paneRegister?.classList.toggle("active", !login);
 }
 
 function setStatus(id, text, ok = false) {
@@ -463,20 +463,6 @@ function normalizeText(value) {
     .trim();
 }
 
-function getCart() {
-  for (const key of CART_KEYS) {
-    try {
-      const data = JSON.parse(localStorage.getItem(key) || "[]");
-      if (Array.isArray(data) && data.length) return { key, items: data };
-    } catch (_) {}
-  }
-  return { key: CART_KEYS[0], items: [] };
-}
-
-function clearCart() {
-  CART_KEYS.forEach(key => localStorage.removeItem(key));
-}
-
 function toggleAccountMenu(forceOpen = null) {
   const menu = document.getElementById("accountMenu");
   if (!menu) return;
@@ -499,9 +485,11 @@ function updateRegisterAddress() {
   const detail = document.getElementById("registerAddressDetail")?.value.trim() || "";
   const hidden = document.getElementById("registerAddress");
   const preview = document.getElementById("registerAddressPreview");
+
   const parts = [selectedNeighborhood, selectedDistrict, city].filter(Boolean);
   const shortText = parts.join(" / ");
   const fullText = [detail, shortText].filter(Boolean).join(" - ");
+
   if (hidden) hidden.value = fullText;
   if (preview) preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
 }
@@ -511,9 +499,11 @@ function updateProfileAddress() {
   const detail = document.getElementById("profileAddressDetail")?.value.trim() || "";
   const hidden = document.getElementById("profileAddress");
   const preview = document.getElementById("profileAddressPreview");
+
   const parts = [selectedProfileNeighborhood, selectedProfileDistrict, city].filter(Boolean);
   const shortText = parts.join(" / ");
   const fullText = [detail, shortText].filter(Boolean).join(" - ");
+
   if (hidden) hidden.value = fullText;
   if (preview) preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
 }
@@ -585,6 +575,7 @@ window.selectProfileNeighborhood = selectProfileNeighborhood;
 function hydrateProfileAddress(addressText) {
   const text = String(addressText || "");
   const lower = text.toLocaleLowerCase("tr-TR");
+
   selectedProfileDistrict = "";
   selectedProfileNeighborhood = "";
 
@@ -617,36 +608,38 @@ async function getCurrentUser() {
   return data?.user || null;
 }
 
-async function getProfileByUserId(userId, email = "") {
+async function getCurrentProfile() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
   const { data, error } = await client
     .from("profiles")
     .select("id, email, full_name, phone, address")
-    .eq("id", userId)
+    .eq("id", user.id)
     .maybeSingle();
 
   if (error) {
-    console.error(error);
+    console.error("Profil okuma hatası:", error);
+    return {
+      id: user.id,
+      email: user.email || "",
+      full_name: "",
+      phone: "",
+      address: ""
+    };
   }
 
   return data || {
-    id: userId,
-    email,
+    id: user.id,
+    email: user.email || "",
     full_name: "",
     phone: "",
     address: ""
   };
 }
 
-async function getCurrentProfile() {
-  const user = await getCurrentUser();
-  if (!user) return null;
-  return await getProfileByUserId(user.id, user.email || "");
-}
-
-async function refreshHeaderInfo(user = null) {
-  const currentUser = user || await getCurrentUser();
-  const profile = currentUser ? await getProfileByUserId(currentUser.id, currentUser.email || "") : null;
-
+async function refreshHeaderInfo() {
+  const profile = await getCurrentProfile();
   const text = document.getElementById("activeUserText");
   const menuName = document.getElementById("accountMenuName");
   const menuMeta = document.getElementById("accountMenuMeta");
@@ -654,6 +647,7 @@ async function refreshHeaderInfo(user = null) {
   const toggleSub = document.getElementById("accountToggleSub");
   const toggleAvatar = document.getElementById("accountToggleAvatar");
   const heroAvatar = document.getElementById("accountHeroAvatar");
+
   const avatarText = (name) => String(name || "H").trim().charAt(0).toUpperCase();
 
   if (!profile) {
@@ -664,36 +658,42 @@ async function refreshHeaderInfo(user = null) {
     if (toggleSub) toggleSub.textContent = "Bilgiler ve siparişler";
     if (toggleAvatar) toggleAvatar.textContent = "H";
     if (heroAvatar) heroAvatar.textContent = "H";
-    const pName = document.getElementById("profileName");
-    const pPhone = document.getElementById("profilePhone");
-    const pAddress = document.getElementById("profileAddress");
-    const pDetail = document.getElementById("profileAddressDetail");
-    if (pName) pName.value = "";
-    if (pPhone) pPhone.value = "";
-    if (pAddress) pAddress.value = "";
-    if (pDetail) pDetail.value = "";
+    const profileName = document.getElementById("profileName");
+    const profilePhone = document.getElementById("profilePhone");
+    const profileAddress = document.getElementById("profileAddress");
+    const profileAddressDetail = document.getElementById("profileAddressDetail");
+    if (profileName) profileName.value = "";
+    if (profilePhone) profilePhone.value = "";
+    if (profileAddress) profileAddress.value = "";
+    if (profileAddressDetail) profileAddressDetail.value = "";
     selectedProfileDistrict = "";
     selectedProfileNeighborhood = "";
     renderProfileAddressChips();
-    return null;
+    return;
   }
 
   const displayName = profile.full_name || profile.email || "Kullanıcı";
   if (text) {
-    text.innerHTML = `<strong>${escapeHtml(displayName)}</strong><br>${escapeHtml(profile.email || "-")}<br>${escapeHtml(profile.phone || "-")}<br>${escapeHtml(profile.address || "-")}`;
+    text.innerHTML = `
+      <strong>${escapeHtml(displayName)}</strong><br>
+      ${escapeHtml(profile.email || "-")}<br>
+      ${escapeHtml(profile.phone || "-")}<br>
+      ${escapeHtml(profile.address || "-")}
+    `;
   }
+
   if (menuName) menuName.textContent = displayName;
   if (menuMeta) menuMeta.innerHTML = `${escapeHtml(profile.email || "-")}<br>${escapeHtml(profile.phone || "-")}<br>${escapeHtml(profile.address || "-")}`;
   if (toggleName) toggleName.textContent = displayName;
   if (toggleSub) toggleSub.textContent = "Bilgiler ve siparişler";
   if (toggleAvatar) toggleAvatar.textContent = avatarText(displayName);
   if (heroAvatar) heroAvatar.textContent = avatarText(displayName);
-  const pName = document.getElementById("profileName");
-  const pPhone = document.getElementById("profilePhone");
-  if (pName) pName.value = profile.full_name || "";
-  if (pPhone) pPhone.value = profile.phone || "";
+
+  const profileName = document.getElementById("profileName");
+  const profilePhone = document.getElementById("profilePhone");
+  if (profileName) profileName.value = profile.full_name || "";
+  if (profilePhone) profilePhone.value = profile.phone || "";
   hydrateProfileAddress(profile.address || "");
-  return profile;
 }
 
 async function saveProfile() {
@@ -729,12 +729,13 @@ async function saveProfile() {
   }
 
   setStatus("saveProfileStatus", "Bilgiler güncellendi.", true);
-  await refreshHeaderInfo(user);
+  await refreshHeaderInfo();
 }
 
 async function login() {
-  setStatus("loginStatus", "");
   try {
+    setStatus("loginStatus", "");
+    setStatus("profileStatus", "");
     const email = document.getElementById("loginEmail")?.value.trim() || "";
     const password = document.getElementById("loginPassword")?.value || "";
 
@@ -743,24 +744,24 @@ async function login() {
       return;
     }
 
-    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    const { error } = await client.auth.signInWithPassword({ email, password });
     if (error) {
       setStatus("loginStatus", error.message);
       return;
     }
 
     setStatus("loginStatus", "Giriş başarılı.", true);
-    setTab("login");
-    await afterAuthSuccess(data?.user || null);
+    await afterAuthSuccess();
+    closeAccountMenu();
   } catch (err) {
-    console.error(err);
-    setStatus("loginStatus", err.message || "Giriş sırasında hata oluştu.");
+    console.error("Login hatası:", err);
+    setStatus("loginStatus", "Giriş sonrası işlem hatası: " + (err.message || err));
   }
 }
 
 async function register() {
-  setStatus("registerStatus", "");
   try {
+    setStatus("registerStatus", "");
     const fullName = document.getElementById("registerName")?.value.trim() || "";
     const phone = document.getElementById("registerPhone")?.value.trim() || "";
     updateRegisterAddress();
@@ -772,6 +773,7 @@ async function register() {
       setStatus("registerStatus", "Lütfen ilçe ve mahalle seç.");
       return;
     }
+
     if (!fullName || !phone || !address || !email || !password) {
       setStatus("registerStatus", "Tüm alanlar gerekli.");
       return;
@@ -796,16 +798,17 @@ async function register() {
       phone,
       address
     }]);
+
     if (profileError) {
       setStatus("registerStatus", profileError.message);
       return;
     }
 
     setStatus("registerStatus", "Kayıt başarılı.", true);
-    await afterAuthSuccess(user);
+    await afterAuthSuccess();
   } catch (err) {
-    console.error(err);
-    setStatus("registerStatus", err.message || "Kayıt sırasında hata oluştu.");
+    console.error("Register hatası:", err);
+    setStatus("registerStatus", "Kayıt sonrası işlem hatası: " + (err.message || err));
   }
 }
 
@@ -816,19 +819,29 @@ async function logout() {
   setStatus("saveProfileStatus", "");
   setStatus("profileStatus", "");
   closeAccountMenu();
-  await refreshHeaderInfo(null);
-  renderOrders([]);
+  await refreshHeaderInfo();
+  renderOrders([], {});
+}
+
+function readCart() {
+  for (const key of CART_KEYS) {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+      if (Array.isArray(parsed) && parsed.length) return { key, items: parsed };
+    } catch (_) {}
+  }
+  return { key: null, items: [] };
 }
 
 async function getServiceSettings() {
   const { data, error } = await client
     .from("site_settings")
-    .select("*")
+    .select("key, value")
     .eq("key", SERVICE_SETTINGS_KEY)
     .maybeSingle();
 
   if (error) {
-    console.warn(error);
+    console.warn("service_settings okuma hatası:", error);
     return null;
   }
   return data?.value || null;
@@ -837,39 +850,50 @@ async function getServiceSettings() {
 function addressAllowed(address, settings) {
   if (!settings) return true;
   if (settings.enabled === false) return true;
+
   const areas = Array.isArray(settings.areas) ? settings.areas : [];
   if (!areas.length) return true;
+
   const adr = normalizeText(address);
   return areas.some(area => adr.includes(normalizeText(area)));
 }
 
-async function createOrderFromCartIfNeeded(user = null) {
+async function createOrderFromCartIfNeeded() {
   if (orderCreateLock) return;
-  const currentUser = user || await getCurrentUser();
-  if (!currentUser) return;
+  const cartInfo = readCart();
+  if (!cartInfo.items.length) return;
 
-  const { items: cart } = getCart();
-  if (!cart.length) return;
-
-  const profile = await getProfileByUserId(currentUser.id, currentUser.email || "");
-  if (!profile) return;
-  if (!profile.full_name || !profile.phone || !profile.address) {
-    setStatus("profileStatus", "Sipariş için hesap bilgileri eksik.");
-    return;
-  }
-
-  const settings = await getServiceSettings();
-  if (!addressAllowed(profile.address, settings)) {
-    setStatus("profileStatus", "Adres hizmet bölgesi dışında görünüyor.");
-    return;
-  }
+  const user = await getCurrentUser();
+  if (!user) return;
 
   orderCreateLock = true;
+
   try {
-    const totalAmount = cart.reduce((sum, item) => {
-      const price = Number(item.price ?? item.unit_price ?? 0);
+    const profile = await getCurrentProfile();
+    if (!profile || !profile.id) {
+      setStatus("profileStatus", "Profil bilgisi bulunamadı.");
+      return;
+    }
+
+    const fullName = String(profile.full_name || "").trim();
+    const phone = String(profile.phone || "").trim();
+    const address = String(profile.address || "").trim();
+
+    if (!fullName || !phone || !address) {
+      setStatus("profileStatus", "Sipariş için hesap bilgilerini tamamla.");
+      return;
+    }
+
+    const serviceSettings = await getServiceSettings();
+    if (!addressAllowed(address, serviceSettings)) {
+      setStatus("profileStatus", "Adres hizmet bölgesi dışında görünüyor.");
+      return;
+    }
+
+    const totalAmount = cartInfo.items.reduce((sum, item) => {
       const qty = Number(item.quantity || 1);
-      return sum + (price * qty);
+      const price = Number(item.price ?? item.unit_price ?? 0);
+      return sum + (qty * price);
     }, 0);
 
     if (totalAmount <= 0) {
@@ -877,48 +901,48 @@ async function createOrderFromCartIfNeeded(user = null) {
       return;
     }
 
-    const orderPayload = {
-      customer_id: currentUser.id,
-      customer_name: profile.full_name || profile.email || "Müşteri",
-      phone: profile.phone || "",
-      address: profile.address || "",
-      delivery_slot: "Hemen",
-      payment_method: "Kapıda Nakit",
-      status: "yeni",
-      total_amount: totalAmount,
-      total: totalAmount
-    };
-
     const { data: order, error: orderError } = await client
       .from("orders")
-      .insert([orderPayload])
+      .insert([{
+        customer_id: user.id,
+        customer_name: fullName,
+        phone,
+        address,
+        delivery_slot: "Hemen",
+        payment_method: "Kapıda Nakit",
+        status: "yeni",
+        total_amount: totalAmount,
+        total: totalAmount
+      }])
       .select()
       .single();
 
     if (orderError) {
-      console.error(orderError);
       setStatus("profileStatus", "Sipariş oluşturulamadı: " + orderError.message);
       return;
     }
 
-    const itemsPayload = cart.map(item => ({
+    const itemsPayload = cartInfo.items.map(item => ({
       order_id: order.id,
       product_id: item.id || item.product_id || null,
       product_name: item.name || item.product_name || "Ürün",
       quantity: Number(item.quantity || 1),
       unit_price: Number(item.price ?? item.unit_price ?? 0),
-      line_total: Number(item.price ?? item.unit_price ?? 0) * Number(item.quantity || 1)
+      line_total: Number(item.quantity || 1) * Number(item.price ?? item.unit_price ?? 0)
     }));
 
     const { error: itemsError } = await client.from("order_items").insert(itemsPayload);
     if (itemsError) {
-      console.error(itemsError);
       setStatus("profileStatus", "Sipariş kalemleri kaydedilemedi: " + itemsError.message);
       return;
     }
 
-    clearCart();
+    localStorage.removeItem(cartInfo.key);
     setStatus("profileStatus", "Sipariş başarıyla oluşturuldu.", true);
+
+    if (window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   } finally {
     orderCreateLock = false;
   }
@@ -965,51 +989,57 @@ function renderOrders(orders, itemsByOrder = {}) {
   }).join("");
 }
 
-async function loadOrders(user = null) {
-  const currentUser = user || await getCurrentUser();
-  if (!currentUser) {
-    renderOrders([]);
-    return;
-  }
-
-  const { data: orders, error } = await client
-    .from("orders")
-    .select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id")
-    .eq("customer_id", currentUser.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error(error);
-    setStatus("profileStatus", "Siparişler alınamadı: " + error.message);
-    renderOrders([]);
-    return;
-  }
-
-  const ids = (orders || []).map(o => o.id).filter(Boolean);
-  let itemsByOrder = {};
-
-  if (ids.length) {
-    const { data: items, error: itemsError } = await client
-      .from("order_items")
-      .select("order_id, product_name, quantity, unit_price, line_total")
-      .in("order_id", ids);
-
-    if (!itemsError) {
-      itemsByOrder = (items || []).reduce((acc, item) => {
-        (acc[item.order_id] ||= []).push(item);
-        return acc;
-      }, {});
+async function loadOrders() {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      renderOrders([], {});
+      return;
     }
-  }
 
-  renderOrders(orders || [], itemsByOrder);
+    const { data: orders, error } = await client
+      .from("orders")
+      .select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id")
+      .eq("customer_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("orders okuma hatası:", error);
+      setStatus("profileStatus", "Siparişler alınamadı: " + error.message);
+      renderOrders([], {});
+      return;
+    }
+
+    const ids = (orders || []).map(o => o.id).filter(Boolean);
+    let itemsByOrder = {};
+
+    if (ids.length) {
+      const { data: items, error: itemsError } = await client
+        .from("order_items")
+        .select("order_id, product_name, quantity, unit_price, line_total")
+        .in("order_id", ids);
+
+      if (!itemsError) {
+        itemsByOrder = (items || []).reduce((acc, item) => {
+          if (!acc[item.order_id]) acc[item.order_id] = [];
+          acc[item.order_id].push(item);
+          return acc;
+        }, {});
+      }
+    }
+
+    renderOrders(orders || [], itemsByOrder);
+  } catch (err) {
+    console.error("loadOrders hatası:", err);
+    setStatus("profileStatus", "Siparişler yüklenemedi: " + (err.message || err));
+    renderOrders([], {});
+  }
 }
 
-async function afterAuthSuccess(user = null) {
-  const currentUser = user || await getCurrentUser();
-  await refreshHeaderInfo(currentUser);
-  await createOrderFromCartIfNeeded(currentUser);
-  await loadOrders(currentUser);
+async function afterAuthSuccess() {
+  await refreshHeaderInfo();
+  await createOrderFromCartIfNeeded();
+  await loadOrders();
 }
 
 tabLogin?.addEventListener("click", () => setTab("login"));
@@ -1019,8 +1049,8 @@ document.getElementById("registerBtn")?.addEventListener("click", register);
 document.getElementById("registerAddressDetail")?.addEventListener("input", updateRegisterAddress);
 document.getElementById("profileAddressDetail")?.addEventListener("input", updateProfileAddress);
 document.getElementById("saveProfileBtn")?.addEventListener("click", saveProfile);
-document.getElementById("accountToggleBtn")?.addEventListener("click", () => toggleAccountMenu());
 document.getElementById("menuLogoutBtn")?.addEventListener("click", logout);
+document.getElementById("accountToggleBtn")?.addEventListener("click", () => toggleAccountMenu());
 
 document.addEventListener("click", (e) => {
   const shell = document.querySelector(".account-shell");
@@ -1034,18 +1064,21 @@ document.getElementById("registerPassword")?.addEventListener("keydown", (e) => 
   if (e.key === "Enter") register();
 });
 
-client.auth.onAuthStateChange(async (_event, session) => {
-  await refreshHeaderInfo(session?.user || null);
-  await loadOrders(session?.user || null);
+client.auth.onAuthStateChange(() => {
+  setTimeout(async () => {
+    await refreshHeaderInfo();
+    await loadOrders();
+  }, 0);
 });
 
 (async function init() {
   renderAddressChips();
   renderProfileAddressChips();
   await refreshHeaderInfo();
+  await createOrderFromCartIfNeeded();
   await loadOrders();
 })();
 </script>
+
 </body>
 </html>
-
