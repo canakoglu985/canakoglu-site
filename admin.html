@@ -250,6 +250,12 @@
       100%{transform:scale(1)}
     }
 
+  
+    .bar-chart{display:grid;gap:10px}
+    .bar-row{display:grid;grid-template-columns:160px 1fr 70px;gap:10px;align-items:center}
+    .bar-track{height:12px;border-radius:999px;background:#eef3f9;overflow:hidden}
+    .bar-fill{height:100%;border-radius:999px;background:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%)}
+
   </style>
 </head>
 <body>
@@ -390,6 +396,9 @@
           </div>
           <div><label>Görsel URL</label><input id="p-image-url"></div>
           <div><label>Kampanya Etiketi</label><input id="p-campaign"></div>
+          <div><label>Eski Fiyat</label><input id="p-compare-price" type="number" step="0.01"></div>
+          <div><label>Öne Çıkan</label><select id="p-featured"><option value="false">Hayır</option><option value="true">Evet</option></select></div>
+          <div><label>Vitrin Sırası</label><input id="p-featured-rank" type="number" step="1"></div>
         </div>
         <div class="row" style="margin-top:12px">
           <button class="btn primary" onclick="saveProduct()">Ürünü Kaydet</button>
@@ -504,6 +513,14 @@
           <div class="stat"><div class="label">Aktif Müşteri</div><div id="report-customers" class="value">0</div></div>
         </div>
         <div class="grid-2" style="margin-top:14px">
+          <div class="card">
+            <h4 style="margin-top:0">Günlük Ciro Grafiği</h4>
+            <div id="daily-sales-chart" class="bar-chart"></div>
+          </div>
+          <div class="card">
+            <h4 style="margin-top:0">Kategori Bazlı Satış</h4>
+            <div id="category-sales-chart" class="bar-chart"></div>
+          </div>
           <div class="card">
             <h4 style="margin-top:0">En Çok Satan Ürünler</h4>
             <div id="top-products" class="report-list"></div>
@@ -823,13 +840,17 @@ if(!url || !key){
       document.getElementById('p-unit').value = p.unit || 'adet';
       document.getElementById('p-image-url').value = p.image_url || '';
       document.getElementById('p-campaign').value = p.campaign_label || '';
+      const compareEl = document.getElementById('p-compare-price'); if(compareEl) compareEl.value = p.compare_at_price || p.old_price || '';
+      const featuredEl = document.getElementById('p-featured'); if(featuredEl) featuredEl.value = String(Boolean(p.is_featured || p.featured));
+      const rankEl = document.getElementById('p-featured-rank'); if(rankEl) rankEl.value = p.featured_rank || p.sort_order || '';
       showTab('products', document.querySelectorAll('.tab')[1]);
       window.scrollTo({top:0, behavior:'smooth'});
     }
 
     function clearProductForm(){
-      ['p-barcode','p-name','p-price','p-category','p-stock','p-image-url','p-campaign'].forEach(id => document.getElementById(id).value = '');
+      ['p-barcode','p-name','p-price','p-category','p-stock','p-image-url','p-campaign','p-compare-price','p-featured-rank'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
       document.getElementById('p-unit').value = 'adet';
+      const featuredEl = document.getElementById('p-featured'); if(featuredEl) featuredEl.value = 'false';
     }
 
     async function saveProduct(){
@@ -843,6 +864,9 @@ if(!url || !key){
           unit: document.getElementById('p-unit').value.trim(),
           image_url: document.getElementById('p-image-url').value.trim() || null,
           campaign_label: document.getElementById('p-campaign').value.trim() || null,
+          compare_at_price: Number((document.getElementById('p-compare-price')?.value) || 0) || null,
+          is_featured: (document.getElementById('p-featured')?.value || 'false') === 'true',
+          featured_rank: Number((document.getElementById('p-featured-rank')?.value) || 0) || null,
           is_active: true
         };
 
@@ -1492,7 +1516,7 @@ if(!url || !key){
 
     function renderReports(){
       const reportOrders = getFilteredOrdersForReport();
-      const revenue = reportOrders.reduce((sum,o) => sum + Number(o.total_amount || 0), 0);
+      const revenue = reportOrders.reduce((sum,o) => sum + Number(o.total_amount ?? o.total ?? 0), 0);
       const avg = reportOrders.length ? revenue / reportOrders.length : 0;
       const customerSet = new Set(reportOrders.map(o => `${o.customer_name || ''}__${o.phone || ''}`));
 
@@ -1533,8 +1557,44 @@ if(!url || !key){
           <div><strong>${count}</strong></div>
         </div>
       `).join('') : '<div class="muted">Rapor için veri yok.</div>';
-    }
 
+      const dailyRevenueMap = new Map();
+      reportOrders.forEach(order => {
+        const day = String(order.created_at || '').slice(0,10) || 'Tarih yok';
+        dailyRevenueMap.set(day, (dailyRevenueMap.get(day) || 0) + Number(order.total_amount ?? order.total ?? 0));
+      });
+      const dailyRows = Array.from(dailyRevenueMap.entries()).sort((a,b) => a[0].localeCompare(b[0])).slice(-7);
+      const maxDaily = Math.max(1, ...dailyRows.map(([,val]) => val));
+      const dailyBox = document.getElementById('daily-sales-chart');
+      if (dailyBox) {
+        dailyBox.innerHTML = dailyRows.length ? dailyRows.map(([day, val]) => `
+          <div class="bar-row">
+            <div>${escapeHtml(day)}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6, (val / maxDaily) * 100)}%"></div></div>
+            <div style="text-align:right;font-weight:800;">${money(val)}</div>
+          </div>
+        `).join('') : '<div class="muted">Grafik için veri yok.</div>';
+      }
+
+      const categoryMap = new Map();
+      reportItems.forEach(item => {
+        const product = products.find(p => String(p.name || '').trim() === String(item.product_name || '').trim());
+        const key = product?.category || 'Diğer';
+        categoryMap.set(key, (categoryMap.get(key) || 0) + Number(item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0))));
+      });
+      const catRows = Array.from(categoryMap.entries()).sort((a,b) => b[1]-a[1]).slice(0,8);
+      const maxCat = Math.max(1, ...catRows.map(([,val]) => val));
+      const catBox = document.getElementById('category-sales-chart');
+      if (catBox) {
+        catBox.innerHTML = catRows.length ? catRows.map(([cat, val]) => `
+          <div class="bar-row">
+            <div>${escapeHtml(cat)}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6, (val / maxCat) * 100)}%"></div></div>
+            <div style="text-align:right;font-weight:800;">${money(val)}</div>
+          </div>
+        `).join('') : '<div class="muted">Grafik için veri yok.</div>';
+      }
+    }
     function hydrateRememberedLogin(){
       const remembered = localStorage.getItem('canakoglu_admin_remember') === 'true';
       const loggedIn = localStorage.getItem('canakoglu_admin_login') === 'true';
