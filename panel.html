@@ -256,49 +256,7 @@
     .bar-track{height:12px;border-radius:999px;background:#eef3f9;overflow:hidden}
     .bar-fill{height:100%;border-radius:999px;background:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%)}
 
-  
-    .password-card{
-      background:#fff;
-      border:1px solid #dbe6f1;
-      border-radius:20px;
-      padding:18px;
-      box-shadow:0 8px 18px rgba(18,50,85,.07);
-      margin-bottom:18px;
-    }
-    .password-card h3{
-      margin:0 0 12px;
-      color:#1d4678;
-    }
-    .password-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:10px;
-    }
-    .password-card input{
-      width:100%;
-      padding:12px;
-      border:1px solid #c9d7e6;
-      border-radius:14px;
-      font:inherit;
-      box-sizing:border-box;
-      background:#fff;
-    }
-    .password-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:12px;
-    }
-    .password-status{
-      margin-top:10px;
-      font-size:13px;
-      font-weight:800;
-      min-height:18px;
-    }
-    .password-status.ok{ color:#1e7b36; }
-    .password-status.err{ color:#c62828; }
-
-</style>
+  </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -334,7 +292,7 @@ window.addEventListener('DOMContentLoaded', () => {
 </head>
 <body>
 
-  <div id="login-screen">
+  <div id="login-screen" style="display:none !important;">
     <div class="login-box">
       <h2>Admin Giriş</h2>
       <input id="login-username" placeholder="Kullanıcı adı">
@@ -369,19 +327,6 @@ window.addEventListener('DOMContentLoaded', () => {
   <div id="top-note" class="top-note"></div>
 
   <div class="wrap">
-
-      <div class="password-card">
-        <h3>Admin Şifre Değiştir</h3>
-        <div class="password-grid">
-          <input id="new-admin-password" type="password" placeholder="Yeni şifre">
-          <input id="new-admin-password-repeat" type="password" placeholder="Yeni şifre tekrar">
-        </div>
-        <div class="password-actions">
-          <button class="btn primary" type="button" onclick="changeAdminPassword()">Şifreyi Güncelle</button>
-        </div>
-        <div id="admin-password-status" class="password-status"></div>
-      </div>
-
     <div class="panel">
       <h2>Bağlantı Ayarları</h2>
       <div class="config-grid">
@@ -1417,21 +1362,8 @@ if(!url || !key){
 
 
     function loginAdmin(){
-      const u = document.getElementById('login-username').value.trim();
-      const p = document.getElementById('login-password').value.trim();
-      const remember = document.getElementById('remember-login').checked;
-
-      if(u === 'admin' && p === '1234'){
-        localStorage.setItem('canakoglu_admin_login', 'true');
-        localStorage.setItem('canakoglu_admin_remember', remember ? 'true' : 'false');
-        localStorage.setItem('canakoglu_admin_login_user', u || 'admin');
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('login-error').style.display = 'none';
-
-        const savedUrl = localStorage.getItem('canakoglu_admin_url');
-        const savedKey = localStorage.getItem('canakoglu_admin_key');
-        if(savedUrl && savedKey){
-          setTimeout(() => connectSupabase(), 150);
+          const screen = document.getElementById('login-screen');
+          if(screen) screen.style.display = 'none';
         } else {
           setStatus('global-status', 'Giriş başarılı. Supabase URL ve anon key girip Bağlan butonuna bas.', true);
         }
@@ -1523,7 +1455,7 @@ if(!url || !key){
         try{ supabaseClient.removeChannel(window.__ordersChannel); }catch(e){}
         window.__ordersChannel = null;
       }
-      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('login-screen').style.display = 'none';
       setStatus('global-status', 'Çıkış yapıldı.', true);
     }
 
@@ -1683,15 +1615,9 @@ if(!url || !key){
       }
     }
     function hydrateRememberedLogin(){
-      const remembered = localStorage.getItem('canakoglu_admin_remember') === 'true';
-      const loggedIn = localStorage.getItem('canakoglu_admin_login') === 'true';
-      const checkbox = document.getElementById('remember-login');
-      const username = document.getElementById('login-username');
-      if(checkbox) checkbox.checked = remembered;
-      if(username) username.value = localStorage.getItem('canakoglu_admin_login_user') || 'admin';
-      if(remembered && loggedIn){
-        document.getElementById('login-screen').style.display = 'none';
-      }
+      const screen = document.getElementById('login-screen');
+      if(screen) screen.style.display = 'none';
+    }
     }
 
 
@@ -1742,53 +1668,37 @@ hydrateRememberedLogin();
       }
     });
 
-  
-    async function changeAdminPassword(){
-      const statusEl = document.getElementById('admin-password-status');
-      const pass1 = document.getElementById('new-admin-password').value;
-      const pass2 = document.getElementById('new-admin-password-repeat').value;
-
-      statusEl.className = 'password-status';
-      statusEl.textContent = '';
-
-      if(!pass1 || !pass2){
-        statusEl.className = 'password-status err';
-        statusEl.textContent = 'İki alan da gerekli.';
-        return;
-      }
-
-      if(pass1.length < 6){
-        statusEl.className = 'password-status err';
-        statusEl.textContent = 'Şifre en az 6 karakter olmalı.';
-        return;
-      }
-
-      if(pass1 !== pass2){
-        statusEl.className = 'password-status err';
-        statusEl.textContent = 'Şifreler aynı değil.';
-        return;
-      }
-
-      try{
-        const { error } = await __authClient.auth.updateUser({ password: pass1 });
-        if(error){
-          statusEl.className = 'password-status err';
-          statusEl.textContent = 'Şifre güncellenemedi: ' + error.message;
-          return;
-        }
-
-        document.getElementById('new-admin-password').value = '';
-        document.getElementById('new-admin-password-repeat').value = '';
-        statusEl.className = 'password-status ok';
-        statusEl.textContent = 'Şifre başarıyla güncellendi.';
-      }catch(err){
-        statusEl.className = 'password-status err';
-        statusEl.textContent = 'Şifre güncellenemedi: ' + (err.message || err);
-      }
-    }
-
-
-</script>
+  </script>
   <div id="floating-alert" class="floating-alert"></div>
+
+<script>
+(function(){
+  const SUPABASE_URL = 'https://jpguymicdiujhutnycvl.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I';
+  const ADMIN_EMAIL = 'admin@canakoglu.com';
+
+  async function guardAdminPanel(){
+    try{
+      const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data } = await client.auth.getUser();
+      const email = String(data?.user?.email || '').trim().toLowerCase();
+      const screen = document.getElementById('login-screen');
+      if(screen) screen.style.display = 'none';
+      if(email !== ADMIN_EMAIL){
+        window.location.href = 'admin.html';
+      }
+    }catch(e){
+      window.location.href = 'admin.html';
+    }
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', guardAdminPanel);
+  } else {
+    guardAdminPanel();
+  }
+})();
+</script>
+
 </body>
 </html>
