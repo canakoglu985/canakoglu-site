@@ -313,10 +313,10 @@
       </div>
       <div id="auto-refresh-note" class="tiny" style="margin-top:10px">Otomatik yenileme kapalı.</div>
       <div class="row" style="margin-top:12px">
-        <button class="btn primary" onclick="connectSupabase()">Bağlan</button>
+        
         <button class="btn secondary" onclick="loadAllData()">Tüm Verileri Yenile</button>
       </div>
-      <div id="global-status" class="status">Hazır. Panel otomatik bağlanıyor...</div>
+      <div id="global-status" class="status">Panel başlatılıyor...</div>
     </div>
 
     <div class="stats-grid">
@@ -731,6 +731,17 @@
 
     async async function connectSupabase(){
       try{
+        const url = 'https://jpguymicdiujhutnycvl.supabase.co';
+        const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I';
+        localStorage.setItem('canakoglu_admin_url', url);
+        localStorage.setItem('canakoglu_admin_key', key);
+        const phoneEl = document.getElementById('market-phone');
+        if(phoneEl){
+          if(!phoneEl.value.trim()) phoneEl.value = '905518857099';
+          localStorage.setItem('canakoglu_market_phone', phoneEl.value.trim());
+        }
+        const createClient = (window.supabase && window.supabase.createClient) ? window.supabase.createClient : supabase.createClient;
+        supabaseClient = createClient(url, key);
         const url = document.getElementById('supabase-url').value.trim();
         const key = document.getElementById('supabase-key').value.trim();
 
@@ -1624,6 +1635,7 @@ hydrateRememberedLogin();
         await connectSupabase();
       }catch(e){
         console.error(e);
+        setStatus('global-status', 'Panel otomatik bağlanamadı: ' + (e.message || e), false);
       }
     });
 
