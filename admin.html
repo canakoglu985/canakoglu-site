@@ -318,10 +318,6 @@
       <div class="stat"><div class="label">Toplam Sipariş</div><div id="stat-orders" class="value">0</div></div>
       <div class="stat"><div class="label">Yeni Sipariş</div><div id="stat-new-orders" class="value">0</div></div>
       <div class="stat"><div class="label">Kritik Stok</div><div id="stat-critical" class="value">0</div></div>
-      <div class="stat"><div class="label">Bugün Sipariş</div><div id="stat-today-orders" class="value">0</div></div>
-      <div class="stat"><div class="label">Bugün Ciro</div><div id="stat-today-revenue" class="value">0 TL</div></div>
-      <div class="stat"><div class="label">Teslim Edilen</div><div id="stat-delivered" class="value">0</div></div>
-      <div class="stat"><div class="label">Ortalama Sepet</div><div id="stat-avg-basket" class="value">0 TL</div></div>
     </div>
 
     <div class="tabs">
@@ -332,6 +328,7 @@
       <button class="tab" onclick="showTab('reports', this)">Satış Raporu</button>
       <button class="tab" onclick="showTab('customers', this)">Müşteriler</button>
       <button class="tab" onclick="showTab('status', this)">Canlı Durum</button>
+      <button class="tab" onclick="showTab('serviceareas', this)">Hizmet Bölgeleri</button>
     </div>
 
     <div id="tab-orders" class="tab-content active">
@@ -532,6 +529,32 @@
         <div id="live-status-box" class="status">Bağlantı bekleniyor...</div>
       </div>
     </div>
+
+    <div id="tab-serviceareas" class="tab-content">
+      <div class="panel">
+        <h3>Hizmet Bölgeleri</h3>
+        <div class="settings-grid">
+          <div>
+            <label>Kontrol Aktif</label>
+            <select id="service-area-enabled">
+              <option value="true">Açık</option>
+              <option value="false">Kapalı</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1">
+            <label>Hizmet Verilen Bölgeler</label>
+            <textarea id="service-areas-text" placeholder="Her satıra bir bölge yaz&#10;Akhan&#10;Güzelköy&#10;Kocadere&#10;Pınarkent"></textarea>
+            <div class="tiny" style="margin-top:8px">Müşteri adresinde bu isimlerden biri geçmiyorsa sipariş oluşturulmaz.</div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn primary" onclick="saveServiceAreas()">Kaydet</button>
+          <button class="btn secondary" onclick="loadServiceAreas()">Yenile</button>
+        </div>
+        <div id="service-area-status" class="status">Hazır.</div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -720,7 +743,8 @@ if(!url || !key){
       await Promise.all([
         loadProductsAdmin(),
         loadOrders(false),
-        loadSettings()
+        loadSettings(),
+        loadServiceAreas()
       ]);
       updateStats();
       renderCriticalStock();
@@ -1026,6 +1050,48 @@ if(!url || !key){
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
     }
 
+
+    async function loadServiceAreas(){
+      try{
+        const { data, error } = await supabaseClient
+          .from('site_settings')
+          .select('*')
+          .eq('key', 'service_areas')
+          .maybeSingle();
+
+        if(error) throw error;
+
+        const value = data?.value || {};
+        document.getElementById('service-area-enabled').value = String(value.enabled ?? true);
+        document.getElementById('service-areas-text').value = Array.isArray(value.areas) ? value.areas.join('\n') : '';
+        setStatus('service-area-status', 'Hizmet bölgeleri yüklendi.', true);
+      }catch(err){
+        setStatus('service-area-status', 'Hizmet bölgeleri yüklenemedi: ' + err.message, false);
+      }
+    }
+
+    async function saveServiceAreas(){
+      try{
+        const enabled = document.getElementById('service-area-enabled').value === 'true';
+        const areas = document.getElementById('service-areas-text').value
+          .split('\n')
+          .map(x => x.trim())
+          .filter(Boolean);
+
+        const { error } = await supabaseClient
+          .from('site_settings')
+          .upsert({ key: 'service_areas', value: { enabled, areas } }, { onConflict: 'key' });
+
+        if(error) throw error;
+
+        setStatus('service-area-status', 'Hizmet bölgeleri kaydedildi.', true);
+        setStatus('global-status', 'Hizmet bölgesi ayarları kaydedildi.', true);
+      }catch(err){
+        setStatus('service-area-status', 'Hizmet bölgeleri kaydedilemedi: ' + err.message, false);
+      }
+    }
+
+
     async function loadSettings(){
       try{
         const { data, error } = await supabaseClient
@@ -1128,17 +1194,6 @@ if(!url || !key){
       document.getElementById('stat-products').textContent = String(products.length);
       document.getElementById('stat-orders').textContent = String(orders.length);
       document.getElementById('stat-new-orders').textContent = String(orders.filter(o => String(o.status || 'yeni').toLowerCase() === 'yeni').length);
-
-      const today = new Date().toISOString().slice(0,10);
-      const todayOrders = orders.filter(o => String(o.created_at || '').slice(0,10) === today);
-      const todayRevenue = todayOrders.reduce((sum,o) => sum + Number(o.total_amount ?? o.total ?? 0), 0);
-      const deliveredCount = orders.filter(o => String(o.status || '').trim().toLowerCase() === 'teslim').length;
-      const avgBasket = orders.length ? orders.reduce((sum,o) => sum + Number(o.total_amount ?? o.total ?? 0), 0) / orders.length : 0;
-
-      document.getElementById('stat-today-orders').textContent = String(todayOrders.length);
-      document.getElementById('stat-today-revenue').textContent = money(todayRevenue);
-      document.getElementById('stat-delivered').textContent = String(deliveredCount);
-      document.getElementById('stat-avg-basket').textContent = money(avgBasket);
     }
 
     function normalizeBool(v){
