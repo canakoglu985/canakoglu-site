@@ -314,13 +314,14 @@
   <div class="wrap">
     <section class="hero">
       <div class="hero-copy">
-        <span class="hero-badge">⚡ Çanakoğlu’na özel güçlü vitrin</span>
-        <h1>Mahalle marketin<br>artık çok daha şık</h1>
-        <p>Logona uyumlu lacivert ve turuncu kimlikle, güven veren, sade ama güçlü bir alışveriş deneyimi.</p>
+        <span class="hero-badge" id="heroBadgeText">⚡ Çanakoğlu’na özel güçlü vitrin</span>
+        <h1 id="heroTitle1">Mahalle marketin<br>artık çok daha şık</h1>
+        <p id="heroSubtitle1">Logona uyumlu lacivert ve turuncu kimlikle, güven veren, sade ama güçlü bir alışveriş deneyimi.</p>
         <div class="hero-actions">
-          <button class="hero-light" type="button" onclick="document.getElementById('productsSection').scrollIntoView({behavior:'smooth'})">Ürünlere Git</button>
+          <button class="hero-light" id="heroButton1" type="button" onclick="document.getElementById('productsSection').scrollIntoView({behavior:'smooth'})">Ürünlere Git</button>
           <a class="hero-ghost" href="hesap.html">Giriş Yap / Sipariş Ver</a>
         </div>
+        <div id="heroNote" style="margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);font-size:13px;font-weight:800;line-height:1.6;">Çanakoğlu’nun vitrini artık admin panelden yönetilebilir.</div>
       </div>
       <div class="hero-side">
         <div class="mini-panel">
@@ -328,8 +329,8 @@
           <div style="line-height:1.7;opacity:.94">Tek tıkla kapımda mottosunu güçlü ve profesyonel bir vitrinde öne çıkar.</div>
         </div>
         <div class="mini-grid">
-          <div class="mini-box"><b>Hızlı Teslimat</b><span>Aynı gün kapında</span></div>
-          <div class="mini-box"><b>Güncel Kampanya</b><span>Öne çıkan ürünler</span></div>
+          <div class="mini-box"><b id="heroTitle2">Hızlı Teslimat</b><span id="heroSubtitle2">Aynı gün kapında</span></div>
+          <div class="mini-box"><b id="heroTitle3">Güncel Kampanya</b><span id="heroSubtitle3">Öne çıkan ürünler</span></div>
           <div class="mini-box"><b>Kolay Sipariş</b><span>Hesap sayfası ayrı</span></div>
           <div class="mini-box"><b>Mahalle Uyumlu</b><span>Yerel market hissi</span></div>
         </div>
@@ -391,7 +392,8 @@
   </div>
 
   <script>
-    const client = supabase.createClient(
+    const HOME_BANNER_KEY = 'home_banner_v1';
+const client = supabase.createClient(
       "https://jpguymicdiujhutnycvl.supabase.co",
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I"
     );
@@ -405,7 +407,35 @@
         .replaceAll("'","&#39;");
     }
 
-    async function load() {
+    
+async function loadHomeBanner(){
+  try{
+    const { data, error } = await client.from("site_settings").select("*").eq("key", HOME_BANNER_KEY).maybeSingle();
+    if(error) throw error;
+
+    const value = data?.value || {};
+    const slides = Array.isArray(value.slides) ? value.slides : [];
+    const s1 = slides[0] || {};
+    const s2 = slides[1] || {};
+    const s3 = slides[2] || {};
+
+    if (s1.title) document.getElementById("heroTitle1").innerHTML = esc(s1.title).replaceAll("\n","<br>");
+    if (s1.subtitle) document.getElementById("heroSubtitle1").textContent = s1.subtitle;
+    if (s1.button) document.getElementById("heroButton1").textContent = s1.button;
+
+    if (s2.title) document.getElementById("heroTitle2").textContent = s2.title;
+    if (s2.subtitle) document.getElementById("heroSubtitle2").textContent = s2.subtitle;
+
+    if (s3.title) document.getElementById("heroTitle3").textContent = s3.title;
+    if (s3.subtitle) document.getElementById("heroSubtitle3").textContent = s3.subtitle;
+
+    if (value.note) document.getElementById("heroNote").textContent = value.note;
+  }catch(err){
+    console.error("Banner yüklenemedi:", err);
+  }
+}
+
+async function load() {
       const status = document.getElementById("status");
       const box = document.getElementById("products");
       try {
@@ -444,7 +474,8 @@
       });
     });
 
-    document.getElementById("refreshBtn").addEventListener("click", load);
+    document.getElementById("refreshBtn").addEventListener("click", async function(){ await loadHomeBanner(); await loadHomeBanner();
+    load(); });
 
     load();
   </script>
