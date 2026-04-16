@@ -284,6 +284,35 @@
       cursor:pointer;
     }
 
+
+    .order-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .mini-btn{
+      border:none;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:800;
+      cursor:pointer;
+      background:#edf4fb;
+      color:var(--navy);
+    }
+    @media print {
+      body * { visibility: hidden !important; }
+      #printReceiptArea, #printReceiptArea * { visibility: visible !important; }
+      #printReceiptArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #fff;
+        padding: 24px;
+      }
+    }
+
 </style>
 </head>
 <body>
@@ -491,6 +520,8 @@
     </div>
   </div>
 
+
+<div id="printReceiptArea" style="display:none;"></div>
 
 <script>
 const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
@@ -1081,7 +1112,99 @@ async function createOrderFromCartIfNeeded() {
   }
 }
 
+
+function getOrderStatusLabel(status) {
+  const s = String(status || "yeni").toLowerCase();
+  if (s === "hazirlaniyor") return "Hazırlanıyor";
+  if (s === "yolda") return "Yolda";
+  if (s === "teslim") return "Teslim";
+  if (s === "iptal") return "İptal";
+  return "Yeni";
+}
+
+function buildReceiptHtml(order, items = []) {
+  const total = Number(order.total_amount ?? order.total ?? 0);
+  const rows = items.map(item => {
+    const qty = Number(item.quantity || 0);
+    const unitPrice = Number(item.unit_price || 0);
+    const lineTotal = Number(item.line_total ?? (qty * unitPrice));
+    return `
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #e5edf5;">${escapeHtml(item.product_name || "Ürün")}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5edf5;text-align:center;">${qty}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5edf5;text-align:right;">${money(unitPrice)}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5edf5;text-align:right;">${money(lineTotal)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div style="font-family:Arial,sans-serif;color:#17324f;">
+      <div style="display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:2px solid #dbe6f1;padding-bottom:16px;margin-bottom:18px;">
+        <div>
+          <div style="font-size:28px;font-weight:900;color:#1d4678;">Çanakoğlu Market</div>
+          <div style="margin-top:6px;color:#6f8196;font-size:13px;">Sipariş fişi / bilgi çıktısı</div>
+        </div>
+        <div style="text-align:right;font-size:13px;line-height:1.7;">
+          <div><strong>Sipariş No:</strong> #${escapeHtml(order.id)}</div>
+          <div><strong>Tarih:</strong> ${order.created_at ? new Date(order.created_at).toLocaleString("tr-TR") : "-"}</div>
+          <div><strong>Durum:</strong> ${escapeHtml(getOrderStatusLabel(order.status))}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
+        <div style="background:#f8fbff;border:1px solid #dbe6f1;border-radius:16px;padding:14px;">
+          <div style="font-weight:900;color:#1d4678;margin-bottom:8px;">Müşteri Bilgisi</div>
+          <div><strong>Ad Soyad:</strong> ${escapeHtml(order.customer_name || "-")}</div>
+          <div><strong>Telefon:</strong> ${escapeHtml(order.phone || "-")}</div>
+          <div style="margin-top:6px;"><strong>Adres:</strong><br>${escapeHtml(order.address || "-")}</div>
+        </div>
+        <div style="background:#f8fbff;border:1px solid #dbe6f1;border-radius:16px;padding:14px;">
+          <div style="font-weight:900;color:#1d4678;margin-bottom:8px;">Teslimat / Ödeme</div>
+          <div><strong>Teslimat:</strong> ${escapeHtml(order.delivery_slot || "-")}</div>
+          <div><strong>Ödeme:</strong> ${escapeHtml(order.payment_method || "-")}</div>
+          <div style="margin-top:10px;font-size:22px;font-weight:900;color:#16375e;">Toplam: ${money(total)}</div>
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;border:1px solid #dbe6f1;border-radius:16px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f8fbff;">
+            <th style="padding:12px;text-align:left;border-bottom:1px solid #dbe6f1;">Ürün</th>
+            <th style="padding:12px;text-align:center;border-bottom:1px solid #dbe6f1;">Adet</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid #dbe6f1;">Birim</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid #dbe6f1;">Tutar</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="4" style="padding:12px;">Ürün detayı bulunamadı.</td></tr>'}
+        </tbody>
+      </table>
+
+      <div style="margin-top:18px;font-size:12px;color:#6f8196;">Bu çıktı bilgilendirme amaçlıdır.</div>
+    </div>
+  `;
+}
+
+function printOrderReceipt(orderId) {
+  const order = window.__ordersCache?.find(o => String(o.id) === String(orderId));
+  const items = window.__itemsByOrderCache?.[orderId] || [];
+  if (!order) return;
+
+  const area = document.getElementById("printReceiptArea");
+  area.innerHTML = buildReceiptHtml(order, items);
+  area.style.display = "block";
+  window.print();
+  setTimeout(() => {
+    area.style.display = "none";
+    area.innerHTML = "";
+  }, 500);
+}
+window.printOrderReceipt = printOrderReceipt;
+
 function renderOrders(orders, itemsByOrder = {}) {
+  window.__ordersCache = orders || [];
+  window.__itemsByOrderCache = itemsByOrder || {};
   const box = document.getElementById("ordersBox");
   if (!box) return;
 
@@ -1116,6 +1239,10 @@ function renderOrders(orders, itemsByOrder = {}) {
         <div class="items">
           <strong>Ürünler</strong>
           <ul style="margin-top:8px;">${itemsHtml || "<li>Ürün bilgisi bulunamadı.</li>"}</ul>
+        </div>
+
+        <div class="order-actions">
+          <button class="mini-btn" type="button" onclick="printOrderReceipt('${String(order.id).replaceAll("'", "\'")}')">PDF / Fiş</button>
         </div>
       </div>
     `;
