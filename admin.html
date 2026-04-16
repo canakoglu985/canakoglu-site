@@ -355,7 +355,32 @@ code.inline{
           <h2 class="panel-section-title">Kampanyalı Ürünler</h2>
           <div id="campaignProductsList" class="settings-list"></div>
         </div>
+      
+      <div class="card" style="margin-top:18px;">
+        <h2 class="panel-section-title">Ana Sayfa Banner Yönetimi</h2>
+        <div class="grid-3">
+          <div class="field"><label>Banner 1 Başlık</label><input id="banner1Title" placeholder="Örn: Mahalle marketin artık online" /></div>
+          <div class="field"><label>Banner 1 Alt Metin</label><input id="banner1Subtitle" placeholder="Örn: Hızlı teslimat ve güçlü kampanyalar" /></div>
+          <div class="field"><label>Banner 1 Buton</label><input id="banner1Button" placeholder="Örn: Ürünlere Git" /></div>
+
+          <div class="field"><label>Banner 2 Başlık</label><input id="banner2Title" placeholder="Örn: Haftanın fırsatları" /></div>
+          <div class="field"><label>Banner 2 Alt Metin</label><input id="banner2Subtitle" placeholder="Örn: Seçili ürünlerde özel fiyatlar" /></div>
+          <div class="field"><label>Banner 2 Buton</label><input id="banner2Button" placeholder="Örn: Kampanyaları Gör" /></div>
+
+          <div class="field"><label>Banner 3 Başlık</label><input id="banner3Title" placeholder="Örn: Çanakoğlu Kapıda" /></div>
+          <div class="field"><label>Banner 3 Alt Metin</label><input id="banner3Subtitle" placeholder="Örn: Tek tıkla kapımda" /></div>
+          <div class="field"><label>Banner 3 Buton</label><input id="banner3Button" placeholder="Örn: Hesabıma Git" /></div>
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label>Banner Notu</label>
+          <textarea id="bannerNote" placeholder="Hero alanında küçük bilgi notu olarak gösterilir."></textarea>
+        </div>
+        <div class="row-actions">
+          <button id="saveBannerBtn" class="btn primary" type="button">Bannerları Kaydet</button>
+        </div>
+        <div id="bannerStatus" class="status-box">Hazır.</div>
       </div>
+
     </section>
 
     <section id="tab-service" class="tab-section hidden">
@@ -443,6 +468,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const ADMIN_EMAIL = 'admin@canakoglu.com';
 const SERVICE_SETTINGS_KEY = 'service_areas_v1';
 const CAMPAIGN_SETTINGS_KEY = 'campaign_areas_v1';
+const HOME_BANNER_KEY = 'home_banner_v1';
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -985,6 +1011,75 @@ function renderReports(){
     </div>
   `).join('') : '<div class="item-box"><div class="muted">Müşteri raporu yok.</div></div>';
 }
+
+async function loadHomeBanner(){
+  try{
+    const { data, error } = await client.from('site_settings').select('*').eq('key', HOME_BANNER_KEY).maybeSingle();
+    if(error){
+      setBoxStatus('bannerStatus', 'Banner ayarı okunamadı: ' + error.message, false, true);
+      return;
+    }
+    const value = data?.value || {};
+    const slides = Array.isArray(value.slides) ? value.slides : [];
+    const s1 = slides[0] || {};
+    const s2 = slides[1] || {};
+    const s3 = slides[2] || {};
+
+    document.getElementById('banner1Title').value = s1.title || '';
+    document.getElementById('banner1Subtitle').value = s1.subtitle || '';
+    document.getElementById('banner1Button').value = s1.button || '';
+
+    document.getElementById('banner2Title').value = s2.title || '';
+    document.getElementById('banner2Subtitle').value = s2.subtitle || '';
+    document.getElementById('banner2Button').value = s2.button || '';
+
+    document.getElementById('banner3Title').value = s3.title || '';
+    document.getElementById('banner3Subtitle').value = s3.subtitle || '';
+    document.getElementById('banner3Button').value = s3.button || '';
+
+    document.getElementById('bannerNote').value = value.note || '';
+    setBoxStatus('bannerStatus', 'Banner ayarları yüklendi.', true);
+  }catch(err){
+    console.error(err);
+    setBoxStatus('bannerStatus', 'Banner ayarları alınamadı: ' + (err.message || err));
+  }
+}
+
+async function saveHomeBanner(){
+  try{
+    const payload = {
+      key: HOME_BANNER_KEY,
+      value: {
+        note: document.getElementById('bannerNote').value.trim(),
+        slides: [
+          {
+            title: document.getElementById('banner1Title').value.trim(),
+            subtitle: document.getElementById('banner1Subtitle').value.trim(),
+            button: document.getElementById('banner1Button').value.trim()
+          },
+          {
+            title: document.getElementById('banner2Title').value.trim(),
+            subtitle: document.getElementById('banner2Subtitle').value.trim(),
+            button: document.getElementById('banner2Button').value.trim()
+          },
+          {
+            title: document.getElementById('banner3Title').value.trim(),
+            subtitle: document.getElementById('banner3Subtitle').value.trim(),
+            button: document.getElementById('banner3Button').value.trim()
+          }
+        ]
+      }
+    };
+    const { error } = await client.from('site_settings').upsert(payload, { onConflict:'key' });
+    if(error) throw error;
+    setBoxStatus('bannerStatus', 'Banner ayarları kaydedildi.', true);
+    topNote('Banner kaydedildi');
+  }catch(err){
+    console.error(err);
+    setBoxStatus('bannerStatus', 'Banner kaydedilemedi: ' + (err.message || err));
+  }
+}
+
 async function loadAllData(){
   try{
     setGlobalStatus('Veriler yükleniyor...', true);
