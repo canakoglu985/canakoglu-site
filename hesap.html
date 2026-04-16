@@ -1,220 +1,1373 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hesabım - Çanakoğlu</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Çanakoğlu Hesap</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    :root {
+      --bg:#f3f6fb;
+      --card:#fff;
+      --text:#17324f;
+      --muted:#6f8196;
+      --primary:#f28a12;
+      --primary-2:#ffab2d;
+      --navy:#082b78;
+      --navy-2:#123e97;
+      --border:#dbe6f1;
+      --shadow:0 18px 40px rgba(18,50,85,.10);
+      --shadow-soft:0 10px 24px rgba(18,50,85,.07);
+      --success:#39a852;
+      --danger:#c62828;
+      --glass:rgba(255,255,255,.14);
+      --orange-gradient:linear-gradient(135deg,#f28a12 0%,#ffab2d 100%);
+      --navy-gradient:linear-gradient(135deg,#082b78 0%,#123e97 55%,#2b6bdf 100%);
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; padding:0; }
+    body { font-family:Arial,sans-serif; background:var(--bg); color:var(--text); }
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    header {
+      position:sticky; top:0; z-index:40;
+      background:rgba(255,255,255,.94);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(219,230,241,.9);
+      box-shadow:0 10px 26px rgba(18,50,85,.05);
+    }
+    .header-inner,.wrap { max-width:1180px; margin:0 auto; }
+    .header-inner {
+      display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+      padding:16px 20px;
+    }
+    .brand-title { font-size:30px; font-weight:900; color:var(--navy); line-height:1; }
+    .brand-sub { font-size:13px; color:var(--muted); margin-top:6px; font-weight:700; }
 
-<style>
-body {
-  font-family: Arial;
-  margin:0;
-  background:#f3f6fb;
-}
+    .btn {
+      border:none; border-radius:14px; padding:12px 14px; font-weight:800; cursor:pointer;
+      text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;
+    }
+    .btn:hover { filter:brightness(1.03); transform:translateY(-1px); }
+    .primary { background:var(--orange-gradient); color:#fff; box-shadow:0 10px 20px rgba(242,138,18,.2); }
+    .secondary { background:#edf4fb; color:var(--navy); border:1px solid var(--border); }
 
-.container {
-  max-width:1000px;
-  margin:auto;
-  padding:20px;
-}
+    .wrap { padding:22px 20px 28px; }
+    .layout { display:grid; grid-template-columns:430px minmax(0,1fr); gap:18px; align-items:start; }
 
-.hero {
-  background:linear-gradient(135deg,#082b78,#f28a12);
-  color:white;
-  padding:30px;
-  border-radius:20px;
-  margin-bottom:20px;
-}
+    .card {
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:28px;
+      padding:22px;
+      box-shadow:var(--shadow-soft);
+    }
 
-.quick-grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:20px;
-}
+    .tabs {
+      display:flex; gap:10px; margin-bottom:16px; background:#f7faff; padding:6px; border-radius:999px; border:1px solid var(--border);
+    }
+    .tab {
+      border:none; background:transparent; border-radius:999px; padding:12px 16px; cursor:pointer; font-weight:900; color:var(--navy);
+      flex:1;
+    }
+    .tab.active { background:var(--orange-gradient); color:#fff; box-shadow:0 10px 18px rgba(242,138,18,.18); }
 
-.quick-btn {
-  padding:15px;
-  border-radius:12px;
-  border:none;
-  font-weight:bold;
-  cursor:pointer;
-  background:white;
-}
+    .pane { display:none; }
+    .pane.active { display:block; }
 
-.card {
-  background:white;
-  padding:20px;
-  border-radius:20px;
-  margin-top:20px;
-}
+    .field { display:grid; gap:6px; margin-bottom:12px; }
+    label { font-size:13px; color:var(--navy); font-weight:800; }
+    input, textarea, select {
+      width:100%; padding:13px 14px; border:1px solid #c9d7e6; border-radius:16px; font:inherit; background:#fff;
+      outline:none;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color:#9bb7e4; box-shadow:0 0 0 4px rgba(43,107,223,.08);
+    }
+    textarea { min-height:96px; resize:vertical; }
+    .muted { color:var(--muted); font-size:13px; }
+    .status { margin-top:10px; font-size:13px; font-weight:800; min-height:18px; }
+    .status.error { color:var(--danger); }
+    .status.ok { color:var(--success); }
 
-input {
-  width:100%;
-  padding:12px;
-  margin-bottom:10px;
-  border-radius:10px;
-  border:1px solid #ccc;
-}
+    .profile-box {
+      background:linear-gradient(180deg,#fbfcfe,#f7faff);
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:18px;
+      display:grid;
+      gap:8px;
+    }
 
-button.main {
-  width:100%;
-  padding:15px;
-  border:none;
-  border-radius:12px;
-  background:#f28a12;
-  color:white;
-  font-weight:bold;
-  cursor:pointer;
-}
+    .orders { display:grid; gap:14px; }
+    .order {
+      background:linear-gradient(180deg,#fff,#fbfdff);
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:18px;
+      box-shadow:0 8px 18px rgba(18,50,85,.05);
+    }
+    .meta {
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-top:12px;
+    }
+    .meta-item {
+      background:#f7f9fc; border:1px solid var(--border); border-radius:14px; padding:12px;
+    }
+    .items {
+      margin-top:14px; border:1px solid var(--border); border-radius:16px; background:#fbfcfe; padding:14px;
+    }
+    .empty { padding:28px; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:18px; background:#fcfdff; }
+    .sep {
+      height:1px; background:var(--border); margin:18px 0;
+    }
 
-.order-box {
-  border:1px solid #ddd;
-  padding:15px;
-  border-radius:12px;
-  margin-top:10px;
-}
-</style>
+    .selector-group{display:grid;gap:8px;margin-bottom:10px}
+    .selector-label{font-size:13px;color:var(--navy);font-weight:800}
+    .chip-grid{display:grid;grid-template-columns:1fr;gap:8px}
+    .chip-btn{
+      border:none;background:#fff;border:1px solid var(--border);border-radius:14px;
+      padding:12px 14px;cursor:pointer;font-weight:800;color:var(--navy);transition:.18s ease;
+      text-align:left;width:100%;
+    }
+    .chip-btn.active{background:var(--orange-gradient);color:#fff;border-color:transparent;box-shadow:0 8px 18px rgba(242,138,18,.16)}
+    .address-preview{
+      padding:12px 14px;border-radius:14px;background:#f7f9fc;border:1px solid var(--border);
+      color:var(--navy);font-size:13px;font-weight:700;line-height:1.6;margin-bottom:10px;
+    }
+
+    .header-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .account-shell{position:relative}
+    .account-toggle{
+      border:none;border-radius:18px;padding:10px 14px;font-weight:900;cursor:pointer;
+      background:var(--navy-gradient); color:#fff; border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 14px 28px rgba(8,24,46,.14);
+      display:flex; align-items:center; gap:10px; min-width:220px; justify-content:space-between;
+    }
+    .account-chip{display:flex;align-items:center;gap:10px;min-width:0;}
+    .account-avatar{
+      width:44px;height:44px;border-radius:50%;
+      background:var(--orange-gradient);
+      color:#fff;display:flex;align-items:center;justify-content:center;
+      font-weight:900;font-size:16px;flex:0 0 44px;
+      box-shadow:0 10px 20px rgba(242,138,18,.22);
+    }
+    .account-chip-text{min-width:0;text-align:left;}
+    .account-chip-name{
+      font-size:14px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      max-width:130px;
+    }
+    .account-chip-sub{font-size:11px;opacity:.9;font-weight:700;}
+
+    .account-menu{
+      position:absolute;top:calc(100% + 12px);right:0;width:min(490px,94vw);display:none;
+      background:rgba(255,255,255,.98);
+      border:1px solid rgba(219,230,241,.95);
+      border-radius:30px;
+      padding:18px;
+      box-shadow:0 24px 60px rgba(10,28,52,.20);
+      z-index:90;color:var(--text);
+      backdrop-filter: blur(12px);
+    }
+    .account-menu.open{display:block}
+
+    .account-hero{
+      background:linear-gradient(135deg, rgba(9,33,63,.98) 0%, rgba(18,62,151,.98) 55%, rgba(242,138,18,.96) 100%);
+      color:#fff;border-radius:24px;padding:18px;display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:center;
+      box-shadow:0 16px 34px rgba(10,28,52,.18);margin-bottom:14px;
+    }
+    .account-hero-avatar{
+      width:64px;height:64px;border-radius:22px;background:rgba(255,255,255,.12);
+      display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;
+      border:1px solid rgba(255,255,255,.14);
+    }
+    .account-hero-name{ font-size:22px;font-weight:900;line-height:1.1; }
+    .account-hero-meta{
+      margin-top:6px;font-size:13px;line-height:1.6;color:rgba(255,255,255,.9);font-weight:700
+    }
+
+    .account-quick-grid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px;
+    }
+    .quick-tile{
+      border:none;border-radius:18px;padding:14px 14px;cursor:pointer;text-align:left;
+      background:linear-gradient(180deg,#fff,#f8fbff);border:1px solid var(--border);
+      box-shadow:var(--shadow-soft);color:var(--navy);
+    }
+    .quick-tile strong{display:block;font-size:15px;margin-bottom:4px}
+    .quick-tile span{font-size:12px;color:var(--muted);font-weight:700}
+
+    .profile-form{
+      display:grid;gap:12px;padding:16px;border:1px solid var(--border);border-radius:24px;background:#fbfcfe
+    }
+    .profile-form-head{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
+    }
+    .profile-form-head strong{color:var(--navy);font-size:17px}
+    .profile-mini{font-size:13px;color:var(--muted);font-weight:700}
+    .save-row{display:flex;gap:10px;flex-wrap:wrap}
+    .save-row .btn{flex:1}
+
+    .profile-address-builder{
+      display:grid; gap:10px; padding:12px; border:1px solid var(--border); border-radius:18px; background:#fff;
+    }
+
+    .address-select-shell{display:grid;gap:10px}
+    .accordion-group{
+      border:1px solid var(--border); border-radius:16px; background:#fff; overflow:hidden;
+    }
+    .accordion-trigger{
+      width:100%; border:none; background:#f8fbff; color:var(--navy); padding:14px 16px; font-weight:900; cursor:pointer;
+      display:flex; align-items:center; justify-content:space-between; text-align:left;
+    }
+    .accordion-trigger span:last-child{
+      font-size:12px; color:var(--muted); font-weight:800;
+    }
+    .accordion-body{
+      display:none; padding:12px; border-top:1px solid var(--border); background:#fff;
+    }
+    .accordion-group.open .accordion-body{display:block}
+    .accordion-summary{color:var(--muted); font-size:12px; font-weight:800}
+    .accordion-actions{display:flex; justify-content:flex-end; margin-top:10px}
+    .accordion-close{
+      border:none; background:#edf4fb; color:var(--navy); border-radius:12px; padding:10px 12px; font-weight:800; cursor:pointer;
+    }
+
+    .order-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .mini-btn{
+      border:none;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:800;
+      cursor:pointer;
+      background:#edf4fb;
+      color:var(--navy);
+    }
+
+    @media print {
+      body * { visibility: hidden !important; }
+      #printReceiptArea, #printReceiptArea * { visibility: visible !important; }
+      #printReceiptArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #fff;
+        padding: 24px;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns:1fr; }
+    }
+    @media (max-width:640px){
+      .account-toggle{min-width:auto;width:100%;justify-content:space-between}
+      .account-menu{right:auto;left:0;width:min(96vw,490px)}
+      .account-hero{grid-template-columns:1fr;text-align:center}
+      .account-hero-avatar{margin:0 auto}
+      .account-quick-grid{grid-template-columns:1fr}
+      .wrap{padding:14px 12px 24px}
+      .card{padding:18px}
+      .brand-title{font-size:24px}
+    }
+  </style>
+
 </head>
-
 <body>
+  <header>
+    <div class="header-inner">
+      <div>
+        <div class="brand-title">Hesabım</div>
+        <div class="brand-sub">Giriş • kayıt • çıkış • siparişlerim</div>
+      </div>
+      <div class="header-actions">
+        <a class="btn secondary" href="index.html">Markete Dön</a>
+        <div class="account-shell">
+          <button id="accountToggleBtn" class="account-toggle" type="button">
+            <span class="account-chip">
+              <span id="accountToggleAvatar" class="account-avatar">H</span>
+              <span class="account-chip-text">
+                <span id="accountToggleName" class="account-chip-name">Hesabım</span>
+                <span id="accountToggleSub" class="account-chip-sub">Bilgiler ve siparişler</span>
+              </span>
+            </span>
+            <span>▼</span>
+          </button>
 
-<div class="container">
+          <div id="accountMenu" class="account-menu">
+            <div class="account-hero">
+              <div id="accountHeroAvatar" class="account-hero-avatar">H</div>
+              <div>
+                <div id="accountMenuName" class="account-hero-name">Misafir Kullanıcı</div>
+                <div id="accountMenuMeta" class="account-hero-meta">Giriş yapılmadı.</div>
+              </div>
+            </div>
 
-<div class="hero">
-  <h2>Çanakoğlu hesabını yönet</h2>
-  <p>Giriş yap, adresini güncelle ve siparişlerini takip et</p>
+            <div class="account-quick-grid">
+              <button class="quick-tile" type="button" onclick="scrollToOrders()">
+                <strong>Siparişlerim</strong>
+                <span>Geçmiş siparişlerini görüntüle</span>
+              </button>
+              <button id="menuLogoutBtn" class="quick-tile" type="button">
+                <strong>Çıkış Yap</strong>
+                <span>Güvenli şekilde oturumu kapat</span>
+              </button>
+            </div>
 
-  <div class="quick-grid">
-    <button class="quick-btn" onclick="gitLogin()">Hızlı Giriş</button>
-    <button class="quick-btn" onclick="gitAdres()">Adres</button>
-    <button class="quick-btn" onclick="gitSiparis()">Siparişler</button>
-    <button class="quick-btn" onclick="gitSiparis()">PDF / Fiş</button>
+            <div class="profile-form">
+              <div class="profile-form-head">
+                <strong>Hesap Bilgilerim</strong>
+                <span class="profile-mini">Bilgilerini buradan güncelleyebilirsin</span>
+              </div>
+
+              <div class="field" style="margin:0;">
+                <label for="profileName">Ad Soyad</label>
+                <input id="profileName" type="text" />
+              </div>
+
+              <div class="field" style="margin:0;">
+                <label for="profilePhone">Telefon</label>
+                <input id="profilePhone" type="text" />
+              </div>
+
+              <div class="field" style="margin:0;">
+                <label>Adres Bilgisi</label>
+                <div class="profile-address-builder">
+                  <div class="address-select-shell">
+                    <div class="accordion-group" id="profileDistrictGroup">
+                      <button class="accordion-trigger" type="button" onclick="toggleAccordion('profileDistrictGroup')">
+                        <span>İlçe Seç</span>
+                        <span id="profileDistrictSummary" class="accordion-summary">İlçe seçilmedi</span>
+                      </button>
+                      <div class="accordion-body">
+                        <div id="profileDistrictChips" class="chip-grid"></div>
+                        <div class="accordion-actions"><button class="accordion-close" type="button" onclick="closeAccordion('profileDistrictGroup')">Kapat</button></div>
+                      </div>
+                    </div>
+
+                    <div class="accordion-group" id="profileNeighborhoodGroup">
+                      <button class="accordion-trigger" type="button" onclick="toggleAccordion('profileNeighborhoodGroup')">
+                        <span>Mahalle / Bölge Seç</span>
+                        <span id="profileNeighborhoodSummary" class="accordion-summary">Mahalle seçilmedi</span>
+                      </button>
+                      <div class="accordion-body">
+                        <div id="profileNeighborhoodChips" class="chip-grid"></div>
+                        <div class="accordion-actions"><button class="accordion-close" type="button" onclick="closeAccordion('profileNeighborhoodGroup')">Kapat</button></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="field" style="margin:0;">
+                    <label for="profileAddressDetail">Açık Adres</label>
+                    <textarea id="profileAddressDetail" placeholder="Sokak, bina no, daire, kat, apartman adı..."></textarea>
+                  </div>
+
+                  <div id="profileAddressPreview" class="address-preview">İlçe ve mahalle seçildiğinde adres burada oluşacak.</div>
+                  <textarea id="profileAddress" style="display:none;"></textarea>
+                </div>
+              </div>
+
+              <div class="save-row">
+                <button id="saveProfileBtn" class="btn primary" type="button">Bilgileri Güncelle</button>
+              </div>
+
+              <div id="saveProfileStatus" class="status"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" style="margin-bottom:18px; padding:0; overflow:hidden; background:linear-gradient(135deg,#082b78 0%,#123e97 55%,#f28a12 100%); color:#fff; border:none;">
+      <div style="display:grid; grid-template-columns:1.08fr .92fr; gap:18px; align-items:center; padding:26px;">
+        <div>
+          <div style="display:inline-flex; padding:10px 14px; border-radius:999px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.16); font-weight:900; font-size:12px;">Hesabın • Siparişlerin • Adresin</div>
+          <h1 style="margin:14px 0 10px; font-size:42px; line-height:1.04;">Çanakoğlu hesabını<br>tek yerden yönet</h1>
+          <div style="line-height:1.8; max-width:560px; opacity:.95;">Giriş yap, üye ol, adresini güncelle, siparişlerini takip et ve fiş çıktını al. Hepsi tek ekranda, daha düzenli ve daha profesyonel.</div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;">
+          <button type="button" onclick="gitLogin()" style="padding:14px; border-radius:18px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.14); color:#fff; text-align:left; cursor:pointer;">
+            <strong style="display:block; font-size:18px;">Hızlı Giriş</strong>
+            <span style="font-size:13px; opacity:.92;">Mevcut hesabınla anında devam et</span>
+          </button>
+          <button type="button" onclick="gitAdres()" style="padding:14px; border-radius:18px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.14); color:#fff; text-align:left; cursor:pointer;">
+            <strong style="display:block; font-size:18px;">Adres Yönetimi</strong>
+            <span style="font-size:13px; opacity:.92;">İlçe ve mahalleyi kolay seç</span>
+          </button>
+          <button type="button" onclick="gitSiparis()" style="padding:14px; border-radius:18px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.14); color:#fff; text-align:left; cursor:pointer;">
+            <strong style="display:block; font-size:18px;">Sipariş Takibi</strong>
+            <span style="font-size:13px; opacity:.92;">Durumunu tek bakışta gör</span>
+          </button>
+          <button type="button" onclick="gitFis()" style="padding:14px; border-radius:18px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.14); color:#fff; text-align:left; cursor:pointer;">
+            <strong style="display:block; font-size:18px;">PDF / Fiş</strong>
+            <span style="font-size:13px; opacity:.92;">Sipariş fişini kolayca al</span>
+          </button>
+        </div>
+      </div>
+    </section>
+    <div class="layout">
+      <section class="card">
+        <div class="tabs">
+          <button id="tabLogin" class="tab active" type="button">Giriş Yap</button>
+          <button id="tabRegister" class="tab" type="button">Üye Ol</button>
+        </div>
+
+        <div id="paneLogin" class="pane active">
+          <div class="field">
+            <label for="loginEmail">E-posta</label>
+            <input id="loginEmail" type="email" autocomplete="email" />
+          </div>
+          <div class="field">
+            <label for="loginPassword">Şifre</label>
+            <input id="loginPassword" type="password" autocomplete="current-password" />
+          </div>
+          <button id="loginBtn" class="btn primary" type="button" style="width:100%;">Giriş Yap</button>
+          <div id="loginStatus" class="status"></div>
+        </div>
+
+        <div id="paneRegister" class="pane">
+          <div class="field">
+            <label for="registerName">Ad Soyad</label>
+            <input id="registerName" type="text" />
+          </div>
+          <div class="field">
+            <label for="registerPhone">Telefon</label>
+            <input id="registerPhone" type="text" />
+          </div>
+          <div class="address-select-shell">
+            <div class="accordion-group open" id="registerCityGroup">
+              <button class="accordion-trigger" type="button" onclick="toggleAccordion('registerCityGroup')">
+                <span>İl</span>
+                <span id="registerCitySummary" class="accordion-summary">Denizli</span>
+              </button>
+              <div class="accordion-body">
+                <input id="registerCity" type="text" value="Denizli" readonly />
+              </div>
+            </div>
+
+            <div class="accordion-group" id="registerDistrictGroup">
+              <button class="accordion-trigger" type="button" onclick="toggleAccordion('registerDistrictGroup')">
+                <span>İlçe Seç</span>
+                <span id="registerDistrictSummary" class="accordion-summary">İlçe seçilmedi</span>
+              </button>
+              <div class="accordion-body">
+                <div id="districtChips" class="chip-grid"></div>
+                <div class="accordion-actions"><button class="accordion-close" type="button" onclick="closeAccordion('registerDistrictGroup')">Kapat</button></div>
+              </div>
+            </div>
+
+            <div class="accordion-group" id="registerNeighborhoodGroup">
+              <button class="accordion-trigger" type="button" onclick="toggleAccordion('registerNeighborhoodGroup')">
+                <span>Mahalle / Bölge Seç</span>
+                <span id="registerNeighborhoodSummary" class="accordion-summary">Mahalle seçilmedi</span>
+              </button>
+              <div class="accordion-body">
+                <div id="neighborhoodChips" class="chip-grid"></div>
+                <div class="accordion-actions"><button class="accordion-close" type="button" onclick="closeAccordion('registerNeighborhoodGroup')">Kapat</button></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="registerAddressDetail">Açık Adres</label>
+            <textarea id="registerAddressDetail" placeholder="Sokak, bina no, daire, apartman, tarif"></textarea>
+          </div>
+
+          <div class="address-preview" id="registerAddressPreview">İlçe ve mahalle seçildiğinde adres burada oluşacak.</div>
+          <textarea id="registerAddress" style="display:none;"></textarea>
+          <div class="field">
+            <label for="registerEmail">E-posta</label>
+            <input id="registerEmail" type="email" autocomplete="email" />
+          </div>
+          <div class="field">
+            <label for="registerPassword">Şifre</label>
+            <input id="registerPassword" type="password" autocomplete="new-password" />
+          </div>
+          <button id="registerBtn" class="btn primary" type="button" style="width:100%;">Kayıt Ol</button>
+          <div id="registerStatus" class="status"></div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="profile-box">
+          <strong>Aktif Kullanıcı</strong>
+          <div id="activeUserText" class="muted">Henüz giriş yapılmadı.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top:0; color:#1d4678;">Siparişlerim</h2>
+        <div id="profileStatus" class="status"></div>
+        <div id="ordersBox" class="orders"></div>
+      </section>
+    </div>
   </div>
-</div>
 
-<div class="card" id="loginBox">
-  <h3>Giriş Yap</h3>
-  <input id="email" placeholder="E-posta">
-  <input id="password" type="password" placeholder="Şifre">
-  <button class="main" onclick="login()">Giriş Yap</button>
-</div>
 
-<div class="card" id="profileBox" style="display:none">
-  <h3>Hesap Bilgileri</h3>
-  <input id="name" placeholder="Ad Soyad">
-  <input id="phone" placeholder="Telefon">
-  <input id="address" placeholder="Adres">
-  <button class="main" onclick="saveProfile()">Kaydet</button>
-</div>
-
-<div class="card">
-  <h3>Siparişlerim</h3>
-  <div id="orders"></div>
-</div>
-
-</div>
+<div id="printReceiptArea" style="display:none;"></div>
 
 <script>
-const supabase = window.supabase.createClient(
-"https://jpguymicdiujhutnycvl.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-);
+const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const CART_KEYS = ["canakoglu_cart_v1", "cart"];
+const SERVICE_SETTINGS_KEY = "service_areas_v1";
 
-// NAV
-function gitLogin(){window.scrollTo({top:0,behavior:"smooth"})}
-function gitAdres(){document.getElementById("profileBox").scrollIntoView({behavior:"smooth"})}
-function gitSiparis(){document.getElementById("orders").scrollIntoView({behavior:"smooth"})}
+const tabLogin = document.getElementById("tabLogin");
+const tabRegister = document.getElementById("tabRegister");
+const paneLogin = document.getElementById("paneLogin");
+const paneRegister = document.getElementById("paneRegister");
 
-// LOGIN
-async function login(){
-  const { error } = await supabase.auth.signInWithPassword({
-    email: email.value,
-    password: password.value
-  });
+const ADDRESS_DATA = {
+  "Pamukkale": ["Akhan", "Güzelköy", "Kocadere", "Pınarkent", "Karakova", "Kale"],
+  "Merkezefendi": ["Sırakapılar", "Altıntop", "Yenişehir", "Şemikler", "Selçukbey"],
+  "Honaz": ["Honaz Merkez", "Kaklık", "Kocabaş", "Dereçiftlik", "Aksu"],
+  "Sarayköy": ["Sarayköy Merkez", "Kumluca", "Duacılı", "Sığma"],
+  "Tavas": ["Tavas Merkez", "Nikfer", "Kızılcabölük", "Karahisar"]
+};
 
-  if(error){
-    alert("Hatalı giriş");
-  } else {
-    alert("Giriş başarılı");
-    loadUser();
-  }
+let selectedDistrict = "";
+let selectedNeighborhood = "";
+let selectedProfileDistrict = "";
+let selectedProfileNeighborhood = "";
+let orderCreateLock = false;
+
+
+function setAccordionState(id, open) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle("open", !!open);
 }
 
-// USER LOAD
-async function loadUser(){
-  const { data } = await supabase.auth.getUser();
+function toggleAccordion(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle("open");
+}
+window.toggleAccordion = toggleAccordion;
+function closeAccordion(id) {
+  setAccordionState(id, false);
+}
+window.closeAccordion = closeAccordion;
 
-  if(!data.user){
-    document.getElementById("loginBox").style.display="block";
-    document.getElementById("profileBox").style.display="none";
+function updateAddressAccordionSummaries() {
+  const registerDistrictSummary = document.getElementById("registerDistrictSummary");
+  const registerNeighborhoodSummary = document.getElementById("registerNeighborhoodSummary");
+  const profileDistrictSummary = document.getElementById("profileDistrictSummary");
+  const profileNeighborhoodSummary = document.getElementById("profileNeighborhoodSummary");
+
+  if (registerDistrictSummary) registerDistrictSummary.textContent = selectedDistrict || "İlçe seçilmedi";
+  if (registerNeighborhoodSummary) registerNeighborhoodSummary.textContent = selectedNeighborhood || "Mahalle seçilmedi";
+  if (profileDistrictSummary) profileDistrictSummary.textContent = selectedProfileDistrict || "İlçe seçilmedi";
+  if (profileNeighborhoodSummary) profileNeighborhoodSummary.textContent = selectedProfileNeighborhood || "Mahalle seçilmedi";
+}
+
+function setTab(mode) {
+  const login = mode === "login";
+  tabLogin?.classList.toggle("active", login);
+  tabRegister?.classList.toggle("active", !login);
+  paneLogin?.classList.toggle("active", login);
+  paneRegister?.classList.toggle("active", !login);
+}
+
+function setStatus(id, text, ok = false) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text || "";
+  el.className = "status " + (text ? (ok ? "ok" : "error") : "");
+}
+
+function money(value) {
+  return new Intl.NumberFormat("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value || 0)) + " TL";
+}
+
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLocaleLowerCase("tr-TR")
+    .replace(/ı/g, "i")
+    .replace(/İ/g, "i")
+    .trim();
+}
+
+function toggleAccountMenu(forceOpen = null) {
+  const menu = document.getElementById("accountMenu");
+  if (!menu) return;
+  const shouldOpen = forceOpen === null ? !menu.classList.contains("open") : forceOpen;
+  menu.classList.toggle("open", shouldOpen);
+}
+
+function closeAccountMenu() {
+  toggleAccountMenu(false);
+}
+
+function scrollToOrders() {
+  document.getElementById("ordersBox")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  closeAccountMenu();
+}
+window.scrollToOrders = scrollToOrders;
+
+function updateRegisterAddress() {
+  const city = document.getElementById("registerCity")?.value || "Denizli";
+  const detail = document.getElementById("registerAddressDetail")?.value.trim() || "";
+  const hidden = document.getElementById("registerAddress");
+  const preview = document.getElementById("registerAddressPreview");
+
+  const parts = [selectedNeighborhood, selectedDistrict, city].filter(Boolean);
+  const shortText = parts.join(" / ");
+  const fullText = [detail, shortText].filter(Boolean).join(" - ");
+
+  if (hidden) hidden.value = fullText;
+  if (preview) preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
+}
+
+function updateProfileAddress() {
+  const city = "Denizli";
+  const detail = document.getElementById("profileAddressDetail")?.value.trim() || "";
+  const hidden = document.getElementById("profileAddress");
+  const preview = document.getElementById("profileAddressPreview");
+
+  const parts = [selectedProfileNeighborhood, selectedProfileDistrict, city].filter(Boolean);
+  const shortText = parts.join(" / ");
+  const fullText = [detail, shortText].filter(Boolean).join(" - ");
+
+  if (hidden) hidden.value = fullText;
+  if (preview) preview.textContent = fullText || "İlçe ve mahalle seçildiğinde adres burada oluşacak.";
+}
+
+function renderAddressChips() {
+  const districtBox = document.getElementById("districtChips");
+  const neighborhoodBox = document.getElementById("neighborhoodChips");
+  if (!districtBox || !neighborhoodBox) return;
+
+  districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
+    <button type="button" class="chip-btn ${selectedDistrict === name ? "active" : ""}" onclick="event.stopPropagation(); selectDistrict('${name.replace(/'/g, "\\'")}')">${name}</button>
+  `).join("");
+
+  const neighborhoods = ADDRESS_DATA[selectedDistrict] || [];
+  neighborhoodBox.innerHTML = neighborhoods.length
+    ? neighborhoods.map(name => `
+        <button type="button" class="chip-btn ${selectedNeighborhood === name ? "active" : ""}" onclick="event.stopPropagation(); selectNeighborhood('${name.replace(/'/g, "\\'")}')">${name}</button>
+      `).join("")
+    : '<div class="muted">Önce ilçe seç.</div>';
+
+  updateRegisterAddress();
+  updateAddressAccordionSummaries();
+}
+
+function renderProfileAddressChips() {
+  const districtBox = document.getElementById("profileDistrictChips");
+  const neighborhoodBox = document.getElementById("profileNeighborhoodChips");
+  if (!districtBox || !neighborhoodBox) return;
+
+  districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
+    <button type="button" class="chip-btn ${selectedProfileDistrict === name ? "active" : ""}" onclick="event.stopPropagation(); selectProfileDistrict('${name.replace(/'/g, "\\'")}')">${name}</button>
+  `).join("");
+
+  const neighborhoods = ADDRESS_DATA[selectedProfileDistrict] || [];
+  neighborhoodBox.innerHTML = neighborhoods.length
+    ? neighborhoods.map(name => `
+        <button type="button" class="chip-btn ${selectedProfileNeighborhood === name ? "active" : ""}" onclick="event.stopPropagation(); selectProfileNeighborhood('${name.replace(/'/g, "\\'")}')">${name}</button>
+      `).join("")
+    : '<div class="muted">Önce ilçe seç.</div>';
+
+  updateProfileAddress();
+  updateAddressAccordionSummaries();
+}
+
+function selectDistrict(name) {
+  selectedDistrict = name;
+  selectedNeighborhood = "";
+  renderAddressChips();
+  updateAddressAccordionSummaries();
+  setAccordionState("registerNeighborhoodGroup", true);
+}
+window.selectDistrict = selectDistrict;
+
+function selectNeighborhood(name) {
+  selectedNeighborhood = name;
+  renderAddressChips();
+  updateAddressAccordionSummaries();
+}
+window.selectNeighborhood = selectNeighborhood;
+
+function selectProfileDistrict(name) {
+  selectedProfileDistrict = name;
+  selectedProfileNeighborhood = "";
+  renderProfileAddressChips();
+  updateAddressAccordionSummaries();
+  setAccordionState("profileNeighborhoodGroup", true);
+}
+window.selectProfileDistrict = selectProfileDistrict;
+
+function selectProfileNeighborhood(name) {
+  selectedProfileNeighborhood = name;
+  renderProfileAddressChips();
+  updateAddressAccordionSummaries();
+}
+window.selectProfileNeighborhood = selectProfileNeighborhood;
+
+function hydrateProfileAddress(addressText) {
+  const text = String(addressText || "");
+  const lower = text.toLocaleLowerCase("tr-TR");
+
+  selectedProfileDistrict = "";
+  selectedProfileNeighborhood = "";
+
+  for (const district of Object.keys(ADDRESS_DATA)) {
+    if (lower.includes(district.toLocaleLowerCase("tr-TR"))) {
+      selectedProfileDistrict = district;
+      for (const n of ADDRESS_DATA[district] || []) {
+        if (lower.includes(n.toLocaleLowerCase("tr-TR"))) {
+          selectedProfileNeighborhood = n;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  let detail = text;
+  if (selectedProfileDistrict) detail = detail.replaceAll(selectedProfileDistrict, "");
+  if (selectedProfileNeighborhood) detail = detail.replaceAll(selectedProfileNeighborhood, "");
+  detail = detail.replace(/Denizli/gi, "").replace(/[\-\/]/g, " ").replace(/\s+/g, " ").trim();
+
+  const detailEl = document.getElementById("profileAddressDetail");
+  if (detailEl) detailEl.value = detail;
+  renderProfileAddressChips();
+  updateAddressAccordionSummaries();
+}
+
+async function getCurrentUser() {
+  const { data, error } = await client.auth.getUser();
+  if (error) return null;
+  return data?.user || null;
+}
+
+async function getCurrentProfile() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, email, full_name, phone, address")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Profil okuma hatası:", error);
+    return {
+      id: user.id,
+      email: user.email || "",
+      full_name: "",
+      phone: "",
+      address: ""
+    };
+  }
+
+  return data || {
+    id: user.id,
+    email: user.email || "",
+    full_name: "",
+    phone: "",
+    address: ""
+  };
+}
+
+async function refreshHeaderInfo() {
+  const profile = await getCurrentProfile();
+  const text = document.getElementById("activeUserText");
+  const menuName = document.getElementById("accountMenuName");
+  const menuMeta = document.getElementById("accountMenuMeta");
+  const toggleName = document.getElementById("accountToggleName");
+  const toggleSub = document.getElementById("accountToggleSub");
+  const toggleAvatar = document.getElementById("accountToggleAvatar");
+  const heroAvatar = document.getElementById("accountHeroAvatar");
+
+  const avatarText = (name) => String(name || "H").trim().charAt(0).toUpperCase();
+
+  if (!profile) {
+    if (text) text.textContent = "Henüz giriş yapılmadı.";
+    if (menuName) menuName.textContent = "Misafir Kullanıcı";
+    if (menuMeta) menuMeta.textContent = "Giriş yapılmadı.";
+    if (toggleName) toggleName.textContent = "Hesabım";
+    if (toggleSub) toggleSub.textContent = "Bilgiler ve siparişler";
+    if (toggleAvatar) toggleAvatar.textContent = "H";
+    if (heroAvatar) heroAvatar.textContent = "H";
+    const profileName = document.getElementById("profileName");
+    const profilePhone = document.getElementById("profilePhone");
+    const profileAddress = document.getElementById("profileAddress");
+    const profileAddressDetail = document.getElementById("profileAddressDetail");
+    if (profileName) profileName.value = "";
+    if (profilePhone) profilePhone.value = "";
+    if (profileAddress) profileAddress.value = "";
+    if (profileAddressDetail) profileAddressDetail.value = "";
+    selectedProfileDistrict = "";
+    selectedProfileNeighborhood = "";
+    renderProfileAddressChips();
     return;
   }
 
-  document.getElementById("loginBox").style.display="none";
-  document.getElementById("profileBox").style.display="block";
-
-  const { data:profile } = await supabase
-  .from("profiles")
-  .select("*")
-  .eq("id", data.user.id)
-  .single();
-
-  if(profile){
-    name.value = profile.full_name || "";
-    phone.value = profile.phone || "";
-    address.value = profile.address || "";
+  const displayName = profile.full_name || profile.email || "Kullanıcı";
+  if (text) {
+    text.innerHTML = `
+      <strong>${escapeHtml(displayName)}</strong><br>
+      ${escapeHtml(profile.email || "-")}<br>
+      ${escapeHtml(profile.phone || "-")}<br>
+      ${escapeHtml(profile.address || "-")}
+    `;
   }
 
-  loadOrders();
+  if (menuName) menuName.textContent = displayName;
+  if (menuMeta) menuMeta.innerHTML = `${escapeHtml(profile.email || "-")}<br>${escapeHtml(profile.phone || "-")}<br>${escapeHtml(profile.address || "-")}`;
+  if (toggleName) toggleName.textContent = displayName;
+  if (toggleSub) toggleSub.textContent = "Bilgiler ve siparişler";
+  if (toggleAvatar) toggleAvatar.textContent = avatarText(displayName);
+  if (heroAvatar) heroAvatar.textContent = avatarText(displayName);
+
+  const profileName = document.getElementById("profileName");
+  const profilePhone = document.getElementById("profilePhone");
+  if (profileName) profileName.value = profile.full_name || "";
+  if (profilePhone) profilePhone.value = profile.phone || "";
+  hydrateProfileAddress(profile.address || "");
 }
 
-// SAVE PROFILE
-async function saveProfile(){
-  const { data } = await supabase.auth.getUser();
-
-  await supabase.from("profiles").upsert({
-    id: data.user.id,
-    email: data.user.email,
-    full_name: name.value,
-    phone: phone.value,
-    address: address.value
-  });
-
-  alert("Kaydedildi");
-}
-
-// LOAD ORDERS
-async function loadOrders(){
-  const { data:user } = await supabase.auth.getUser();
-
-  const { data } = await supabase
-  .from("orders")
-  .select("*")
-  .eq("customer_name", name.value);
-
-  const div = document.getElementById("orders");
-  div.innerHTML="";
-
-  if(!data || data.length==0){
-    div.innerHTML="Sipariş yok";
+async function saveProfile() {
+  setStatus("saveProfileStatus", "");
+  const user = await getCurrentUser();
+  if (!user) {
+    setStatus("saveProfileStatus", "Önce giriş yapmalısın.");
     return;
   }
 
-  data.forEach(o=>{
-    div.innerHTML += `
-      <div class="order-box">
-        <b>${o.total} TL</b><br>
-        ${o.address}<br>
-        ${o.created_at}
+  updateProfileAddress();
+
+  const full_name = document.getElementById("profileName")?.value.trim() || "";
+  const phone = document.getElementById("profilePhone")?.value.trim() || "";
+  const address = document.getElementById("profileAddress")?.value.trim() || "";
+
+  if (!full_name || !phone || !address) {
+    setStatus("saveProfileStatus", "Tüm hesap alanları gerekli.");
+    return;
+  }
+
+  const { error } = await client.from("profiles").upsert([{
+    id: user.id,
+    email: user.email || "",
+    full_name,
+    phone,
+    address
+  }]);
+
+  if (error) {
+    setStatus("saveProfileStatus", error.message);
+    return;
+  }
+
+  setStatus("saveProfileStatus", "Bilgiler güncellendi.", true);
+  await refreshHeaderInfo();
+}
+
+async function login() {
+  try {
+    setStatus("loginStatus", "");
+    setStatus("profileStatus", "");
+    const email = document.getElementById("loginEmail")?.value.trim() || "";
+    const password = document.getElementById("loginPassword")?.value || "";
+
+    if (!email || !password) {
+      setStatus("loginStatus", "E-posta ve şifre gerekli.");
+      return;
+    }
+
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    if (error) {
+      setStatus("loginStatus", error.message);
+      return;
+    }
+
+    setStatus("loginStatus", "Giriş başarılı.", true);
+    await afterAuthSuccess();
+    closeAccountMenu();
+  } catch (err) {
+    console.error("Login hatası:", err);
+    setStatus("loginStatus", "Giriş sonrası işlem hatası: " + (err.message || err));
+  }
+}
+
+async function register() {
+  try {
+    setStatus("registerStatus", "");
+    const fullName = document.getElementById("registerName")?.value.trim() || "";
+    const phone = document.getElementById("registerPhone")?.value.trim() || "";
+    updateRegisterAddress();
+    const address = document.getElementById("registerAddress")?.value.trim() || "";
+    const email = document.getElementById("registerEmail")?.value.trim() || "";
+    const password = document.getElementById("registerPassword")?.value || "";
+
+    if (!selectedDistrict || !selectedNeighborhood) {
+      setStatus("registerStatus", "Lütfen ilçe ve mahalle seç.");
+      return;
+    }
+
+    if (!fullName || !phone || !address || !email || !password) {
+      setStatus("registerStatus", "Tüm alanlar gerekli.");
+      return;
+    }
+
+    const { data, error } = await client.auth.signUp({ email, password });
+    if (error) {
+      setStatus("registerStatus", error.message);
+      return;
+    }
+
+    const user = data?.user;
+    if (!user) {
+      setStatus("registerStatus", "Kullanıcı oluşturulamadı.");
+      return;
+    }
+
+    const { error: profileError } = await client.from("profiles").upsert([{
+      id: user.id,
+      email,
+      full_name: fullName,
+      phone,
+      address
+    }]);
+
+    if (profileError) {
+      setStatus("registerStatus", profileError.message);
+      return;
+    }
+
+    setStatus("registerStatus", "Kayıt başarılı.", true);
+    await afterAuthSuccess();
+  } catch (err) {
+    console.error("Register hatası:", err);
+    setStatus("registerStatus", "Kayıt sonrası işlem hatası: " + (err.message || err));
+  }
+}
+
+async function logout() {
+  await client.auth.signOut();
+  setStatus("loginStatus", "");
+  setStatus("registerStatus", "");
+  setStatus("saveProfileStatus", "");
+  setStatus("profileStatus", "");
+  closeAccountMenu();
+  await refreshHeaderInfo();
+  renderOrders([], {});
+}
+
+function readCart() {
+  for (const key of CART_KEYS) {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+      if (Array.isArray(parsed) && parsed.length) return { key, items: parsed };
+    } catch (_) {}
+  }
+  return { key: null, items: [] };
+}
+
+async function getServiceSettings() {
+  const { data, error } = await client
+    .from("site_settings")
+    .select("key, value")
+    .eq("key", SERVICE_SETTINGS_KEY)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("service_settings okuma hatası:", error);
+    return null;
+  }
+  return data?.value || null;
+}
+
+function addressAllowed(address, settings) {
+  if (!settings) return true;
+  if (settings.enabled === false) return true;
+
+  const areas = Array.isArray(settings.areas) ? settings.areas : [];
+  if (!areas.length) return true;
+
+  const adr = normalizeText(address);
+  return areas.some(area => adr.includes(normalizeText(area)));
+}
+
+async function createOrderFromCartIfNeeded() {
+  if (orderCreateLock) return;
+  const cartInfo = readCart();
+  if (!cartInfo.items.length) return;
+
+  const user = await getCurrentUser();
+  if (!user) return;
+
+  orderCreateLock = true;
+
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile || !profile.id) {
+      setStatus("profileStatus", "Profil bilgisi bulunamadı.");
+      return;
+    }
+
+    const fullName = String(profile.full_name || "").trim();
+    const phone = String(profile.phone || "").trim();
+    const address = String(profile.address || "").trim();
+
+    if (!fullName || !phone || !address) {
+      setStatus("profileStatus", "Sipariş için hesap bilgilerini tamamla.");
+      return;
+    }
+
+    const serviceSettings = await getServiceSettings();
+    if (!addressAllowed(address, serviceSettings)) {
+      setStatus("profileStatus", "Adres hizmet bölgesi dışında görünüyor.");
+      return;
+    }
+
+    const totalAmount = cartInfo.items.reduce((sum, item) => {
+      const qty = Number(item.quantity || 1);
+      const price = Number(item.price ?? item.unit_price ?? 0);
+      return sum + (qty * price);
+    }, 0);
+
+    if (totalAmount <= 0) {
+      setStatus("profileStatus", "Sepet toplamı hesaplanamadı.");
+      return;
+    }
+
+    const { data: order, error: orderError } = await client
+      .from("orders")
+      .insert([{
+        customer_id: user.id,
+        customer_name: fullName,
+        phone,
+        address,
+        delivery_slot: "Hemen",
+        payment_method: "Kapıda Nakit",
+        status: "yeni",
+        total_amount: totalAmount,
+        total: totalAmount
+      }])
+      .select()
+      .single();
+
+    if (orderError) {
+      setStatus("profileStatus", "Sipariş oluşturulamadı: " + orderError.message);
+      return;
+    }
+
+    const itemsPayload = cartInfo.items.map(item => ({
+      order_id: order.id,
+      product_id: item.id || item.product_id || null,
+      product_name: item.name || item.product_name || "Ürün",
+      quantity: Number(item.quantity || 1),
+      unit_price: Number(item.price ?? item.unit_price ?? 0),
+      line_total: Number(item.quantity || 1) * Number(item.price ?? item.unit_price ?? 0)
+    }));
+
+    const { error: itemsError } = await client.from("order_items").insert(itemsPayload);
+    if (itemsError) {
+      setStatus("profileStatus", "Sipariş kalemleri kaydedilemedi: " + itemsError.message);
+      return;
+    }
+
+    localStorage.removeItem(cartInfo.key);
+    setStatus("profileStatus", "Sipariş başarıyla oluşturuldu.", true);
+
+    if (window.location.search) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  } finally {
+    orderCreateLock = false;
+  }
+}
+
+
+function getOrderStatusLabel(status) {
+  const s = String(status || "yeni").toLowerCase();
+  if (s === "hazirlaniyor") return "Hazırlanıyor";
+  if (s === "yolda") return "Yolda";
+  if (s === "teslim") return "Teslim";
+  if (s === "iptal") return "İptal";
+  return "Yeni";
+}
+
+function buildReceiptHtml(order, items = []) {
+  const total = Number(order.total_amount ?? order.total ?? 0);
+  const rows = items.map(item => {
+    const qty = Number(item.quantity || 0);
+    const unitPrice = Number(item.unit_price || 0);
+    const lineTotal = Number(item.line_total ?? (qty * unitPrice));
+    return `
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #e5edf5;">${escapeHtml(item.product_name || "Ürün")}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5edf5;text-align:center;">${qty}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5edf5;text-align:right;">${money(unitPrice)}</td>
+        <td style="padding:10px;border-bottom:1px solid #e5edf5;text-align:right;">${money(lineTotal)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div style="font-family:Arial,sans-serif;color:#17324f;">
+      <div style="display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:2px solid #dbe6f1;padding-bottom:16px;margin-bottom:18px;">
+        <div>
+          <div style="font-size:28px;font-weight:900;color:#1d4678;">Çanakoğlu Market</div>
+          <div style="margin-top:6px;color:#6f8196;font-size:13px;">Sipariş fişi / bilgi çıktısı</div>
+        </div>
+        <div style="text-align:right;font-size:13px;line-height:1.7;">
+          <div><strong>Sipariş No:</strong> #${escapeHtml(order.id)}</div>
+          <div><strong>Tarih:</strong> ${order.created_at ? new Date(order.created_at).toLocaleString("tr-TR") : "-"}</div>
+          <div><strong>Durum:</strong> ${escapeHtml(getOrderStatusLabel(order.status))}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
+        <div style="background:#f8fbff;border:1px solid #dbe6f1;border-radius:16px;padding:14px;">
+          <div style="font-weight:900;color:#1d4678;margin-bottom:8px;">Müşteri Bilgisi</div>
+          <div><strong>Ad Soyad:</strong> ${escapeHtml(order.customer_name || "-")}</div>
+          <div><strong>Telefon:</strong> ${escapeHtml(order.phone || "-")}</div>
+          <div style="margin-top:6px;"><strong>Adres:</strong><br>${escapeHtml(order.address || "-")}</div>
+        </div>
+        <div style="background:#f8fbff;border:1px solid #dbe6f1;border-radius:16px;padding:14px;">
+          <div style="font-weight:900;color:#1d4678;margin-bottom:8px;">Teslimat / Ödeme</div>
+          <div><strong>Teslimat:</strong> ${escapeHtml(order.delivery_slot || "-")}</div>
+          <div><strong>Ödeme:</strong> ${escapeHtml(order.payment_method || "-")}</div>
+          <div style="margin-top:10px;font-size:22px;font-weight:900;color:#16375e;">Toplam: ${money(total)}</div>
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;border:1px solid #dbe6f1;border-radius:16px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f8fbff;">
+            <th style="padding:12px;text-align:left;border-bottom:1px solid #dbe6f1;">Ürün</th>
+            <th style="padding:12px;text-align:center;border-bottom:1px solid #dbe6f1;">Adet</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid #dbe6f1;">Birim</th>
+            <th style="padding:12px;text-align:right;border-bottom:1px solid #dbe6f1;">Tutar</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="4" style="padding:12px;">Ürün detayı bulunamadı.</td></tr>'}
+        </tbody>
+      </table>
+
+      <div style="margin-top:18px;font-size:12px;color:#6f8196;">Bu çıktı bilgilendirme amaçlıdır.</div>
+    </div>
+  `;
+}
+
+function printOrderReceipt(orderId) {
+  const order = window.__ordersCache?.find(o => String(o.id) === String(orderId));
+  const items = window.__itemsByOrderCache?.[orderId] || [];
+  if (!order) return;
+
+  const area = document.getElementById("printReceiptArea");
+  area.innerHTML = buildReceiptHtml(order, items);
+  area.style.display = "block";
+  window.print();
+  setTimeout(() => {
+    area.style.display = "none";
+    area.innerHTML = "";
+  }, 500);
+}
+window.printOrderReceipt = printOrderReceipt;
+
+function renderOrders(orders, itemsByOrder = {}) {
+  window.__ordersCache = orders || [];
+  window.__itemsByOrderCache = itemsByOrder || {};
+  const box = document.getElementById("ordersBox");
+  if (!box) return;
+
+  if (!orders.length) {
+    box.innerHTML = '<div class="empty">Henüz siparişin yok.</div>';
+    return;
+  }
+
+  box.innerHTML = orders.map(order => {
+    const total = order.total_amount ?? order.total ?? 0;
+    const items = itemsByOrder[order.id] || [];
+    const itemsHtml = items.map(item => {
+      const line = item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0));
+      return `<li>${escapeHtml(item.product_name || "Ürün")} — ${item.quantity || 0} adet — ${money(line)}</li>`;
+    }).join("");
+
+    return `
+      <div class="order">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
+          <strong>Sipariş #${order.id}</strong>
+          <span style="font-weight:900;color:#c97507;">${escapeHtml(order.status || "yeni")}</span>
+        </div>
+        <div class="muted" style="margin-top:6px;">${order.created_at ? new Date(order.created_at).toLocaleString("tr-TR") : "-"}</div>
+
+        <div class="meta">
+          <div class="meta-item"><strong>Ödeme</strong><div style="margin-top:4px;">${escapeHtml(order.payment_method || "-")}</div></div>
+          <div class="meta-item"><strong>Teslimat</strong><div style="margin-top:4px;">${escapeHtml(order.delivery_slot || "-")}</div></div>
+          <div class="meta-item"><strong>Toplam</strong><div style="margin-top:4px;">${money(total)}</div></div>
+          <div class="meta-item"><strong>Telefon</strong><div style="margin-top:4px;">${escapeHtml(order.phone || "-")}</div></div>
+        </div>
+
+        <div class="items">
+          <strong>Ürünler</strong>
+          <ul style="margin-top:8px;">${itemsHtml || "<li>Ürün bilgisi bulunamadı.</li>"}</ul>
+        </div>
+
+        <div class="order-actions">
+          <button class="mini-btn" type="button" onclick="printOrderReceipt('${String(order.id).replaceAll("'", "\'")}')">PDF / Fiş</button>
+        </div>
       </div>
     `;
-  });
+  }).join("");
 }
 
-loadUser();
+async function loadOrders() {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      renderOrders([], {});
+      return;
+    }
+
+    const { data: orders, error } = await client
+      .from("orders")
+      .select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id")
+      .eq("customer_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("orders okuma hatası:", error);
+      setStatus("profileStatus", "Siparişler alınamadı: " + error.message);
+      renderOrders([], {});
+      return;
+    }
+
+    const ids = (orders || []).map(o => o.id).filter(Boolean);
+    let itemsByOrder = {};
+
+    if (ids.length) {
+      const { data: items, error: itemsError } = await client
+        .from("order_items")
+        .select("order_id, product_name, quantity, unit_price, line_total")
+        .in("order_id", ids);
+
+      if (!itemsError) {
+        itemsByOrder = (items || []).reduce((acc, item) => {
+          if (!acc[item.order_id]) acc[item.order_id] = [];
+          acc[item.order_id].push(item);
+          return acc;
+        }, {});
+      }
+    }
+
+    renderOrders(orders || [], itemsByOrder);
+  } catch (err) {
+    console.error("loadOrders hatası:", err);
+    setStatus("profileStatus", "Siparişler yüklenemedi: " + (err.message || err));
+    renderOrders([], {});
+  }
+}
+
+async function afterAuthSuccess() {
+  await refreshHeaderInfo();
+  await createOrderFromCartIfNeeded();
+  await loadOrders();
+}
+
+tabLogin?.addEventListener("click", () => setTab("login"));
+tabRegister?.addEventListener("click", () => setTab("register"));
+document.getElementById("loginBtn")?.addEventListener("click", login);
+document.getElementById("registerBtn")?.addEventListener("click", register);
+document.getElementById("registerAddressDetail")?.addEventListener("input", updateRegisterAddress);
+document.getElementById("profileAddressDetail")?.addEventListener("input", updateProfileAddress);
+document.getElementById("saveProfileBtn")?.addEventListener("click", saveProfile);
+document.getElementById("menuLogoutBtn")?.addEventListener("click", logout);
+document.getElementById("accountToggleBtn")?.addEventListener("click", () => toggleAccountMenu());
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#accountMenu")) return;
+
+  const shell = document.querySelector(".account-shell");
+  if (shell && !shell.contains(e.target)) closeAccountMenu();
+
+  if (e.target.closest(".chip-btn")) return;
+  if (e.target.closest(".accordion-trigger")) return;
+  if (e.target.closest(".accordion-close")) return;
+  if (e.target.closest(".accordion-body")) return;
+
+  const groups = ["registerCityGroup","registerDistrictGroup","registerNeighborhoodGroup","profileDistrictGroup","profileNeighborhoodGroup"];
+  groups.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && !el.contains(e.target)) {
+      setAccordionState(id, false);
+    }
+  });
+});
+
+document.getElementById("loginPassword")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") login();
+});
+document.getElementById("registerPassword")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") register();
+});
+
+client.auth.onAuthStateChange(() => {
+  setTimeout(async () => {
+    await refreshHeaderInfo();
+    await loadOrders();
+  }, 0);
+});
+
+
+function gitLogin() {
+  setTab("login");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function gitAdres() {
+  toggleAccountMenu(true);
+  document.getElementById("profileName")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function gitSiparis() {
+  document.getElementById("ordersBox")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function gitFis() {
+  document.getElementById("ordersBox")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+(async function init() {
+  renderAddressChips();
+  renderProfileAddressChips();
+  updateAddressAccordionSummaries();
+  setAccordionState("registerCityGroup", true);
+  setAccordionState("registerDistrictGroup", false);
+  setAccordionState("registerNeighborhoodGroup", false);
+  setAccordionState("profileDistrictGroup", false);
+  setAccordionState("profileNeighborhoodGroup", false);
+  await refreshHeaderInfo();
+  await createOrderFromCartIfNeeded();
+  await loadOrders();
+})();
 </script>
 
 </body>
