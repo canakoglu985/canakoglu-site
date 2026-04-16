@@ -343,14 +343,21 @@
   </div>
 </div>
 
+
 <script>
 const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const CART_KEY = "canakoglu_cart_v1";
+const SERVICE_SETTINGS_KEY = "service_areas_v1";
+const CAMPAIGN_SETTINGS_KEY = "campaign_areas_v1";
+
 let allProducts = [];
 let cart = readCart();
+let productDetailPayloads = {};
+let serviceAreaConfig = { enabled:false, areas:[], centerLat:null, centerLng:null, radiusKm:null };
+let campaignConfig = { title:"", subtitle:"", banner:"", tags:[] };
 
 function money(value) {
   return new Intl.NumberFormat('tr-TR', {
@@ -359,9 +366,17 @@ function money(value) {
   }).format(Number(value || 0)) + " TL";
 }
 
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function normalizeProduct(row) {
-  const image =
-    row.image_url || row.image || row.photo_url || row.photo || row.cover_url || "";
+  const image = row.image_url || row.image || row.photo_url || row.photo || row.cover_url || "";
   const name = row.name || row.product_name || row.title || "Ürün";
   const price = Number(row.price || row.unit_price || row.sale_price || 0);
   const category = row.category || row.category_name || "Diğer";
@@ -423,11 +438,7 @@ function updateHeaderCartBadge() {
   const badge = document.getElementById("headerCartBadge");
   if (!badge) return;
   const totalQty = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-  if (totalQty <= 0) {
-    badge.textContent = "0";
-  } else {
-    badge.textContent = String(String(totalQty).includes(".") ? Math.round(totalQty * 100) / 100 : totalQty);
-  }
+  badge.textContent = totalQty > 0 ? String(Math.round(totalQty * 100) / 100) : "0";
 }
 
 function maxStockFor(product) {
@@ -435,62 +446,115 @@ function maxStockFor(product) {
   return Number(product.stock || 0);
 }
 
-function renderCampaignStrip(){
-  const box = document.getElementById("campaignStrip");
-  if(!box) return;
-  const featured = allProducts.filter(p => String(p.campaignLabel || "").trim()).slice(0, 4);
-  if(!featured.length){
-    box.innerHTML = '';
-    return;
-  }
-  box.innerHTML = featured.map(product => `
-    <div class="campaign-mini">
-      <div class="promo-tag">${escapeHtml(product.campaignLabel)}</div>
-      <div style="margin-top:10px;font-weight:900;color:#1d4678;">${escapeHtml(product.name)}</div>
-      <div style="margin-top:6px;font-size:22px;font-weight:900;color:#16375e;">${money(product.price)}</div>
-      <button class="detail-link" type="button" style="margin-top:10px" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])'>İncele</button>
-    </div>
-  `).join('');
-}
+async function loadCampaignConfig() {
+  try {
+    const { data } = await client
+      .from("site_settings")
+      .select("*")
+      .eq("key", CAMPAIGN_SETTINGS_KEY)
+      .maybeSingle();
 
-let serviceAreaConfig = { enabled:false, areas:[], centerLat:null, centerLng:null, radiusKm:null };
-let productDetailPayloads = {};
-
-async function loadServiceAreaConfig(){
-  try{
-    const { data } = await client.from("site_settings").select("*").eq("key","service_areas").maybeSingle();
     const value = data?.value || {};
-    serviceAreaConfig = {
-      enabled: Boolean(value.enabled),
-      areas: Array.isArray(value.areas) ? value.areas : [],
-      centerLat: value.centerLat ?? null,
-      centerLng: value.centerLng ?? null,
-      radiusKm: value.radiusKm ?? null
+    campaignConfig = {
+      title: value.title || "",
+      subtitle: value.subtitle || "",
+      banner: value.banner || "",
+      tags: Array.isArray(value.tags) ? value.tags : []
     };
-  }catch(err){
+  } catch (err) {
     console.error(err);
   }
 }
 
-function haversineKm(lat1, lon1, lat2, lon2){
+function renderCampaignStrip() {
+  const box = document.getElementById("campaignStrip");
+  if (!box) return;
+
+  const configuredTags = campaignConfig.tags.map(v => String(v).trim().toLowerCase()).filter(Boolean);
+  let featured = [];
+
+  if (configuredTags.length) {
+    featured = allProducts.filter(p => configuredTags.includes(String(p.campaignLabel || "").trim().toLowerCase()));
+  } else {
+    featured = allProducts.filter(p => String(p.campaignLabel || "").trim());
+  }
+
+  featured = featured
+    .sort((a,b) => {
+      if (Number(b.isFeatured) !== Number(a.isFeatured)) return Number(b.isFeatured) - Number(a.isFeatured);
+      if (a.featuredRank !== b.featuredRank) return a.featuredRank - b.featuredRank;
+      return a.price - b.price;
+    })
+    .slice(0, 6);
+
+  if (!featured.length && !campaignConfig.banner && !campaignConfig.title) {
+    box.innerHTML = "";
+    return;
+  }
+
+  const heroCard = `
+    <div class="campaign-mini" style="grid-column:1/-1;background:linear-gradient(135deg, rgba(9,33,63,.96) 0%, rgba(22,55,94,.98) 52%, rgba(37,91,148,.95) 100%);color:#fff;">
+      ${campaignConfig.title ? `<div class="promo-tag" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.18)">${escapeHtml(campaignConfig.title)}</div>` : ""}
+      ${campaignConfig.banner ? `<div style="margin-top:12px;font-size:24px;font-weight:900;line-height:1.25">${escapeHtml(campaignConfig.banner)}</div>` : ""}
+      ${campaignConfig.subtitle ? `<div style="margin-top:8px;opacity:.92;line-height:1.6">${escapeHtml(campaignConfig.subtitle)}</div>` : ""}
+    </div>
+  `;
+
+  const productCards = featured.map(product => `
+    <div class="campaign-mini">
+      <div class="promo-tag">${escapeHtml(product.campaignLabel || "Kampanya")}</div>
+      <div style="margin-top:10px;font-weight:900;color:#1d4678;">${escapeHtml(product.name)}</div>
+      <div class="price-wrap" style="margin-top:8px">
+        <div style="font-size:22px;font-weight:900;color:#16375e;">${money(product.price)}</div>
+        ${product.comparePrice > product.price ? `<div class="old-price">${money(product.comparePrice)}</div>` : ``}
+      </div>
+      <button class="detail-link" type="button" style="margin-top:10px" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])'>İncele</button>
+    </div>
+  `).join("");
+
+  box.innerHTML = heroCard + productCards;
+}
+
+async function loadServiceAreaConfig() {
+  try {
+    const { data } = await client
+      .from("site_settings")
+      .select("*")
+      .eq("key", SERVICE_SETTINGS_KEY)
+      .maybeSingle();
+
+    const value = data?.value || {};
+    serviceAreaConfig = {
+      enabled: Boolean(value.enabled),
+      areas: Array.isArray(value.areas) ? value.areas : [],
+      centerLat: value.center_lat ?? null,
+      centerLng: value.center_lng ?? null,
+      radiusKm: value.radius_km ?? null
+    };
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const toRad = (deg) => deg * Math.PI / 180;
-  const dLat = toRad(lat2-lat1);
-  const dLon = toRad(lon2-lon1);
-  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-function updateGeoStatus(text, bad=false){
+function updateGeoStatus(text, bad=false) {
   const box = document.getElementById("geoStatusBox");
-  if(!box) return;
+  if (!box) return;
   box.textContent = text;
   box.style.background = bad ? "rgba(198,40,40,.18)" : "rgba(255,255,255,.12)";
   box.style.borderColor = bad ? "rgba(255,255,255,.24)" : "rgba(255,255,255,.16)";
 }
 
-async function checkUserGeolocation(){
-  if(!navigator.geolocation){
+async function checkUserGeolocation() {
+  if (!navigator.geolocation) {
     updateGeoStatus("Tarayıcı konum desteği vermiyor.");
     return;
   }
@@ -499,9 +563,9 @@ async function checkUserGeolocation(){
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
     localStorage.setItem("canakoglu_geo_coords", JSON.stringify({ lat, lng }));
-    if(serviceAreaConfig.enabled && serviceAreaConfig.centerLat && serviceAreaConfig.centerLng && serviceAreaConfig.radiusKm){
+    if (serviceAreaConfig.enabled && serviceAreaConfig.centerLat && serviceAreaConfig.centerLng && serviceAreaConfig.radiusKm) {
       const dist = haversineKm(lat, lng, Number(serviceAreaConfig.centerLat), Number(serviceAreaConfig.centerLng));
-      if(dist > Number(serviceAreaConfig.radiusKm)){
+      if (dist > Number(serviceAreaConfig.radiusKm)) {
         localStorage.setItem("canakoglu_geo_outside", "1");
         updateGeoStatus("Konumuna göre hizmet alanı dışındasın. Yine de adresin siparişte ayrıca kontrol edilir.", true);
       } else {
@@ -516,8 +580,8 @@ async function checkUserGeolocation(){
   }, { enableHighAccuracy:true, timeout:10000, maximumAge:60000 });
 }
 
-function openProductDetail(product){
-  if(!product) return;
+function openProductDetail(product) {
+  if (!product) return;
   const content = document.getElementById("productDetailContent");
   const stockText = stockLabel(product);
   content.innerHTML = `
@@ -540,25 +604,18 @@ function openProductDetail(product){
   `;
   document.getElementById("productDetailModal").classList.add("open");
 }
+window.openProductDetail = openProductDetail;
 
-function closeProductDetail(){
+function closeProductDetail() {
   document.getElementById("productDetailModal").classList.remove("open");
 }
+window.closeProductDetail = closeProductDetail;
 
 function categoryOptions(products) {
   const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
   const select = document.getElementById("categoryFilter");
   select.innerHTML = '<option value="">Tüm Kategoriler</option>' +
     categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-}
-
-function escapeHtml(text) {
-  return String(text ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 function stockClass(product) {
@@ -581,9 +638,7 @@ function renderProducts() {
   const category = document.getElementById("categoryFilter").value;
 
   const filtered = allProducts.filter(product => {
-    const textHit = !search ||
-      product.name.toLowerCase().includes(search) ||
-      product.category.toLowerCase().includes(search);
+    const textHit = !search || product.name.toLowerCase().includes(search) || product.category.toLowerCase().includes(search);
     const categoryHit = !category || product.category === category;
     return textHit && categoryHit;
   }).sort((a,b) => {
@@ -624,16 +679,14 @@ function renderProducts() {
           ${disabled
             ? `<button class="btn primary add-first-btn" type="button" disabled>Tükendi</button>`
             : (cartItemFor(product.id)
-              ? `
-              <div class="market-stepper">
-                <button class="stepper-minus" type="button" onclick="updateCartItem('${String(product.id).replaceAll("'", "\\'")}', -stepAmount('${String(product.unit).replaceAll("'", "\\'")}'))">−</button>
-                <div class="stepper-value">
-                  ${cartQtyFor(product.id)}
-                  <span class="stepper-sub">Sepette</span>
-                </div>
-                <button class="stepper-plus" type="button" onclick="updateCartItem('${String(product.id).replaceAll("'", "\\'")}', stepAmount('${String(product.unit).replaceAll("'", "\\'")}'))">+</button>
-              </div>
-              `
+              ? `<div class="market-stepper">
+                  <button class="stepper-minus" type="button" onclick="updateCartItem('${String(product.id).replaceAll("'", "\\'")}', -stepAmount('${String(product.unit).replaceAll("'", "\\'")}'))">−</button>
+                  <div class="stepper-value">
+                    ${cartQtyFor(product.id)}
+                    <span class="stepper-sub">Sepette</span>
+                  </div>
+                  <button class="stepper-plus" type="button" onclick="updateCartItem('${String(product.id).replaceAll("'", "\\'")}', stepAmount('${String(product.unit).replaceAll("'", "\\'")}'))">+</button>
+                </div>`
               : `<button class="btn primary add-first-btn" type="button" onclick="addToCart('${String(product.id).replaceAll("'", "\\'")}')">Sepete Ekle</button>`
             )
           }
@@ -641,7 +694,9 @@ function renderProducts() {
       </div>
     `;
   }).join("");
-}function addToCart(productId) {
+}
+
+function addToCart(productId) {
   const product = allProducts.find(p => String(p.id) === String(productId));
   if (!product) return;
 
@@ -670,6 +725,7 @@ function renderProducts() {
   renderCart();
   renderProducts();
 }
+window.addToCart = addToCart;
 
 function updateCartItem(productId, delta) {
   const item = cart.find(x => String(x.id) === String(productId));
@@ -696,6 +752,7 @@ function updateCartItem(productId, delta) {
   renderCart();
   renderProducts();
 }
+window.updateCartItem = updateCartItem;
 
 function clearCart() {
   cart = [];
@@ -706,11 +763,7 @@ function clearCart() {
 function totals() {
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
   const delivery = subtotal > 0 ? 0 : 0;
-  return {
-    subtotal,
-    delivery,
-    grandTotal: subtotal + delivery
-  };
+  return { subtotal, delivery, grandTotal: subtotal + delivery };
 }
 
 function renderCart() {
@@ -748,12 +801,13 @@ function renderCart() {
 
 async function loadProducts() {
   const status = document.getElementById("productsStatus");
-  status.textContent = "Ürünler yükleniyor...";
+  status.textContent = "Ürünler yükleniyor.";
 
   try {
     const { data, error } = await client
       .from("products")
       .select("*")
+      .eq("is_active", true)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -779,9 +833,9 @@ async function goToAccountForOrder() {
     return;
   }
   writeCart();
-  if(localStorage.getItem("canakoglu_geo_outside") === "1"){
+  if (localStorage.getItem("canakoglu_geo_outside") === "1") {
     const ok = confirm("Konumuna göre hizmet alanı dışındasın görünüyor. Yine de adresin siparişte tekrar kontrol edilecek. Devam edilsin mi?");
-    if(!ok) return;
+    if (!ok) return;
   }
   alert("Siparişi tamamlamak için hesap sayfasına yönlendiriliyorsun.");
   window.location.href = "hesap.html?redirect=order";
@@ -789,25 +843,31 @@ async function goToAccountForOrder() {
 
 document.getElementById("searchInput").addEventListener("input", renderProducts);
 document.getElementById("categoryFilter").addEventListener("change", renderProducts);
-document.getElementById("refreshBtn").addEventListener("click", loadProducts);
+document.getElementById("refreshBtn").addEventListener("click", async () => {
+  await loadCampaignConfig();
+  await loadProducts();
+});
 document.getElementById("clearCartBtn").addEventListener("click", clearCart);
 document.getElementById("placeOrderBtn").addEventListener("click", goToAccountForOrder);
 document.getElementById("geoCheckBtn").addEventListener("click", checkUserGeolocation);
 document.getElementById("productDetailModal").addEventListener("click", (e) => {
-  if(e.target.id === "productDetailModal") closeProductDetail();
+  if (e.target.id === "productDetailModal") closeProductDetail();
 });
-
-window.addToCart = addToCart;
-window.updateCartItem = updateCartItem;
 
 renderCart();
-loadServiceAreaConfig().then(() => {
+
+(async function init() {
+  await loadServiceAreaConfig();
+  await loadCampaignConfig();
+
   const savedOutside = localStorage.getItem("canakoglu_geo_outside");
-  if(savedOutside === "1"){
+  if (savedOutside === "1") {
     updateGeoStatus("Konumuna göre daha önce hizmet alanı dışı görünmüşsün. Siparişte adresin tekrar kontrol edilir.", true);
   }
-});
-loadProducts();
+
+  await loadProducts();
+})();
 </script>
+
 </body>
 </html>
