@@ -348,7 +348,7 @@ window.addEventListener('DOMContentLoaded', () => {
         <button class="btn primary" onclick="connectSupabase()">Bağlan</button>
         <button class="btn secondary" onclick="loadAllData()">Tüm Verileri Yenile</button>
       </div>
-      <div id="global-status" class="status">Hazır. Önce Supabase anon key girip Bağlan'a bas.</div>
+      <div id="global-status" class="status">Hazır. Bağlantı kuruluyor...</div>
     </div>
 
     <div class="stats-grid">
@@ -761,7 +761,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    async function connectSupabase(){
+    async async function connectSupabase(){
       try{
         const url = document.getElementById('supabase-url').value.trim();
         const key = document.getElementById('supabase-key').value.trim();
