@@ -152,6 +152,19 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
       .success-actions .btn{width:100%}
     }
 
+
+    .service-warning{
+      margin-top:12px;
+      padding:12px 14px;
+      border-radius:14px;
+      background:#fff3f3;
+      color:#c62828;
+      border:1px solid #f0c9c9;
+      font-size:13px;
+      font-weight:800;
+      line-height:1.6;
+    }
+
 </style>
 </head>
 <body>
@@ -173,6 +186,7 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
     <h1>Giriş yap, siparişini tamamla</h1>
     <p>Hesabın açıksa sayfa bunu hemen görür. Giriş yaptıktan sonra sepetten sipariş otomatik oluşturulur.</p>
     <div id="pageStatus" class="status"></div>
+    <div id="serviceAreaWarning" class="service-warning" style="display:none;"></div>
   </section>
 
   <div class="layout">
@@ -468,6 +482,80 @@ async function logout() {
   setPageStatus("Çıkış yapıldı.", true);
 }
 
+
+async function getServiceAreaConfig(){
+  try{
+    const { data, error } = await client
+      .from("site_settings")
+      .select("*")
+      .eq("key", "service_areas")
+      .maybeSingle();
+
+    if(error){
+      console.error("service_areas load error:", error);
+      return { enabled: false, areas: [] };
+    }
+
+    const value = data?.value || {};
+    return {
+      enabled: Boolean(value.enabled),
+      areas: Array.isArray(value.areas) ? value.areas : []
+    };
+  }catch(err){
+    console.error("service_areas fetch failed:", err);
+    return { enabled: false, areas: [] };
+  }
+}
+
+function addressMatchesServiceArea(address, areas){
+  const normalizedAddress = String(address || "").toLocaleLowerCase("tr-TR");
+  const normalizedAreas = (areas || []).map(a => String(a || "").trim().toLocaleLowerCase("tr-TR")).filter(Boolean);
+  if(!normalizedAreas.length) return true;
+  return normalizedAreas.some(area => normalizedAddress.includes(area));
+}
+
+function showServiceAreaWarning(message){
+  const box = document.getElementById("serviceAreaWarning");
+  if(!box) return;
+  box.style.display = "block";
+  box.textContent = message;
+}
+
+function hideServiceAreaWarning(){
+  const box = document.getElementById("serviceAreaWarning");
+  if(!box) return;
+  box.style.display = "none";
+  box.textContent = "";
+}
+
+async function validateServiceAreaBeforeOrder(profile){
+  const config = await getServiceAreaConfig();
+  if(!config.enabled){
+    hideServiceAreaWarning();
+    return { ok: true, areas: config.areas || [] };
+  }
+
+  const address = String(profile?.address || "").trim();
+  if(!address){
+    const text = "Sipariş verebilmek için profil adresin gerekli.";
+    showServiceAreaWarning(text);
+    setPageStatus(text, false);
+    return { ok: false, areas: config.areas || [] };
+  }
+
+  const ok = addressMatchesServiceArea(address, config.areas || []);
+  if(!ok){
+    const text = "Hizmet alanı dışındasınız. Şu bölgelerde hizmet veriyoruz: " + (config.areas || []).join(", ");
+    showServiceAreaWarning(text);
+    setPageStatus(text, false);
+    return { ok: false, areas: config.areas || [] };
+  }
+
+  hideServiceAreaWarning();
+  return { ok: true, areas: config.areas || [] };
+}
+
+
 async function createOrderFromCartIfNeeded() {
   if (!hasOrderIntent() || orderSubmitLock) return false;
   const user = await getCurrentUserFast();
@@ -483,6 +571,11 @@ async function createOrderFromCartIfNeeded() {
   const profile = await getCurrentProfile();
   if (!profile) {
     setPageStatus("Profil bilgisi bulunamadı.", false);
+    return false;
+  }
+
+  const serviceCheck = await validateServiceAreaBeforeOrder(profile);
+  if (!serviceCheck.ok) {
     return false;
   }
 
@@ -583,6 +676,10 @@ async function loadOrders() {
 async function afterLoginOrExistingSession() {
   const loggedIn = await refreshUserUI();
   if (!loggedIn) return;
+  const profile = await getCurrentProfile();
+  if (profile && hasOrderIntent()) {
+    await validateServiceAreaBeforeOrder(profile);
+  }
   const created = await createOrderFromCartIfNeeded();
   await loadOrders();
   if (created) {
