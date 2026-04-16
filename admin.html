@@ -260,15 +260,18 @@
 </head>
 <body>
 
+  
   <div id="login-screen">
     <div class="login-box">
       <h2>Admin Giriş</h2>
-      <input id="login-username" placeholder="Kullanıcı adı">
+      <input id="login-email" type="email" placeholder="Admin e-posta">
       <input id="login-password" type="password" placeholder="Şifre">
       <label class="remember"><input id="remember-login" type="checkbox"> Beni hatırla</label>
       <button onclick="loginAdmin()">Giriş Yap</button>
-      <div id="login-error" class="login-error">Hatalı giriş</div>
+      <div id="login-error" class="login-error">Giriş başarısız</div><div class="tiny" style="margin-top:10px">Sadece yetkili admin e-postaları giriş yapabilir.</div>
     </div>
+  </div>
+
   </div>
 
 
@@ -311,6 +314,15 @@
           <input id="market-phone" placeholder="905xxxxxxxxx">
         </div>
       </div>
+      
+      <div class="config-grid" style="margin-top:12px">
+        <div style="grid-column:1/-1">
+          <label>Admin E-postaları</label>
+          <textarea id="admin-emails" placeholder="Her satıra bir admin e-posta yaz&#10;admin@canakoglu.com"></textarea>
+          <div class="tiny" style="margin-top:8px">Sadece bu e-postalar admin paneline girebilir.</div>
+        </div>
+      </div>
+
       <div id="auto-refresh-note" class="tiny" style="margin-top:10px">Otomatik yenileme kapalı.</div>
       <div class="row" style="margin-top:12px">
         <button class="btn primary" onclick="connectSupabase()">Bağlan</button>
@@ -686,6 +698,11 @@
       localStorage.setItem('canakoglu_admin_url', document.getElementById('supabase-url').value.trim());
       localStorage.setItem('canakoglu_admin_key', document.getElementById('supabase-key').value.trim());
       localStorage.setItem('canakoglu_market_phone', document.getElementById('market-phone').value.trim());
+      const adminEmails = (document.getElementById('admin-emails')?.value || '')
+        .split('\n')
+        .map(x => x.trim().toLowerCase())
+        .filter(Boolean);
+      localStorage.setItem('canakoglu_admin_emails', JSON.stringify(adminEmails.length ? adminEmails : ADMIN_EMAILS));
     }
 
     function loadConfigLocal(){
@@ -695,6 +712,15 @@
       if(savedUrl) document.getElementById('supabase-url').value = savedUrl;
       if(savedKey) document.getElementById('supabase-key').value = savedKey;
       if(savedPhone) document.getElementById('market-phone').value = savedPhone;
+      const savedEmails = localStorage.getItem('canakoglu_admin_emails');
+      if(savedEmails){
+        try{
+          const arr = JSON.parse(savedEmails);
+          if(Array.isArray(arr)) document.getElementById('admin-emails').value = arr.join('\n');
+        }catch(e){}
+      } else {
+        document.getElementById('admin-emails').value = ADMIN_EMAILS.join('\n');
+      }
     }
 
 
@@ -744,6 +770,15 @@ if(!url || !key){
         saveConfigLocal();
         const { createClient } = supabase;
         supabaseClient = createClient(url, key);
+
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const currentEmail = String(sessionData?.session?.user?.email || '').trim().toLowerCase();
+        const allowed = getAllowedAdminEmails();
+        if(!currentEmail || !allowed.includes(currentEmail)){
+          document.getElementById('login-screen').style.display = 'flex';
+          setStatus('global-status', 'Admin oturumu gerekli.', false);
+          return;
+        }
 
         const { error } = await supabaseClient.from('products').select('id', { count: 'exact', head: true });
         if(error) throw error;
@@ -1329,105 +1364,70 @@ if(!url || !key){
     }
 
 
-    function loginAdmin(){
-      const u = document.getElementById('login-username').value.trim();
-      const p = document.getElementById('login-password').value.trim();
-      const remember = document.getElementById('remember-login').checked;
+    
+    const ADMIN_EMAILS = ['admin@canakoglu.com'];
 
-      if(u === 'admin' && p === '1234'){
+    function getAllowedAdminEmails(){
+      const saved = localStorage.getItem('canakoglu_admin_emails');
+      if(saved){
+        try{
+          const arr = JSON.parse(saved);
+          if(Array.isArray(arr) && arr.length) return arr.map(x => String(x).trim().toLowerCase()).filter(Boolean);
+        }catch(e){}
+      }
+      return ADMIN_EMAILS;
+    }
+
+    async function loginAdmin(){
+      try{
+        if(!supabaseClient){
+          const url = document.getElementById('supabase-url').value.trim();
+          const key = document.getElementById('supabase-key').value.trim();
+          if(!url || !key){
+            document.getElementById('login-error').textContent = 'Önce Supabase URL ve anon key gir.';
+            document.getElementById('login-error').style.display = 'block';
+            return;
+          }
+          const { createClient } = supabase;
+          supabaseClient = createClient(url, key);
+        }
+
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
+        const password = document.getElementById('login-password').value.trim();
+        const remember = document.getElementById('remember-login').checked;
+
+        if(!email || !password){
+          document.getElementById('login-error').textContent = 'E-posta ve şifre gerekli.';
+          document.getElementById('login-error').style.display = 'block';
+          return;
+        }
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if(error) throw error;
+
+        const userEmail = String(data?.user?.email || '').trim().toLowerCase();
+        const allowed = getAllowedAdminEmails();
+        if(!allowed.includes(userEmail)){
+          await supabaseClient.auth.signOut();
+          document.getElementById('login-error').textContent = 'Bu hesap admin yetkisine sahip değil.';
+          document.getElementById('login-error').style.display = 'block';
+          return;
+        }
+
         localStorage.setItem('canakoglu_admin_login', 'true');
         localStorage.setItem('canakoglu_admin_remember', remember ? 'true' : 'false');
-        localStorage.setItem('canakoglu_admin_login_user', u || 'admin');
+        localStorage.setItem('canakoglu_admin_login_user', userEmail);
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('login-error').style.display = 'none';
-
-        const savedUrl = localStorage.getItem('canakoglu_admin_url');
-        const savedKey = localStorage.getItem('canakoglu_admin_key');
-        if(savedUrl && savedKey){
-          setTimeout(() => connectSupabase(), 150);
-        } else {
-          setStatus('global-status', 'Giriş başarılı. Supabase URL ve anon key girip Bağlan butonuna bas.', true);
-        }
-      }else{
+        saveConfigLocal();
+        await connectSupabase();
+      }catch(err){
+        document.getElementById('login-error').textContent = 'Giriş başarısız: ' + (err.message || err);
         document.getElementById('login-error').style.display = 'block';
       }
     }
 
-    document.addEventListener('keydown', function(e){
-      const screen = document.getElementById('login-screen');
-      if(e.key === 'Enter' && screen && screen.style.display !== 'none'){
-        loginAdmin();
-      }
-    });
-
-
-
-    function showTopNote(message){
-      const note = document.getElementById('top-note');
-      if(!note) return;
-      note.textContent = message;
-      note.classList.add('show');
-      clearTimeout(window.__topNoteTimer);
-      window.__topNoteTimer = setTimeout(() => note.classList.remove('show'), 2200);
-    }
-
-    function requestNotificationPermission(){
-      if(!('Notification' in window)){
-        alert('Bu tarayıcı bildirim desteklemiyor.');
-        return;
-      }
-      Notification.requestPermission().then((result) => {
-        showTopNote(result === 'granted' ? 'Bildirim izni verildi' : 'Bildirim izni verilmedi');
-      });
-    }
-
-    function playBeep(){
-      try{
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = 880;
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
-        osc.stop(ctx.currentTime + 0.35);
-      }catch(e){}
-    }
-
-    function handleNewOrders(newOrders){
-      const countEl = document.getElementById('notif-count');
-      const current = Number(countEl.textContent || 0);
-      countEl.textContent = String(current + newOrders.length);
-      countEl.classList.add('pulse');
-      setTimeout(() => countEl.classList.remove('pulse'), 1800);
-
-      const first = newOrders[0] || {};
-      const customerName = first.customer_name || 'Yeni müşteri';
-      const totalText = money(first.total_amount ?? first.total ?? 0);
-
-      showTopNote(`${newOrders.length} yeni sipariş geldi`);
-      showFloatingAlert(`${customerName} • ${totalText}`);
-      playNotifySound();
-
-      if('Notification' in window && Notification.permission === 'granted'){
-        new Notification('Çanakoğlu Market', {
-          body: `${newOrders.length} yeni sipariş geldi • ${customerName}`,
-        });
-      }
-    }
-
-    function startOrderPolling(){
-      clearInterval(window.__orderPollTimer);
-      window.__orderPollTimer = setInterval(() => {
-        if(!supabaseClient) return;
-        if(document.hidden) return;
-        loadOrders(true);
-      }, 5000);
-    }
-
-    function logoutAdmin(){
+    async function logoutAdmin(){
       localStorage.removeItem('canakoglu_admin_login');
       localStorage.removeItem('canakoglu_admin_remember');
       stopAutoRefresh();
@@ -1436,222 +1436,57 @@ if(!url || !key){
         try{ supabaseClient.removeChannel(window.__ordersChannel); }catch(e){}
         window.__ordersChannel = null;
       }
+      try{
+        if(supabaseClient) await supabaseClient.auth.signOut({ scope: 'local' });
+      }catch(e){}
       document.getElementById('login-screen').style.display = 'flex';
       setStatus('global-status', 'Çıkış yapıldı.', true);
     }
 
-    function buildCustomerRows(){
-      const map = new Map();
-      orders.forEach(order => {
-        const key = `${order.customer_name || ''}__${order.phone || ''}`;
-        if(!map.has(key)){
-          map.set(key, {
-            customer_name: order.customer_name || '',
-            phone: order.phone || '',
-            addresses: new Set(),
-            order_count: 0,
-            total_amount: 0,
-            last_order: order.created_at || ''
-          });
-        }
-        const row = map.get(key);
-        row.addresses.add(order.address || '');
-        row.order_count += 1;
-        row.total_amount += Number(order.total_amount || 0);
-        if((order.created_at || '') > row.last_order) row.last_order = order.created_at || '';
-      });
-      customerRows = Array.from(map.values()).map(row => ({
-        ...row,
-        addresses: Array.from(row.addresses)
-      })).sort((a,b) => (b.last_order || '').localeCompare(a.last_order || ''));
-    }
-
-    function renderCustomers(){
-      const box = document.getElementById('customers-list');
-      if(!box) return;
-      const q = (document.getElementById('customer-search').value || '').trim().toLowerCase();
-      const filtered = customerRows.filter(c =>
-        !q ||
-        String(c.customer_name).toLowerCase().includes(q) ||
-        String(c.phone).toLowerCase().includes(q)
-      );
-      if(!filtered.length){
-        box.innerHTML = '<div class="card"><div class="muted">Müşteri bulunamadı.</div></div>';
-        return;
-      }
-      box.innerHTML = filtered.map(c => `
-        <div class="customer-item">
-          <div>
-            <strong>${escapeHtml(c.customer_name || 'İsimsiz müşteri')}</strong>
-            <div class="customer-meta">${escapeHtml(c.phone || '')} • ${escapeHtml((c.addresses[0] || 'Adres yok'))}</div>
-          </div>
-          <div style="text-align:right">
-            <div><strong>${c.order_count}</strong> sipariş</div>
-            <div class="customer-meta">${money(c.total_amount)} • Son: ${c.last_order ? new Date(c.last_order).toLocaleDateString('tr-TR') : '-'}</div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function getFilteredOrdersForReport(){
-      const from = document.getElementById('report-date-from').value;
-      const to = document.getElementById('report-date-to').value;
-      return orders.filter(order => {
-        const d = (order.created_at || '').slice(0,10);
-        if(from && d < from) return false;
-        if(to && d > to) return false;
-        return true;
-      });
-    }
-
-    function setReportRange(days){
-      const now = new Date();
-      const to = new Date(now);
-      const from = new Date(now);
-      from.setDate(now.getDate() - (days - 1));
-      document.getElementById('report-date-from').value = from.toISOString().slice(0,10);
-      document.getElementById('report-date-to').value = to.toISOString().slice(0,10);
-      renderReports();
-    }
-
-    function renderReports(){
-      const reportOrders = getFilteredOrdersForReport();
-      const revenue = reportOrders.reduce((sum,o) => sum + Number(o.total_amount ?? o.total ?? 0), 0);
-      const avg = reportOrders.length ? revenue / reportOrders.length : 0;
-      const customerSet = new Set(reportOrders.map(o => `${o.customer_name || ''}__${o.phone || ''}`));
-
-      const reportItems = orderItems.filter(item => reportOrders.some(o => String(o.id) === String(item.order_id)));
-      const byProduct = new Map();
-      reportItems.forEach(item => {
-        const key = item.product_name || 'İsimsiz ürün';
-        byProduct.set(key, (byProduct.get(key) || 0) + Number(item.quantity || 0));
-      });
-      const topProducts = Array.from(byProduct.entries()).sort((a,b) => b[1] - a[1]).slice(0,10);
-
-      const byStatus = new Map();
-      reportOrders.forEach(order => {
-        const key = order.status || 'belirsiz';
-        byStatus.set(key, (byStatus.get(key) || 0) + 1);
-      });
-
-      const topProductsBox = document.getElementById('top-products');
-      const statusBox = document.getElementById('status-breakdown');
-      document.getElementById('report-orders').textContent = String(reportOrders.length);
-      document.getElementById('report-revenue').textContent = money(revenue);
-      document.getElementById('report-average').textContent = money(avg);
-      document.getElementById('report-customers').textContent = String(customerSet.size);
-
-      topProductsBox.innerHTML = topProducts.length ? topProducts.map(([name, qty]) => `
-        <div class="report-item">
-          <div>
-            <strong>${escapeHtml(name)}</strong>
-            <div class="report-meta">Satılan miktar</div>
-          </div>
-          <div><strong>${qty}</strong></div>
-        </div>
-      `).join('') : '<div class="muted">Rapor için veri yok.</div>';
-
-      statusBox.innerHTML = Array.from(byStatus.entries()).length ? Array.from(byStatus.entries()).map(([status, count]) => `
-        <div class="report-item">
-          <div><strong>${escapeHtml(status)}</strong></div>
-          <div><strong>${count}</strong></div>
-        </div>
-      `).join('') : '<div class="muted">Rapor için veri yok.</div>';
-
-      const dailyRevenueMap = new Map();
-      reportOrders.forEach(order => {
-        const day = String(order.created_at || '').slice(0,10) || 'Tarih yok';
-        dailyRevenueMap.set(day, (dailyRevenueMap.get(day) || 0) + Number(order.total_amount ?? order.total ?? 0));
-      });
-      const dailyRows = Array.from(dailyRevenueMap.entries()).sort((a,b) => a[0].localeCompare(b[0])).slice(-7);
-      const maxDaily = Math.max(1, ...dailyRows.map(([,val]) => val));
-      const dailyBox = document.getElementById('daily-sales-chart');
-      if (dailyBox) {
-        dailyBox.innerHTML = dailyRows.length ? dailyRows.map(([day, val]) => `
-          <div class="bar-row">
-            <div>${escapeHtml(day)}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6, (val / maxDaily) * 100)}%"></div></div>
-            <div style="text-align:right;font-weight:800;">${money(val)}</div>
-          </div>
-        `).join('') : '<div class="muted">Grafik için veri yok.</div>';
-      }
-
-      const categoryMap = new Map();
-      reportItems.forEach(item => {
-        const product = products.find(p => String(p.name || '').trim() === String(item.product_name || '').trim());
-        const key = product?.category || 'Diğer';
-        categoryMap.set(key, (categoryMap.get(key) || 0) + Number(item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0))));
-      });
-      const catRows = Array.from(categoryMap.entries()).sort((a,b) => b[1]-a[1]).slice(0,8);
-      const maxCat = Math.max(1, ...catRows.map(([,val]) => val));
-      const catBox = document.getElementById('category-sales-chart');
-      if (catBox) {
-        catBox.innerHTML = catRows.length ? catRows.map(([cat, val]) => `
-          <div class="bar-row">
-            <div>${escapeHtml(cat)}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${Math.max(6, (val / maxCat) * 100)}%"></div></div>
-            <div style="text-align:right;font-weight:800;">${money(val)}</div>
-          </div>
-        `).join('') : '<div class="muted">Grafik için veri yok.</div>';
-      }
-    }
     function hydrateRememberedLogin(){
       const remembered = localStorage.getItem('canakoglu_admin_remember') === 'true';
       const loggedIn = localStorage.getItem('canakoglu_admin_login') === 'true';
       const checkbox = document.getElementById('remember-login');
-      const username = document.getElementById('login-username');
+      const email = document.getElementById('login-email');
       if(checkbox) checkbox.checked = remembered;
-      if(username) username.value = localStorage.getItem('canakoglu_admin_login_user') || 'admin';
+      if(email) email.value = localStorage.getItem('canakoglu_admin_login_user') || 'admin@canakoglu.com';
       if(remembered && loggedIn){
         document.getElementById('login-screen').style.display = 'none';
       }
     }
 
-
-
-    const savedUrlAuto = localStorage.getItem('canakoglu_admin_url');
-    const savedKeyAuto = localStorage.getItem('canakoglu_admin_key');
-    if(savedUrlAuto && savedKeyAuto){
-      document.getElementById('supabase-url').value = savedUrlAuto;
-      document.getElementById('supabase-key').value = savedKeyAuto;
-    }
-    function subscribeRealtime(){
-      if(!supabaseClient) return;
-      if(window.__ordersChannel){
-        try{ supabaseClient.removeChannel(window.__ordersChannel); }catch(e){}
-      }
-      window.__ordersChannel = supabaseClient
-        .channel('admin-orders-live')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
-          await loadOrders(true);
-          updateStats();
-          renderReports();
-          renderCustomers();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, async () => {
-          await loadOrders(false);
-        })
-        .subscribe();
-    }
-
-hydrateRememberedLogin();
+    hydrateRememberedLogin();
     setReportRange(7);
+
 
     document.getElementById('notif-count').addEventListener('click', () => {
       document.getElementById('notif-count').textContent = '0';
     });
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
+      loadConfigLocal();
       const savedUrlAuto = localStorage.getItem('canakoglu_admin_url');
       const savedKeyAuto = localStorage.getItem('canakoglu_admin_key');
       const loggedInAuto = localStorage.getItem('canakoglu_admin_login') === 'true';
 
       if(savedUrlAuto && savedKeyAuto && loggedInAuto){
-        const urlEl = document.getElementById('supabase-url');
-        const keyEl = document.getElementById('supabase-key');
-        if(urlEl) urlEl.value = savedUrlAuto;
-        if(keyEl) keyEl.value = savedKeyAuto;
-        setTimeout(() => connectSupabase(), 350);
+        const { createClient } = supabase;
+        supabaseClient = createClient(savedUrlAuto, savedKeyAuto);
+        try{
+          const { data: sessionData } = await supabaseClient.auth.getSession();
+          const currentEmail = String(sessionData?.session?.user?.email || '').trim().toLowerCase();
+          const allowed = getAllowedAdminEmails();
+          if(currentEmail && allowed.includes(currentEmail)){
+            document.getElementById('login-screen').style.display = 'none';
+            setTimeout(() => connectSupabase(), 250);
+          } else {
+            document.getElementById('login-screen').style.display = 'flex';
+          }
+        }catch(e){
+          document.getElementById('login-screen').style.display = 'flex';
+        }
+      } else {
+        document.getElementById('login-screen').style.display = 'flex';
       }
     });
 
