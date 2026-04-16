@@ -154,15 +154,8 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
 
 
     .service-warning{
-      margin-top:12px;
-      padding:12px 14px;
-      border-radius:14px;
-      background:#fff3f3;
-      color:#c62828;
-      border:1px solid #f0c9c9;
-      font-size:13px;
-      font-weight:800;
-      line-height:1.6;
+      margin-top:12px;padding:12px 14px;border-radius:14px;background:#fff3f3;color:#c62828;
+      border:1px solid #f0c9c9;font-size:13px;font-weight:800;line-height:1.6;
     }
 
 </style>
@@ -485,25 +478,19 @@ async function logout() {
 
 async function getServiceAreaConfig(){
   try{
-    const { data, error } = await client
-      .from("site_settings")
-      .select("*")
-      .eq("key", "service_areas")
-      .maybeSingle();
-
-    if(error){
-      console.error("service_areas load error:", error);
-      return { enabled: false, areas: [] };
-    }
-
+    const { data, error } = await client.from("site_settings").select("*").eq("key","service_areas").maybeSingle();
+    if(error) return { enabled:false, areas:[], centerLat:null, centerLng:null, radiusKm:null };
     const value = data?.value || {};
     return {
       enabled: Boolean(value.enabled),
-      areas: Array.isArray(value.areas) ? value.areas : []
+      areas: Array.isArray(value.areas) ? value.areas : [],
+      centerLat: value.centerLat ?? null,
+      centerLng: value.centerLng ?? null,
+      radiusKm: value.radiusKm ?? null
     };
   }catch(err){
-    console.error("service_areas fetch failed:", err);
-    return { enabled: false, areas: [] };
+    console.error(err);
+    return { enabled:false, areas:[], centerLat:null, centerLng:null, radiusKm:null };
   }
 }
 
@@ -528,11 +515,20 @@ function hideServiceAreaWarning(){
   box.textContent = "";
 }
 
+function haversineKm(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const toRad = (deg) => deg * Math.PI / 180;
+  const dLat = toRad(lat2-lat1);
+  const dLon = toRad(lon2-lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 async function validateServiceAreaBeforeOrder(profile){
   const config = await getServiceAreaConfig();
   if(!config.enabled){
     hideServiceAreaWarning();
-    return { ok: true, areas: config.areas || [] };
+    return { ok: true };
   }
 
   const address = String(profile?.address || "").trim();
@@ -540,19 +536,36 @@ async function validateServiceAreaBeforeOrder(profile){
     const text = "Sipariş verebilmek için profil adresin gerekli.";
     showServiceAreaWarning(text);
     setPageStatus(text, false);
-    return { ok: false, areas: config.areas || [] };
+    return { ok: false };
   }
 
-  const ok = addressMatchesServiceArea(address, config.areas || []);
-  if(!ok){
+  const addressOk = addressMatchesServiceArea(address, config.areas || []);
+  let geoOk = true;
+  const savedGeo = localStorage.getItem("canakoglu_geo_coords");
+  if(savedGeo && config.centerLat && config.centerLng && config.radiusKm){
+    try{
+      const coords = JSON.parse(savedGeo);
+      const dist = haversineKm(Number(coords.lat), Number(coords.lng), Number(config.centerLat), Number(config.centerLng));
+      geoOk = dist <= Number(config.radiusKm);
+    }catch(err){}
+  }
+
+  if(!addressOk){
     const text = "Hizmet alanı dışındasınız. Şu bölgelerde hizmet veriyoruz: " + (config.areas || []).join(", ");
     showServiceAreaWarning(text);
     setPageStatus(text, false);
-    return { ok: false, areas: config.areas || [] };
+    return { ok: false };
+  }
+
+  if(!geoOk){
+    const text = "Konumunuza göre hizmet alanı dışında görünüyorsunuz. Adresiniz uygun olsa da lütfen bölgeyi kontrol edin.";
+    showServiceAreaWarning(text);
+    setPageStatus(text, false);
+    return { ok: false };
   }
 
   hideServiceAreaWarning();
-  return { ok: true, areas: config.areas || [] };
+  return { ok: true };
 }
 
 
@@ -613,6 +626,14 @@ async function createOrderFromCartIfNeeded() {
     if (itemsError) {
       setPageStatus("Sipariş kalemleri kaydedilemedi: " + itemsError.message);
       return false;
+    }
+
+    for (const item of cart) {
+      const { data: pRow } = await client.from("products").select("id,stock_qty").eq("id", item.id).maybeSingle();
+      if (pRow) {
+        const nextStock = Math.max(0, Number(pRow.stock_qty || 0) - Number(item.quantity || 0));
+        await client.from("products").update({ stock_qty: nextStock }).eq("id", item.id);
+      }
     }
 
     localStorage.removeItem(CART_KEY);
@@ -677,7 +698,7 @@ async function afterLoginOrExistingSession() {
   const loggedIn = await refreshUserUI();
   if (!loggedIn) return;
   const profile = await getCurrentProfile();
-  if (profile && hasOrderIntent()) {
+  if(profile && hasOrderIntent()){
     await validateServiceAreaBeforeOrder(profile);
   }
   const created = await createOrderFromCartIfNeeded();
