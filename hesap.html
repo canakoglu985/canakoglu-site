@@ -78,10 +78,11 @@
   
     .selector-group{display:grid;gap:8px;margin-bottom:10px}
     .selector-label{font-size:13px;color:var(--navy);font-weight:800}
-    .chip-grid{display:flex;flex-wrap:wrap;gap:8px}
+    .chip-grid{display:grid;grid-template-columns:1fr;gap:8px}
     .chip-btn{
-      border:none;background:#fff;border:1px solid var(--border);border-radius:999px;
-      padding:10px 12px;cursor:pointer;font-weight:800;color:var(--navy);transition:.18s ease;
+      border:none;background:#fff;border:1px solid var(--border);border-radius:14px;
+      padding:12px 14px;cursor:pointer;font-weight:800;color:var(--navy);transition:.18s ease;
+      text-align:left;width:100%;
     }
     .chip-btn.active{background:var(--orange-gradient);color:#fff;border-color:transparent;box-shadow:0 8px 18px rgba(244,154,39,.16)}
     .address-preview{
@@ -267,6 +268,22 @@
       font-weight:800;
     }
 
+
+    .accordion-actions{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:10px;
+    }
+    .accordion-close{
+      border:none;
+      background:#edf4fb;
+      color:var(--navy);
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
 </style>
 </head>
 <body>
@@ -337,6 +354,7 @@
                       </button>
                       <div class="accordion-body">
                         <div id="profileDistrictChips" class="chip-grid"></div>
+                        <div class="accordion-actions"><button class="accordion-close" type="button" onclick="closeAccordion('profileDistrictGroup')">Kapat</button></div>
                       </div>
                     </div>
 
@@ -347,6 +365,7 @@
                       </button>
                       <div class="accordion-body">
                         <div id="profileNeighborhoodChips" class="chip-grid"></div>
+                        <div class="accordion-actions"><button class="accordion-close" type="button" onclick="closeAccordion('profileNeighborhoodGroup')">Kapat</button></div>
                       </div>
                     </div>
                   </div>
@@ -421,6 +440,7 @@
               </button>
               <div class="accordion-body">
                 <div id="districtChips" class="chip-grid"></div>
+                <div class="accordion-actions"><button class="accordion-close" type="button" onclick="closeAccordion('registerDistrictGroup')">Kapat</button></div>
               </div>
             </div>
 
@@ -431,6 +451,7 @@
               </button>
               <div class="accordion-body">
                 <div id="neighborhoodChips" class="chip-grid"></div>
+                <div class="accordion-actions"><button class="accordion-close" type="button" onclick="closeAccordion('registerNeighborhoodGroup')">Kapat</button></div>
               </div>
             </div>
           </div>
@@ -510,6 +531,10 @@ function toggleAccordion(id) {
   el.classList.toggle("open");
 }
 window.toggleAccordion = toggleAccordion;
+function closeAccordion(id) {
+  setAccordionState(id, false);
+}
+window.closeAccordion = closeAccordion;
 
 function updateAddressAccordionSummaries() {
   const registerDistrictSummary = document.getElementById("registerDistrictSummary");
@@ -652,7 +677,6 @@ function selectDistrict(name) {
   selectedNeighborhood = "";
   renderAddressChips();
   updateAddressAccordionSummaries();
-  setAccordionState("registerDistrictGroup", false);
   setAccordionState("registerNeighborhoodGroup", true);
 }
 window.selectDistrict = selectDistrict;
@@ -661,7 +685,6 @@ function selectNeighborhood(name) {
   selectedNeighborhood = name;
   renderAddressChips();
   updateAddressAccordionSummaries();
-  setAccordionState("registerNeighborhoodGroup", false);
 }
 window.selectNeighborhood = selectNeighborhood;
 
@@ -670,7 +693,6 @@ function selectProfileDistrict(name) {
   selectedProfileNeighborhood = "";
   renderProfileAddressChips();
   updateAddressAccordionSummaries();
-  setAccordionState("profileDistrictGroup", false);
   setAccordionState("profileNeighborhoodGroup", true);
 }
 window.selectProfileDistrict = selectProfileDistrict;
@@ -679,7 +701,6 @@ function selectProfileNeighborhood(name) {
   selectedProfileNeighborhood = name;
   renderProfileAddressChips();
   updateAddressAccordionSummaries();
-  setAccordionState("profileNeighborhoodGroup", false);
 }
 window.selectProfileNeighborhood = selectProfileNeighborhood;
 
@@ -1167,6 +1188,14 @@ document.getElementById("accountToggleBtn")?.addEventListener("click", () => tog
 document.addEventListener("click", (e) => {
   const shell = document.querySelector(".account-shell");
   if (shell && !shell.contains(e.target)) closeAccountMenu();
+
+  const groups = ["registerCityGroup","registerDistrictGroup","registerNeighborhoodGroup","profileDistrictGroup","profileNeighborhoodGroup"];
+  groups.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && !el.contains(e.target)) {
+      setAccordionState(id, false);
+    }
+  });
 });
 
 document.getElementById("loginPassword")?.addEventListener("keydown", (e) => {
