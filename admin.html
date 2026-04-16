@@ -2,140 +2,48 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Giriş</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:#1f4a84;
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-  }
-  .box{
-    width:min(420px,100%);
-    background:#fff;
-    border-radius:26px;
-    padding:32px 28px;
-    box-shadow:0 20px 50px rgba(0,0,0,.18);
-    text-align:center;
-  }
-  h1{
-    margin:0 0 18px;
-    color:#16375e;
-    font-size:28px;
-  }
-  .fixed-mail{
-    width:100%;
-    padding:14px 16px;
-    border:1px solid #d7e1ec;
-    border-radius:14px;
-    background:#f6f9fc;
-    color:#16375e;
-    font-weight:800;
-    margin-bottom:14px;
-    box-sizing:border-box;
-  }
-  input{
-    width:100%;
-    padding:14px 16px;
-    border:1px solid #d7e1ec;
-    border-radius:14px;
-    margin-bottom:14px;
-    box-sizing:border-box;
-    font:inherit;
-  }
-  button{
-    width:100%;
-    padding:14px 16px;
-    border:none;
-    border-radius:14px;
-    background:#f39c12;
-    color:#fff;
-    font-weight:900;
-    font-size:16px;
-    cursor:pointer;
-  }
-  button:disabled{opacity:.7;cursor:not-allowed}
-  .msg{
-    min-height:22px;
-    margin-top:14px;
-    font-weight:800;
-    color:#c62828;
-    white-space:pre-wrap;
-  }
-  .note{
-    margin-top:10px;
-    color:#6f8196;
-    font-size:13px;
-    line-height:1.5;
-  }
+body{font-family:sans-serif;background:#1f4a84;display:flex;justify-content:center;align-items:center;height:100vh}
+.box{background:#fff;padding:30px;border-radius:20px;width:300px;text-align:center}
+input{width:100%;padding:10px;margin:10px 0;border-radius:10px;border:1px solid #ccc}
+button{width:100%;padding:10px;background:#f39c12;border:none;border-radius:10px;color:#fff;font-weight:bold}
 </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Admin Giriş</h1>
-    <div class="fixed-mail">admin@canakoglu.com</div>
-    <input id="password" type="password" placeholder="Şifre">
-    <button id="loginBtn" onclick="login()">Giriş Yap</button>
-    <div id="msg" class="msg"></div>
-    <div class="note">Bu ekranda sadece sabit admin hesabı giriş yapabilir.</div>
-  </div>
+
+<div class="box">
+<h2>Admin Giriş</h2>
+<input id="password" type="password" placeholder="Şifre">
+<button onclick="login()">Giriş Yap</button>
+<p id="msg"></p>
+</div>
 
 <script>
 const SUPABASE_URL = 'https://jpguymicdiujhutnycvl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I';
+const SUPABASE_KEY = 'BURAYA_ANON_KEY';
 const ADMIN_EMAIL = 'admin@canakoglu.com';
+
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function login(){
-  const btn = document.getElementById('loginBtn');
-  const msg = document.getElementById('msg');
-  const password = document.getElementById('password').value.trim();
+  const password = document.getElementById("password").value;
 
-  msg.textContent = '';
-  if(!password){
-    msg.textContent = 'Şifre gerekli.';
+  const { data, error } = await client.auth.signInWithPassword({
+    email: ADMIN_EMAIL,
+    password
+  });
+
+  if(error){
+    document.getElementById("msg").innerText = error.message;
     return;
   }
 
-  btn.disabled = true;
-  btn.textContent = 'Giriş yapılıyor...';
-
-  try{
-    const { data, error } = await client.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password
-    });
-
-    if(error){
-      msg.textContent = 'Hata: ' + error.message;
-      return;
-    }
-
-    const userEmail = String(data?.user?.email || '').trim().toLowerCase();
-    if(userEmail !== ADMIN_EMAIL){
-      await client.auth.signOut();
-      msg.textContent = 'Sadece sabit admin hesabı giriş yapabilir.';
-      return;
-    }
-
-    window.location.href = 'admin.html';
-  }catch(err){
-    msg.textContent = 'Hata: ' + (err.message || err);
-  }finally{
-    btn.disabled = false;
-    btn.textContent = 'Giriş Yap';
-  }
+  // başarılıysa panel aç
+  window.location.href = "panel.html";
 }
-
-document.getElementById('password').addEventListener('keydown', (e) => {
-  if(e.key === 'Enter') login();
-});
 </script>
+
 </body>
 </html>
