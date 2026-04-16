@@ -1189,6 +1189,11 @@ document.addEventListener("click", (e) => {
   const shell = document.querySelector(".account-shell");
   if (shell && !shell.contains(e.target)) closeAccountMenu();
 
+  if (e.target.closest(".chip-btn")) return;
+  if (e.target.closest(".accordion-trigger")) return;
+  if (e.target.closest(".accordion-close")) return;
+  if (e.target.closest(".accordion-body")) return;
+
   const groups = ["registerCityGroup","registerDistrictGroup","registerNeighborhoodGroup","profileDistrictGroup","profileNeighborhoodGroup"];
   groups.forEach((id) => {
     const el = document.getElementById(id);
