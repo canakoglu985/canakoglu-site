@@ -275,13 +275,35 @@
       .card{padding:18px}
       .brand-title{font-size:24px}
     }
+  
+    #scrollTopBtn{
+      position:fixed;
+      right:20px;
+      bottom:20px;
+      width:52px;
+      height:52px;
+      border:none;
+      border-radius:50%;
+      background:linear-gradient(135deg,#082b78 0%,#f28a12 100%);
+      color:#fff;
+      font-size:22px;
+      font-weight:900;
+      cursor:pointer;
+      display:none;
+      box-shadow:0 12px 24px rgba(8,43,120,.22);
+      z-index:120;
+    }
+    #scrollTopBtn:hover{
+      transform:translateY(-2px) scale(1.03);
+    }
+
   </style>
 
 </head>
 <body>
   <header>
     <div class="header-inner">
-      <div>
+      <div onclick="goTop()" style="cursor:pointer;">
         <div class="brand-title">Hesabım</div>
         <div class="brand-sub">Giriş • kayıt • çıkış • siparişlerim</div>
       </div>
@@ -510,6 +532,8 @@
     </div>
   </div>
 
+
+<button id="scrollTopBtn" type="button" aria-label="Yukarı çık">↑</button>
 
 <div id="printReceiptArea" style="display:none;"></div>
 
@@ -1353,6 +1377,19 @@ function gitSiparis() {
 
 function gitFis() {
   document.getElementById("ordersBox")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+
+function goTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+const scrollTopBtn = document.getElementById("scrollTopBtn");
+if (scrollTopBtn) {
+  window.addEventListener("scroll", () => {
+    scrollTopBtn.style.display = window.scrollY > 220 ? "block" : "none";
+  });
+  scrollTopBtn.addEventListener("click", goTop);
 }
 
 (async function init() {
