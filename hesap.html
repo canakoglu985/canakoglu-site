@@ -1,86 +1,75 @@
-<script>
-const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
+<!DOCTYPE html>
 
-const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hesabım</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{font-family:Arial;background:#eef3f9;margin:0;padding:20px}
+.card{background:#fff;padding:20px;border-radius:12px;max-width:500px;margin:auto}
+input{width:100%;padding:10px;margin-bottom:10px;border-radius:8px;border:1px solid #ccc}
+button{width:100%;padding:12px;background:#f49a27;color:#fff;border:none;border-radius:10px;font-weight:bold}
+.status{margin-top:10px;font-size:14px}
+.order{background:#fff;border:1px solid #ddd;padding:10px;margin-top:10px;border-radius:8px}
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+<h2>Giriş Yap</h2>
+<input id="email" placeholder="E-posta">
+<input id="password" type="password" placeholder="Şifre">
+<button onclick="login()">Giriş Yap</button>
+<div id="status" class="status"></div>
+</div>
+
+<div class="card" style="margin-top:20px">
+<h2>Siparişlerim</h2>
+<div id="orders"></div>
+</div>
+
+<script>
+const supabase = window.supabase.createClient(
+"https://jpguymicdiujhutnycvl.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+);
+
 const CART_KEY = "canakoglu_cart_v1";
 
-/* ---------------- BASIC ---------------- */
-
-function setStatus(id, text, ok=false) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text || "";
-  el.className = "status " + (text ? (ok ? "ok" : "error") : "");
-}
-
-function money(v){
-  return Number(v||0).toLocaleString("tr-TR") + " TL";
-}
-
-/* ---------------- AUTH ---------------- */
-
-async function getUser(){
-  const { data } = await client.auth.getUser();
-  return data?.user || null;
+function getCart(){
+  return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
 }
 
 async function login(){
-  setStatus("loginStatus","");
-  const email = document.getElementById("loginEmail").value;
-  const pass = document.getElementById("loginPassword").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-  const { error } = await client.auth.signInWithPassword({ email, password: pass });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if(error){
-    setStatus("loginStatus", error.message);
+    document.getElementById("status").innerText = error.message;
     return;
   }
 
-  setStatus("loginStatus","Giriş başarılı",true);
+  document.getElementById("status").innerText = "Giriş başarılı";
   afterLogin();
 }
 
-async function register(){
-  setStatus("registerStatus","");
-
-  const email = document.getElementById("registerEmail").value;
-  const pass = document.getElementById("registerPassword").value;
-  const name = document.getElementById("registerName").value;
-  const phone = document.getElementById("registerPhone").value;
-  const address = document.getElementById("registerAddress").value;
-
-  const { data, error } = await client.auth.signUp({ email, password: pass });
-
-  if(error){
-    setStatus("registerStatus", error.message);
-    return;
-  }
-
-  await client.from("profiles").upsert({
-    id: data.user.id,
-    email,
-    full_name: name,
-    phone,
-    address
-  });
-
-  setStatus("registerStatus","Kayıt başarılı",true);
-  afterLogin();
+async function getUser(){
+  const { data } = await supabase.auth.getUser();
+  return data?.user;
 }
-
-async function logout(){
-  await client.auth.signOut();
-  location.reload();
-}
-
-/* ---------------- PROFILE ---------------- */
 
 async function getProfile(){
   const user = await getUser();
   if(!user) return null;
 
-  const { data } = await client
+  const { data } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
@@ -89,31 +78,7 @@ async function getProfile(){
   return data;
 }
 
-async function saveProfile(){
-  const user = await getUser();
-  if(!user) return;
-
-  await client.from("profiles").upsert({
-    id:user.id,
-    email:user.email,
-    full_name:document.getElementById("profileName").value,
-    phone:document.getElementById("profilePhone").value,
-    address:document.getElementById("profileAddress").value
-  });
-
-  setStatus("saveProfileStatus","Kaydedildi",true);
-}
-
-/* ---------------- ORDER ---------------- */
-
-function getCart(){
-  return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
-}
-
-async function createOrderIfNeeded(){
-  const params = new URLSearchParams(location.search);
-  if(params.get("redirect") !== "order") return;
-
+async function createOrder(){
   const user = await getUser();
   if(!user) return;
 
@@ -123,76 +88,66 @@ async function createOrderIfNeeded(){
   const profile = await getProfile();
   if(!profile) return;
 
-  const total = cart.reduce((s,i)=> s + i.price*i.quantity,0);
+  const total = cart.reduce((s,i)=>s + i.price*i.quantity,0);
 
-  const { data: order } = await client.from("orders").insert({
-    customer_id:user.id,
-    customer_name:profile.full_name,
-    phone:profile.phone,
-    address:profile.address,
-    status:"yeni",
-    total,
-    total_amount:total
-  }).select().single();
+  const { data:order } = await supabase
+    .from("orders")
+    .insert({
+      customer_id:user.id,
+      customer_name:profile.full_name,
+      phone:profile.phone,
+      address:profile.address,
+      status:"yeni",
+      total,
+      total_amount:total
+    })
+    .select()
+    .single();
 
   const items = cart.map(i=>({
     order_id:order.id,
     product_name:i.name,
     quantity:i.quantity,
-    unit_price:i.price,
-    line_total:i.price*i.quantity
+    unit_price:i.price
   }));
 
-  await client.from("order_items").insert(items);
+  await supabase.from("order_items").insert(items);
 
   localStorage.removeItem(CART_KEY);
 }
-
-/* ---------------- LOAD ORDERS ---------------- */
 
 async function loadOrders(){
   const user = await getUser();
   if(!user) return;
 
-  const { data: orders } = await client
+  const { data } = await supabase
     .from("orders")
     .select("*")
     .eq("customer_id", user.id)
     .order("created_at",{ascending:false});
 
-  const box = document.getElementById("ordersBox");
+  const box = document.getElementById("orders");
 
-  if(!orders?.length){
+  if(!data?.length){
     box.innerHTML = "Sipariş yok";
     return;
   }
 
-  box.innerHTML = orders.map(o=>`
-    <div style="border:1px solid #ddd;padding:10px;margin-bottom:10px;">
+  box.innerHTML = data.map(o=>`
+    <div class="order">
       <b>#${o.id}</b><br>
       ${o.status}<br>
-      ${money(o.total)}
+      ${o.total} TL
     </div>
   `).join("");
 }
 
-/* ---------------- FLOW ---------------- */
-
 async function afterLogin(){
-  await createOrderIfNeeded();
+  await createOrder();
   await loadOrders();
 }
 
-/* ---------------- EVENTS ---------------- */
-
-document.getElementById("loginBtn").onclick = login;
-document.getElementById("registerBtn").onclick = register;
-document.getElementById("saveProfileBtn").onclick = saveProfile;
-document.getElementById("menuLogoutBtn").onclick = logout;
-
-/* ---------------- INIT ---------------- */
-
-(async ()=>{
-  await afterLogin();
-})();
 </script>
+
+</body>
+</html>
