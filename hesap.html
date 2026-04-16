@@ -638,13 +638,13 @@ function renderAddressChips() {
   if (!districtBox || !neighborhoodBox) return;
 
   districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
-    <button type="button" class="chip-btn ${selectedDistrict === name ? "active" : ""}" onclick="selectDistrict('${name.replace(/'/g, "\\'")}')">${name}</button>
+    <button type="button" class="chip-btn ${selectedDistrict === name ? "active" : ""}" onclick="event.stopPropagation(); selectDistrict('${name.replace(/'/g, "\\'")}')">${name}</button>
   `).join("");
 
   const neighborhoods = ADDRESS_DATA[selectedDistrict] || [];
   neighborhoodBox.innerHTML = neighborhoods.length
     ? neighborhoods.map(name => `
-        <button type="button" class="chip-btn ${selectedNeighborhood === name ? "active" : ""}" onclick="selectNeighborhood('${name.replace(/'/g, "\\'")}')">${name}</button>
+        <button type="button" class="chip-btn ${selectedNeighborhood === name ? "active" : ""}" onclick="event.stopPropagation(); selectNeighborhood('${name.replace(/'/g, "\\'")}')">${name}</button>
       `).join("")
     : '<div class="muted">Önce ilçe seç.</div>';
 
@@ -658,13 +658,13 @@ function renderProfileAddressChips() {
   if (!districtBox || !neighborhoodBox) return;
 
   districtBox.innerHTML = Object.keys(ADDRESS_DATA).map(name => `
-    <button type="button" class="chip-btn ${selectedProfileDistrict === name ? "active" : ""}" onclick="selectProfileDistrict('${name.replace(/'/g, "\\'")}')">${name}</button>
+    <button type="button" class="chip-btn ${selectedProfileDistrict === name ? "active" : ""}" onclick="event.stopPropagation(); selectProfileDistrict('${name.replace(/'/g, "\\'")}')">${name}</button>
   `).join("");
 
   const neighborhoods = ADDRESS_DATA[selectedProfileDistrict] || [];
   neighborhoodBox.innerHTML = neighborhoods.length
     ? neighborhoods.map(name => `
-        <button type="button" class="chip-btn ${selectedProfileNeighborhood === name ? "active" : ""}" onclick="selectProfileNeighborhood('${name.replace(/'/g, "\\'")}')">${name}</button>
+        <button type="button" class="chip-btn ${selectedProfileNeighborhood === name ? "active" : ""}" onclick="event.stopPropagation(); selectProfileNeighborhood('${name.replace(/'/g, "\\'")}')">${name}</button>
       `).join("")
     : '<div class="muted">Önce ilçe seç.</div>';
 
@@ -1186,6 +1186,8 @@ document.getElementById("menuLogoutBtn")?.addEventListener("click", logout);
 document.getElementById("accountToggleBtn")?.addEventListener("click", () => toggleAccountMenu());
 
 document.addEventListener("click", (e) => {
+  if (e.target.closest("#accountMenu")) return;
+
   const shell = document.querySelector(".account-shell");
   if (shell && !shell.contains(e.target)) closeAccountMenu();
 
