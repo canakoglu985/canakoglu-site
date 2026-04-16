@@ -238,6 +238,20 @@
       background:#f7f9fc;border:1px solid var(--border);border-radius:14px;padding:12px;
     }
 
+
+    .price-wrap{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+    .old-price{
+      color:#95a5b6;
+      font-size:14px;
+      font-weight:800;
+      text-decoration:line-through;
+    }
+    .discount-badge{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:6px 10px;border-radius:999px;background:#fff1f1;color:#c62828;
+      border:1px solid #f0c9c9;font-size:11px;font-weight:900;width:max-content
+    }
+
 </style>
 </head>
 <body>
@@ -355,15 +369,21 @@ function normalizeProduct(row) {
   const stock = stockRaw === null ? null : Number(stockRaw);
   const unit = row.unit || "adet";
   const campaignLabel = row.campaign_label || "";
+  const comparePrice = Number(row.compare_at_price || row.old_price || row.list_price || 0);
+  const featuredRank = Number(row.featured_rank || row.sort_order || 999999);
+  const isFeatured = Boolean(row.is_featured || row.featured || campaignLabel);
   return {
     id: row.id,
     name,
     price,
+    comparePrice,
     category,
     stock,
     unit,
     image,
     campaignLabel,
+    featuredRank,
+    isFeatured,
     raw: row
   };
 }
@@ -507,7 +527,7 @@ function openProductDetail(product){
         ${product.campaignLabel ? `<div class="promo-tag">${escapeHtml(product.campaignLabel)}</div>` : ``}
         <h3 style="margin:12px 0 8px;color:#1d4678;font-size:28px;">${escapeHtml(product.name)}</h3>
         <div class="detail-grid">
-          <div class="detail-mini"><strong>Fiyat</strong><div style="margin-top:4px;">${money(product.price)}</div></div>
+          <div class="detail-mini"><strong>Fiyat</strong><div style="margin-top:4px;">${money(product.price)} ${product.comparePrice > product.price ? `<span style='text-decoration:line-through;color:#95a5b6;font-size:12px;margin-left:6px;'>${money(product.comparePrice)}</span>` : ''}</div></div>
           <div class="detail-mini"><strong>Kategori</strong><div style="margin-top:4px;">${escapeHtml(product.category)}</div></div>
           <div class="detail-mini"><strong>Birim</strong><div style="margin-top:4px;">${escapeHtml(product.unit)}</div></div>
           <div class="detail-mini"><strong>Stok</strong><div style="margin-top:4px;">${escapeHtml(stockText)}</div></div>
@@ -566,6 +586,10 @@ function renderProducts() {
       product.category.toLowerCase().includes(search);
     const categoryHit = !category || product.category === category;
     return textHit && categoryHit;
+  }).sort((a,b) => {
+    if (Number(b.isFeatured) !== Number(a.isFeatured)) return Number(b.isFeatured) - Number(a.isFeatured);
+    if (a.featuredRank !== b.featuredRank) return a.featuredRank - b.featuredRank;
+    return String(a.name).localeCompare(String(b.name), 'tr');
   });
 
   productDetailPayloads = {};
@@ -588,7 +612,11 @@ function renderProducts() {
         ${product.campaignLabel ? `<span class="promo-tag">${escapeHtml(product.campaignLabel)}</span>` : ``}
         <span class="badge">${escapeHtml(product.category)}</span>
         <div class="name" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])' style="cursor:pointer">${escapeHtml(product.name)}</div>
-        <div class="price">${money(product.price)}</div>
+        <div class="price-wrap">
+          <div class="price">${money(product.price)}</div>
+          ${product.comparePrice > product.price ? `<div class="old-price">${money(product.comparePrice)}</div>` : ``}
+        </div>
+        ${product.comparePrice > product.price ? `<div class="discount-badge">%${Math.round((1 - (product.price / product.comparePrice)) * 100)} İndirim</div>` : ``}
         <div class="muted">${escapeHtml(product.unit)}</div>
         <div class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</div>
         <div class="card-actions">
