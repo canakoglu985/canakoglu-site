@@ -8,83 +8,275 @@
   <style>
     :root {
       --navy:#082b78;
+      --navy-2:#123e97;
       --orange:#f28a12;
+      --orange-2:#ffab2d;
       --bg:#f3f6fb;
+      --card:#ffffff;
       --text:#17324f;
       --muted:#6f8196;
       --border:#dbe6f1;
+      --soft:0 12px 28px rgba(18,50,85,.08);
+      --shadow:0 18px 40px rgba(8,43,120,.12);
     }
     * { box-sizing:border-box; }
-    body { margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text); }
+    html,body { margin:0; padding:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text); }
+    a { text-decoration:none; color:inherit; }
+    button,input { font:inherit; }
+
     header {
-      position:sticky; top:0; z-index:20;
-      background:rgba(255,255,255,.96);
-      backdrop-filter:blur(10px);
-      border-bottom:1px solid var(--border);
+      position:sticky; top:0; z-index:30;
+      background:rgba(255,255,255,.94);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(219,230,241,.9);
+      box-shadow:0 10px 26px rgba(18,50,85,.05);
     }
     .header {
-      max-width:1300px; margin:auto; padding:14px 18px;
-      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      max-width:1320px; margin:auto; padding:14px 18px;
+      display:grid; grid-template-columns:320px 1fr auto; gap:16px; align-items:center;
     }
-    .logo-box { display:flex; align-items:center; gap:14px; }
+    .logo-box { display:flex; align-items:center; gap:14px; min-width:0; }
     .logo-wrap {
-      width:76px; height:76px; border-radius:50%;
+      width:78px; height:78px; border-radius:50%;
       background:#fff; display:flex; align-items:center; justify-content:center;
-      box-shadow:0 12px 28px rgba(8,43,120,.16);
-      padding:4px;
+      box-shadow:0 14px 30px rgba(8,43,120,.18);
+      padding:4px; border:2px solid rgba(242,138,18,.24);
+      flex:0 0 78px;
     }
     .logo {
       width:68px; height:68px; border-radius:50%;
       object-fit:cover; display:block;
     }
-    .brand-text { font-size:22px; font-weight:900; color:var(--navy); line-height:1.1; }
-    .sub { font-size:13px; color:#5f6f82; margin-top:4px; font-weight:700; }
-    .header a { color:var(--navy); font-weight:800; text-decoration:none; }
+    .brand-text { font-size:30px; font-weight:900; color:var(--navy); line-height:1; }
+    .sub { font-size:13px; color:#5f6f82; margin-top:6px; font-weight:700; }
+    .search-shell {
+      background:#f8fbff; border:1px solid var(--border); border-radius:18px; padding:8px;
+      display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+    }
+    .search-input {
+      width:100%; height:50px; border:none; background:#fff; border-radius:14px;
+      padding:0 16px; outline:none; border:1px solid rgba(219,230,241,.9);
+    }
+    .header-actions { display:flex; gap:10px; align-items:center; }
+    .btn {
+      border:none; border-radius:14px; padding:12px 16px; font-weight:800; cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px; transition:.18s ease;
+    }
+    .btn:hover { transform:translateY(-1px); filter:brightness(1.02); }
+    .primary {
+      background:linear-gradient(135deg,var(--orange) 0%,var(--orange-2) 100%);
+      color:#fff; box-shadow:0 10px 20px rgba(242,138,18,.2);
+    }
+    .ghost {
+      background:#fff; color:var(--navy); border:1px solid var(--border);
+    }
+    .cart-pill {
+      min-width:170px; padding:12px 16px; border-radius:18px; background:#fff; border:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center; box-shadow:var(--soft);
+    }
+    .cart-badge {
+      min-width:30px; height:30px; border-radius:999px; background:#fff5e7; color:#c97507;
+      display:inline-flex; align-items:center; justify-content:center; font-weight:900; border:1px solid rgba(242,138,18,.18); padding:0 8px;
+    }
+
+    .wrap { max-width:1320px; margin:auto; padding:22px 18px 30px; }
     .hero {
-      max-width:1300px; margin:22px auto 18px;
-      background:linear-gradient(135deg,var(--navy) 0%, #1b469d 45%, var(--orange) 100%);
-      border-radius:28px; padding:34px; color:#fff;
-      box-shadow:0 20px 40px rgba(8,43,120,.14);
+      background:
+        radial-gradient(circle at 85% 20%, rgba(255,255,255,.18) 0, rgba(255,255,255,0) 34%),
+        radial-gradient(circle at 18% 100%, rgba(255,255,255,.14) 0, rgba(255,255,255,0) 28%),
+        linear-gradient(135deg,var(--navy) 0%, var(--navy-2) 45%, var(--orange) 100%);
+      border-radius:32px;
+      padding:34px;
+      color:#fff;
+      box-shadow:var(--shadow);
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:22px;
+      align-items:center;
+      overflow:hidden;
+      position:relative;
     }
-    .hero h1 { margin:0; font-size:46px; line-height:1.05; font-weight:900; }
-    .hero p { margin:14px 0 0; font-size:18px; opacity:.95; }
-    .status {
-      max-width:1300px; margin:0 auto 14px; color:var(--muted); font-weight:700; padding:0 4px;
+    .hero-copy {
+      position:relative; z-index:2;
+      max-width:620px;
     }
-    .products {
-      max-width:1300px; margin:0 auto 30px;
-      display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px;
+    .hero-badge {
+      display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px;
+      background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.16); font-weight:900; font-size:12px;
+    }
+    .hero h1 {
+      margin:14px 0 10px; font-size:56px; line-height:1.02; font-weight:900;
+    }
+    .hero p {
+      margin:0; font-size:17px; line-height:1.75; opacity:.95; max-width:560px;
+    }
+    .hero-actions {
+      display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;
+    }
+    .hero-light {
+      background:#fff; color:var(--navy); border:none; border-radius:16px; padding:14px 18px; font-weight:900; cursor:pointer;
+    }
+    .hero-ghost {
+      background:rgba(255,255,255,.1); color:#fff; border:1px solid rgba(255,255,255,.18);
+      border-radius:16px; padding:14px 18px; font-weight:900; cursor:pointer;
+    }
+    .hero-side {
+      position:relative; z-index:2;
+      display:grid; gap:14px;
+    }
+    .mini-panel {
+      background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:24px;
+      padding:18px;
+      backdrop-filter:blur(10px);
+    }
+    .mini-panel strong { display:block; font-size:20px; margin-bottom:8px; }
+    .mini-grid {
+      display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;
+    }
+    .mini-box {
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:16px;
+      padding:12px;
+    }
+    .mini-box b { display:block; font-size:15px; }
+
+    .section {
+      margin-top:20px;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:28px;
+      padding:22px;
+      box-shadow:var(--soft);
+    }
+    .section-head {
+      display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:16px;
+    }
+    .section-title {
+      margin:0; font-size:28px; color:var(--navy); font-weight:900;
+    }
+    .section-sub { color:var(--muted); font-size:14px; margin-top:6px; }
+
+    .campaign-strip {
+      display:grid; grid-template-columns:1.1fr repeat(3,1fr); gap:14px;
+    }
+    .campaign-main {
+      min-height:210px; border-radius:24px; padding:22px;
+      background:linear-gradient(135deg,#0b2e73 0%, #1c4ca7 55%, #f28a12 100%);
+      color:#fff; box-shadow:var(--soft);
+    }
+    .campaign-tag {
+      display:inline-flex; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.15); font-weight:900; font-size:12px;
+    }
+    .campaign-main h3 {
+      margin:14px 0 10px; font-size:34px; line-height:1.08;
+    }
+    .campaign-main p { margin:0; line-height:1.7; opacity:.95; }
+    .campaign-card {
+      background:linear-gradient(180deg,#fff,#f8fbff);
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:16px;
+      box-shadow:var(--soft);
+      display:grid;
+      gap:10px;
+    }
+    .campaign-card .title {
+      font-weight:900; color:var(--navy); line-height:1.35; min-height:48px;
+    }
+    .badge {
+      display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; border-radius:999px;
+      background:#fff5e7; color:#c97507; font-size:12px; font-weight:900; width:max-content;
+      border:1px solid rgba(242,138,18,.18)
+    }
+
+    .products-layout {
+      display:grid; grid-template-columns:minmax(0,1fr) 350px; gap:18px; align-items:start;
+    }
+    .products-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px;
     }
     .card {
-      background:#fff; padding:14px; border-radius:18px;
+      background:linear-gradient(180deg,#fff,#f9fbff);
+      border:1px solid rgba(29,70,120,.10);
+      border-radius:22px;
+      padding:14px;
       box-shadow:0 10px 24px rgba(18,50,85,.06);
-      border:1px solid #eef3f9;
+      transition:.2s ease;
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .card:hover {
+      transform:translateY(-4px);
+      box-shadow:0 16px 34px rgba(29,70,120,.12);
+      border-color:rgba(242,138,18,.22);
     }
     .card img {
-      width:100%; height:170px; object-fit:cover; border-radius:14px; background:#f3f6fa;
+      width:100%; height:170px; object-fit:cover; border-radius:16px; background:#f3f6fa; border:1px solid rgba(29,70,120,.08);
     }
     .fallback {
-      width:100%; height:170px; border-radius:14px; background:#f3f6fa;
+      width:100%; height:170px; border-radius:16px; background:#f3f6fa;
       display:flex; align-items:center; justify-content:center; color:#98a8ba;
+      border:1px solid rgba(29,70,120,.08);
     }
-    .name { font-size:15px; font-weight:900; line-height:1.35; min-height:42px; margin-top:12px; }
-    .price { font-weight:900; color:var(--navy); font-size:30px; margin-top:8px; }
-    .btn {
-      margin-top:12px; width:100%; padding:12px; border:none; border-radius:12px;
-      background:var(--orange); color:white; cursor:pointer; font-weight:800;
+    .name {
+      font-size:16px; font-weight:900; line-height:1.35; min-height:44px;
+    }
+    .muted { color:var(--muted); font-size:13px; }
+    .card-price {
+      color:var(--navy); font-size:28px; font-weight:900;
+    }
+    .btn-card {
+      margin-top:auto; width:100%; padding:12px; border:none; border-radius:14px;
+      background:linear-gradient(135deg,var(--orange) 0%,var(--orange-2) 100%);
+      color:#fff; cursor:pointer; font-weight:900;
+    }
+
+    .cart-box {
+      position:sticky; top:98px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      padding:20px;
+      box-shadow:var(--shadow);
+    }
+    .cart-title {
+      margin:0 0 10px; font-size:28px; color:var(--navy); font-weight:900;
+    }
+    .notice {
+      padding:14px 16px; border-radius:16px; background:#f7f9fc; border:1px solid var(--border);
+      color:var(--navy); font-size:13px; font-weight:700; line-height:1.6;
+    }
+    .summary {
+      margin-top:14px; border-top:1px solid var(--border); padding-top:12px; display:grid; gap:8px;
+    }
+    .summary-line {
+      display:flex; justify-content:space-between; gap:10px; font-weight:800;
+    }
+    .summary-line.total {
+      font-size:18px; color:var(--navy);
+    }
+
+    .status {
+      color:var(--muted); font-weight:700;
+    }
+
+    @media (max-width:1180px) {
+      .header { grid-template-columns:1fr; }
+      .hero, .campaign-strip, .products-layout { grid-template-columns:1fr; }
+      .cart-box { position:static; }
     }
     @media (max-width:760px) {
       .header { padding:12px; }
-      .logo-wrap { width:60px; height:60px; }
-      .logo { width:54px; height:54px; }
-      .brand-text { font-size:18px; }
-      .sub { font-size:12px; }
-      .hero { margin:14px 12px; padding:22px; border-radius:22px; }
-      .hero h1 { font-size:32px; }
-      .hero p { font-size:15px; }
-      .products { margin:0 12px 24px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
-      .card img, .fallback { height:130px; }
-      .price { font-size:24px; }
+      .logo-wrap { width:64px; height:64px; flex-basis:64px; }
+      .logo { width:56px; height:56px; }
+      .brand-text { font-size:24px; }
+      .hero { padding:22px; border-radius:24px; }
+      .hero h1 { font-size:34px; }
+      .products-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+      .card img,.fallback { height:130px; }
+      .search-shell { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -97,20 +289,106 @@
         </div>
         <div>
           <div class="brand-text">Çanakoğlu Kapıda</div>
-          <div class="sub">Tek tıkla kapımda</div>
+          <div class="sub">Tek tıkla kapımda • mahalle marketin</div>
         </div>
       </div>
-      <a href="hesap.html">Hesabım</a>
+
+      <div class="search-shell">
+        <input id="searchInput" class="search-input" type="text" placeholder="Ürün ara..." />
+        <button id="refreshBtn" class="btn primary" type="button">Ara</button>
+      </div>
+
+      <div class="header-actions">
+        <a href="hesap.html" class="btn ghost">Hesabım</a>
+        <div class="cart-pill">
+          <div>
+            <div style="font-weight:900;color:var(--navy)">Sepetim</div>
+            <div id="headerCartTotal" class="muted">0,00 TL</div>
+          </div>
+          <span id="headerCartBadge" class="cart-badge">0</span>
+        </div>
+      </div>
     </div>
   </header>
 
-  <section class="hero">
-    <h1>Mahalle Marketin Artık Online</h1>
-    <p>Hızlı teslimat • Güvenli alışveriş • Çanakoğlu kalitesi</p>
-  </section>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="hero-badge">⚡ Çanakoğlu’na özel güçlü vitrin</span>
+        <h1>Mahalle marketin<br>artık çok daha şık</h1>
+        <p>Logona uyumlu lacivert ve turuncu kimlikle, güven veren, sade ama güçlü bir alışveriş deneyimi.</p>
+        <div class="hero-actions">
+          <button class="hero-light" type="button" onclick="document.getElementById('productsSection').scrollIntoView({behavior:'smooth'})">Ürünlere Git</button>
+          <a class="hero-ghost" href="hesap.html">Giriş Yap / Sipariş Ver</a>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="mini-panel">
+          <strong>Çanakoğlu Kapıda</strong>
+          <div style="line-height:1.7;opacity:.94">Tek tıkla kapımda mottosunu güçlü ve profesyonel bir vitrinde öne çıkar.</div>
+        </div>
+        <div class="mini-grid">
+          <div class="mini-box"><b>Hızlı Teslimat</b><span>Aynı gün kapında</span></div>
+          <div class="mini-box"><b>Güncel Kampanya</b><span>Öne çıkan ürünler</span></div>
+          <div class="mini-box"><b>Kolay Sipariş</b><span>Hesap sayfası ayrı</span></div>
+          <div class="mini-box"><b>Mahalle Uyumlu</b><span>Yerel market hissi</span></div>
+        </div>
+      </div>
+    </section>
 
-  <div id="status" class="status">Ürünler yükleniyor...</div>
-  <div class="products" id="products"></div>
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Kampanyalı Vitrin</h2>
+          <div class="section-sub">Marka rengine uyumlu öne çıkan kampanya alanı</div>
+        </div>
+      </div>
+      <div class="campaign-strip">
+        <div class="campaign-main">
+          <span class="campaign-tag">Günün Fırsatları</span>
+          <h3>Çanakoğlu’na özel seçili ürünlerde güçlü avantaj</h3>
+          <p>Bu alanı daha sonra admin panelden de yönetebiliriz. Şimdilik vitrin olarak premium görünüm veriyor.</p>
+        </div>
+        <div class="campaign-card">
+          <div class="badge">Kampanya</div>
+          <div class="title">Bakliyat ve temel gıda ürünlerinde seçili indirimler</div>
+        </div>
+        <div class="campaign-card">
+          <div class="badge">Kampanya</div>
+          <div class="title">Temizlik ürünlerinde haftalık vitrin alanı</div>
+        </div>
+        <div class="campaign-card">
+          <div class="badge">Kampanya</div>
+          <div class="title">Mahallene özel hızlı teslimat odaklı ürün seçimi</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="productsSection">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Ürünler</h2>
+          <div id="status" class="status">Ürünler yükleniyor...</div>
+        </div>
+      </div>
+
+      <div class="products-layout">
+        <div class="products-grid" id="products"></div>
+
+        <aside class="cart-box">
+          <h3 class="cart-title">Sepet</h3>
+          <div class="notice">
+            Siparişi tamamlamak için hesap sayfasından giriş yap. Bu alan tasarım yerleşimi için hazırlandı.
+          </div>
+          <div class="summary">
+            <div class="summary-line"><span>Ara Toplam</span><span id="subtotalText">0,00 TL</span></div>
+            <div class="summary-line"><span>Teslimat</span><span>0,00 TL</span></div>
+            <div class="summary-line total"><span>Genel Toplam</span><span id="grandTotalText">0,00 TL</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </div>
 
   <script>
     const client = supabase.createClient(
@@ -142,15 +420,31 @@
           return '<div class="card">' +
               img +
               '<div class="name">' + esc(p.name || 'Ürün') + '</div>' +
-              '<div class="price">' + Number(p.price || 0).toFixed(1) + ' TL</div>' +
-              '<button class="btn" type="button">Sepete Ekle</button>' +
+              '<div class="muted">' + esc(p.category || 'Kategori') + '</div>' +
+              '<div class="card-price">' + Number(p.price || 0).toFixed(1) + ' TL</div>' +
+              '<button class="btn-card" type="button">Sepete Ekle</button>' +
             '</div>';
         }).join("");
+
+        document.getElementById("headerCartTotal").textContent = "0,00 TL";
+        document.getElementById("headerCartBadge").textContent = "0";
+        document.getElementById("subtotalText").textContent = "0,00 TL";
+        document.getElementById("grandTotalText").textContent = "0,00 TL";
       } catch (err) {
         status.textContent = "Ürünler alınamadı: " + (err.message || err);
         box.innerHTML = "";
       }
     }
+
+    document.getElementById("searchInput").addEventListener("input", function() {
+      const q = this.value.toLowerCase().trim();
+      document.querySelectorAll("#products .card").forEach(function(card) {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(q) ? "" : "none";
+      });
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", load);
 
     load();
   </script>
