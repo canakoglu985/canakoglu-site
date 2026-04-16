@@ -223,7 +223,51 @@
       background:#fff;
     }
 
-  </style>
+  
+    .address-select-shell{
+      display:grid;
+      gap:10px;
+    }
+    .accordion-group{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .accordion-trigger{
+      width:100%;
+      border:none;
+      background:#f8fbff;
+      color:var(--navy);
+      padding:14px 16px;
+      font-weight:900;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      text-align:left;
+    }
+    .accordion-trigger span:last-child{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+    }
+    .accordion-body{
+      display:none;
+      padding:12px;
+      border-top:1px solid var(--border);
+      background:#fff;
+    }
+    .accordion-group.open .accordion-body{
+      display:block;
+    }
+    .accordion-summary{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:800;
+    }
+
+</style>
 </head>
 <body>
   <header>
@@ -285,14 +329,26 @@
               <div class="field" style="margin:0;">
                 <label>Adres Bilgisi</label>
                 <div class="profile-address-builder">
-                  <div class="selector-group" style="margin:0;">
-                    <div class="selector-label">İlçe Seç</div>
-                    <div id="profileDistrictChips" class="chip-grid"></div>
-                  </div>
+                  <div class="address-select-shell">
+                    <div class="accordion-group" id="profileDistrictGroup">
+                      <button class="accordion-trigger" type="button" onclick="toggleAccordion('profileDistrictGroup')">
+                        <span>İlçe Seç</span>
+                        <span id="profileDistrictSummary" class="accordion-summary">İlçe seçilmedi</span>
+                      </button>
+                      <div class="accordion-body">
+                        <div id="profileDistrictChips" class="chip-grid"></div>
+                      </div>
+                    </div>
 
-                  <div class="selector-group" style="margin:0;">
-                    <div class="selector-label">Mahalle / Bölge Seç</div>
-                    <div id="profileNeighborhoodChips" class="chip-grid"></div>
+                    <div class="accordion-group" id="profileNeighborhoodGroup">
+                      <button class="accordion-trigger" type="button" onclick="toggleAccordion('profileNeighborhoodGroup')">
+                        <span>Mahalle / Bölge Seç</span>
+                        <span id="profileNeighborhoodSummary" class="accordion-summary">Mahalle seçilmedi</span>
+                      </button>
+                      <div class="accordion-body">
+                        <div id="profileNeighborhoodChips" class="chip-grid"></div>
+                      </div>
+                    </div>
                   </div>
 
                   <div class="field" style="margin:0;">
@@ -347,19 +403,36 @@
             <label for="registerPhone">Telefon</label>
             <input id="registerPhone" type="text" />
           </div>
-          <div class="selector-group">
-            <div class="selector-label">İl</div>
-            <input id="registerCity" type="text" value="Denizli" readonly />
-          </div>
+          <div class="address-select-shell">
+            <div class="accordion-group open" id="registerCityGroup">
+              <button class="accordion-trigger" type="button" onclick="toggleAccordion('registerCityGroup')">
+                <span>İl</span>
+                <span id="registerCitySummary" class="accordion-summary">Denizli</span>
+              </button>
+              <div class="accordion-body">
+                <input id="registerCity" type="text" value="Denizli" readonly />
+              </div>
+            </div>
 
-          <div class="selector-group">
-            <div class="selector-label">İlçe Seç</div>
-            <div id="districtChips" class="chip-grid"></div>
-          </div>
+            <div class="accordion-group" id="registerDistrictGroup">
+              <button class="accordion-trigger" type="button" onclick="toggleAccordion('registerDistrictGroup')">
+                <span>İlçe Seç</span>
+                <span id="registerDistrictSummary" class="accordion-summary">İlçe seçilmedi</span>
+              </button>
+              <div class="accordion-body">
+                <div id="districtChips" class="chip-grid"></div>
+              </div>
+            </div>
 
-          <div class="selector-group">
-            <div class="selector-label">Mahalle / Bölge Seç</div>
-            <div id="neighborhoodChips" class="chip-grid"></div>
+            <div class="accordion-group" id="registerNeighborhoodGroup">
+              <button class="accordion-trigger" type="button" onclick="toggleAccordion('registerNeighborhoodGroup')">
+                <span>Mahalle / Bölge Seç</span>
+                <span id="registerNeighborhoodSummary" class="accordion-summary">Mahalle seçilmedi</span>
+              </button>
+              <div class="accordion-body">
+                <div id="neighborhoodChips" class="chip-grid"></div>
+              </div>
+            </div>
           </div>
 
           <div class="field">
@@ -423,6 +496,32 @@ let selectedNeighborhood = "";
 let selectedProfileDistrict = "";
 let selectedProfileNeighborhood = "";
 let orderCreateLock = false;
+
+
+function setAccordionState(id, open) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle("open", !!open);
+}
+
+function toggleAccordion(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle("open");
+}
+window.toggleAccordion = toggleAccordion;
+
+function updateAddressAccordionSummaries() {
+  const registerDistrictSummary = document.getElementById("registerDistrictSummary");
+  const registerNeighborhoodSummary = document.getElementById("registerNeighborhoodSummary");
+  const profileDistrictSummary = document.getElementById("profileDistrictSummary");
+  const profileNeighborhoodSummary = document.getElementById("profileNeighborhoodSummary");
+
+  if (registerDistrictSummary) registerDistrictSummary.textContent = selectedDistrict || "İlçe seçilmedi";
+  if (registerNeighborhoodSummary) registerNeighborhoodSummary.textContent = selectedNeighborhood || "Mahalle seçilmedi";
+  if (profileDistrictSummary) profileDistrictSummary.textContent = selectedProfileDistrict || "İlçe seçilmedi";
+  if (profileNeighborhoodSummary) profileNeighborhoodSummary.textContent = selectedProfileNeighborhood || "Mahalle seçilmedi";
+}
 
 function setTab(mode) {
   const login = mode === "login";
@@ -525,6 +624,7 @@ function renderAddressChips() {
     : '<div class="muted">Önce ilçe seç.</div>';
 
   updateRegisterAddress();
+  updateAddressAccordionSummaries();
 }
 
 function renderProfileAddressChips() {
@@ -544,18 +644,24 @@ function renderProfileAddressChips() {
     : '<div class="muted">Önce ilçe seç.</div>';
 
   updateProfileAddress();
+  updateAddressAccordionSummaries();
 }
 
 function selectDistrict(name) {
   selectedDistrict = name;
   selectedNeighborhood = "";
   renderAddressChips();
+  updateAddressAccordionSummaries();
+  setAccordionState("registerDistrictGroup", false);
+  setAccordionState("registerNeighborhoodGroup", true);
 }
 window.selectDistrict = selectDistrict;
 
 function selectNeighborhood(name) {
   selectedNeighborhood = name;
   renderAddressChips();
+  updateAddressAccordionSummaries();
+  setAccordionState("registerNeighborhoodGroup", false);
 }
 window.selectNeighborhood = selectNeighborhood;
 
@@ -563,12 +669,17 @@ function selectProfileDistrict(name) {
   selectedProfileDistrict = name;
   selectedProfileNeighborhood = "";
   renderProfileAddressChips();
+  updateAddressAccordionSummaries();
+  setAccordionState("profileDistrictGroup", false);
+  setAccordionState("profileNeighborhoodGroup", true);
 }
 window.selectProfileDistrict = selectProfileDistrict;
 
 function selectProfileNeighborhood(name) {
   selectedProfileNeighborhood = name;
   renderProfileAddressChips();
+  updateAddressAccordionSummaries();
+  setAccordionState("profileNeighborhoodGroup", false);
 }
 window.selectProfileNeighborhood = selectProfileNeighborhood;
 
@@ -600,6 +711,7 @@ function hydrateProfileAddress(addressText) {
   const detailEl = document.getElementById("profileAddressDetail");
   if (detailEl) detailEl.value = detail;
   renderProfileAddressChips();
+  updateAddressAccordionSummaries();
 }
 
 async function getCurrentUser() {
@@ -1074,6 +1186,12 @@ client.auth.onAuthStateChange(() => {
 (async function init() {
   renderAddressChips();
   renderProfileAddressChips();
+  updateAddressAccordionSummaries();
+  setAccordionState("registerCityGroup", true);
+  setAccordionState("registerDistrictGroup", false);
+  setAccordionState("registerNeighborhoodGroup", false);
+  setAccordionState("profileDistrictGroup", false);
+  setAccordionState("profileNeighborhoodGroup", false);
   await refreshHeaderInfo();
   await createOrderFromCartIfNeeded();
   await loadOrders();
