@@ -160,14 +160,10 @@ code.inline{
 
 <div id="loginView" class="login-shell">
   <div class="login-card">
-    <h1>Admin Giriş</h1>
-    <div class="fixed-mail">admin@canakoglu.com</div>
-    <div class="field">
-      <label for="password">Şifre</label>
-      <input id="password" type="password" placeholder="Şifre" autocomplete="current-password" />
-    </div>
-    <button id="loginBtn" class="btn primary" type="button" style="width:100%">Giriş Yap</button>
-    <div id="loginStatus" class="status-box">Hazır.</div>
+    <h1>Admin Paneli</h1>
+    <div class="fixed-mail">Önce hesap sayfasından admin hesabınla giriş yap</div>
+    <button id="loginBtn" class="btn primary" type="button" style="width:100%">Hesap Sayfasına Git</button>
+    <div id="loginStatus" class="status-box">Admin kontrolü bekleniyor.</div>
   </div>
 </div>
 
@@ -452,7 +448,7 @@ code.inline{
             </div>
             <div class="item-box">
               <h4>Admin Kısıtı</h4>
-              <div class="muted">Yalnızca <code class="inline">admin@canakoglu.com</code> girişi kabul edilir.</div>
+              <div class="muted">Yalnızca <code class="inline">profiles.role = 'admin'</code> olan hesaplar panele girebilir.</div>
             </div>
           </div>
         </div>
@@ -465,7 +461,6 @@ code.inline{
 <script>
 const SUPABASE_URL = 'https://jpguymicdiujhutnycvl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I';
-const ADMIN_EMAIL = 'admin@canakoglu.com';
 const SERVICE_SETTINGS_KEY = 'service_areas_v1';
 const CAMPAIGN_SETTINGS_KEY = 'campaign_areas_v1';
 const HOME_BANNER_KEY = 'home_banner_v1';
@@ -532,6 +527,10 @@ function openPanel(){
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('panelView').classList.remove('hidden');
 }
+function closePanel(){
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('panelView').classList.add('hidden');
+}
 function switchTab(name){
   document.querySelectorAll('.tabbtn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === name);
@@ -540,52 +539,76 @@ function switchTab(name){
   const target = document.getElementById('tab-' + name);
   if(target) target.classList.remove('hidden');
 }
-async function guardSession(){
-  const { data } = await client.auth.getUser();
-  const email = String(data?.user?.email || '').trim().toLowerCase();
-  if(email === ADMIN_EMAIL){
-    openPanel();
-    return true;
+async function getCurrentUser(){
+  const { data, error } = await client.auth.getUser();
+  if(error) return null;
+  return data?.user || null;
+}
+async function getCurrentProfile(){
+  const user = await getCurrentUser();
+  if(!user) return null;
+
+  const { data, error } = await client
+    .from('profiles')
+    .select('id, email, role, full_name')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if(error){
+    console.error('Profil okuma hatası:', error);
+    return null;
   }
-  return false;
+
+  return data || null;
+}
+async function checkAdminAccess(){
+  const user = await getCurrentUser();
+
+  if(!user){
+    setLoginStatus('Önce hesap sayfasından giriş yapmalısınız.');
+    return false;
+  }
+
+  const profile = await getCurrentProfile();
+
+  if(!profile){
+    setLoginStatus('Profil kaydı bulunamadı.');
+    return false;
+  }
+
+  if(String(profile.role || '').trim().toLowerCase() !== 'admin'){
+    setLoginStatus('Bu hesap admin değil.');
+    try{ await client.auth.signOut(); }catch(_){}
+    setTimeout(() => {
+      window.location.href = 'hesap.html';
+    }, 1200);
+    return false;
+  }
+
+  return true;
 }
 async function login(){
-  const password = document.getElementById('password').value.trim();
-  if(!password){
-    setLoginStatus('Şifre gerekli.');
-    return;
-  }
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true;
-  btn.textContent = 'Giriş yapılıyor...';
-  try{
-    const { data, error } = await client.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password
-    });
-    if(error) throw error;
-
-    const email = String(data?.user?.email || '').trim().toLowerCase();
-    if(email !== ADMIN_EMAIL){
-      await client.auth.signOut();
-      throw new Error('Bu hesap admin değil.');
-    }
-
-    setLoginStatus('Giriş başarılı.', true);
-    openPanel();
-    await loadAllData();
-    startPolling();
-  }catch(err){
-    setLoginStatus('Hata: ' + (err.message || err));
-  }finally{
-    btn.disabled = false;
-    btn.textContent = 'Giriş Yap';
-  }
+  setLoginStatus('Hesap sayfasına yönlendiriliyorsun...');
+  setTimeout(() => {
+    window.location.href = 'hesap.html';
+  }, 500);
 }
 async function logout(){
   clearInterval(pollTimer);
   try{ await client.auth.signOut(); }catch(_){}
-  location.reload();
+  window.location.href = 'hesap.html';
+}
+async function initAdminPage(){
+  closePanel();
+  clearProductForm();
+
+  const ok = await checkAdminAccess();
+  if(!ok) return;
+
+  openPanel();
+  setLoginStatus('Admin girişi onaylandı.', true);
+  await loadAllData();
+  startPolling();
 }
 function updateStats(){
   document.getElementById('statProducts').textContent = String(products.length);
@@ -1138,32 +1161,25 @@ function startPolling(){
 document.getElementById('loginBtn').addEventListener('click', login);
 document.getElementById('refreshBtn').addEventListener('click', loadAllData);
 document.getElementById('logoutBtn').addEventListener('click', logout);
-document.getElementById('password').addEventListener('keydown', (e) => {
-  if(e.key === 'Enter') login();
-});
 document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
 document.getElementById('clearProductBtn').addEventListener('click', clearProductForm);
 document.getElementById('saveServiceBtn').addEventListener('click', saveServiceAreas);
 document.getElementById('saveCampaignBtn').addEventListener('click', saveCampaignSettings);
+document.getElementById('saveBannerBtn').addEventListener('click', saveHomeBanner);
 document.getElementById('orderSearch').addEventListener('input', () => renderOrderRows('ordersBodyFull'));
 document.getElementById('orderStatusFilter').addEventListener('change', () => renderOrderRows('ordersBodyFull'));
 document.getElementById('productSearch').addEventListener('input', renderProducts);
 document.getElementById('campaignFilter').addEventListener('change', renderProducts);
 document.querySelectorAll('.tabbtn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
-(async function init(){
+window.addEventListener('DOMContentLoaded', async () => {
   try{
-    clearProductForm();
-    const ok = await guardSession();
-    if(ok){
-      await loadAllData();
-      startPolling();
-    }
+    await initAdminPage();
   }catch(err){
     console.error(err);
     setLoginStatus('Başlatılamadı: ' + (err.message || err));
   }
-})();
+});
 </script>
 </body>
 </html>
