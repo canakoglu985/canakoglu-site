@@ -503,9 +503,20 @@ function stepAmount(unit) {
 
 function updateHeaderCartBadge() {
   const badge = document.getElementById("headerCartBadge");
-  if (!badge) return;
+  const totalEl = document.getElementById("headerCartTotal");
+  const sideBadge = document.getElementById("sidebarCartBadge");
   const totalQty = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-  badge.textContent = totalQty > 0 ? String(Math.round(totalQty * 100) / 100) : "0";
+  const totalPrice = cart.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
+
+  if (badge) {
+    badge.textContent = totalQty > 0 ? String(Math.round(totalQty * 100) / 100) : "0";
+  }
+  if (sideBadge) {
+    sideBadge.textContent = totalQty > 0 ? String(Math.round(totalQty * 100) / 100) : "0";
+  }
+  if (totalEl) {
+    totalEl.textContent = money(totalPrice);
+  }
 }
 
 function maxStockFor(product) {
