@@ -262,6 +262,18 @@
       color:var(--muted); font-weight:700;
     }
 
+    .cart-items{display:grid;gap:10px;margin-top:14px}
+    .cart-item{
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+      background:#fbfcfe;
+    }
+    .qty{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .qty button{
+      width:32px;height:32px;border:none;border-radius:10px;cursor:pointer;background:#edf4fb;color:var(--navy);font-weight:900;
+    }
+
     @media (max-width:1180px) {
       .header { grid-template-columns:1fr; }
       .hero, .campaign-strip, .products-layout { grid-template-columns:1fr; }
@@ -400,12 +412,17 @@
         <aside class="cart-box">
           <h3 class="cart-title">Sepet</h3>
           <div class="notice">
-            Siparişi tamamlamak için hesap sayfasından giriş yap. Bu alan tasarım yerleşimi için hazırlandı.
+            Ürünleri sepete ekle. Siparişi tamamlamak için hesap sayfasından giriş yaparsın.
           </div>
+          <div id="cartItems" class="cart-items"></div>
           <div class="summary">
             <div class="summary-line"><span>Ara Toplam</span><span id="subtotalText">0,00 TL</span></div>
             <div class="summary-line"><span>Teslimat</span><span>0,00 TL</span></div>
             <div class="summary-line total"><span>Genel Toplam</span><span id="grandTotalText">0,00 TL</span></div>
+          </div>
+          <div style="display:grid;gap:10px;margin-top:14px">
+            <button id="placeOrderBtn" class="btn primary" type="button" style="width:100%">Sipariş Ver</button>
+            <button id="clearCartBtn" class="btn ghost" type="button" style="width:100%">Sepeti Temizle</button>
           </div>
         </aside>
       </div>
@@ -431,6 +448,94 @@
         scrollTopBtn.style.display = window.scrollY > 220 ? "block" : "none";
       });
       scrollTopBtn.addEventListener("click", goTop);
+    }
+
+
+    const CART_KEY = "canakoglu_cart_v1";
+
+    function money(v){
+      return new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v||0)) + " TL";
+    }
+
+    let cart = [];
+    function readCart(){
+      try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch(e){ return []; }
+    }
+    function writeCart(){
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    }
+    function getQtyText(item){
+      return String(item.unit || "").includes("kg")
+        ? (Number(item.quantity || 0).toFixed(2) + " kg")
+        : (Number(item.quantity || 0) + " adet");
+    }
+    function addToCart(product){
+      const step = String(product.unit || "").includes("kg") ? 0.25 : 1;
+      const row = cart.find(x => String(x.id) === String(product.id));
+      if(row){
+        row.quantity = Number(row.quantity || 0) + step;
+      }else{
+        cart.push({
+          id: product.id,
+          name: product.name || "Ürün",
+          price: Number(product.price || 0),
+          unit: product.unit || "adet",
+          quantity: step
+        });
+      }
+      writeCart();
+      renderCart();
+    }
+    function changeQty(id, delta){
+      const row = cart.find(x => String(x.id) === String(id));
+      if(!row) return;
+      row.quantity = Math.round((Number(row.quantity || 0) + Number(delta || 0)) * 100) / 100;
+      if(row.quantity <= 0){
+        cart = cart.filter(x => String(x.id) !== String(id));
+      }
+      writeCart();
+      renderCart();
+    }
+    function renderCart(){
+      const box = document.getElementById("cartItems");
+      const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+      document.getElementById("headerCartTotal").textContent = money(subtotal);
+      document.getElementById("headerCartBadge").textContent = String(cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0)).replace(/\.00$/, '');
+      document.getElementById("subtotalText").textContent = money(subtotal);
+      document.getElementById("grandTotalText").textContent = money(subtotal);
+
+      if(!box) return;
+      if(!cart.length){
+        box.innerHTML = '<div class="muted">Sepet boş.</div>';
+        return;
+      }
+      box.innerHTML = cart.map(item => {
+        const step = String(item.unit || "").includes("kg") ? 0.25 : 1;
+        const line = Number(item.price || 0) * Number(item.quantity || 0);
+        return `
+          <div class="cart-item">
+            <div class="row">
+              <strong>${esc(item.name)}</strong>
+              <span>${money(line)}</span>
+            </div>
+            <div class="muted">${esc(item.unit || 'adet')} • ${money(item.price)}</div>
+            <div class="qty">
+              <button type="button" onclick="changeQty('${String(item.id).replace(/'/g,"\\'")}', -${step})">−</button>
+              <strong>${getQtyText(item)}</strong>
+              <button type="button" onclick="changeQty('${String(item.id).replace(/'/g,"\\'")}', ${step})">+</button>
+            </div>
+          </div>`;
+      }).join("");
+    }
+    window.changeQty = changeQty;
+
+    function placeOrder(){
+      if(!cart.length){
+        alert("Sepet boş.");
+        return;
+      }
+      writeCart();
+      window.location.href = "hesap.html?redirect=order";
     }
 
     function esc(s) {
@@ -459,7 +564,7 @@
               '<div class="name">' + esc(p.name || 'Ürün') + '</div>' +
               '<div class="muted">' + esc(p.category || 'Kategori') + '</div>' +
               '<div class="card-price">' + Number(p.price || 0).toFixed(1) + ' TL</div>' +
-              '<button class="btn-card" type="button">Sepete Ekle</button>' +
+              '<button class="btn-card" type="button" onclick="addToCart({id:' + JSON.stringify(p.id) + ', name:' + JSON.stringify(p.name || 'Ürün') + ', price:' + JSON.stringify(Number(p.price || 0)) + ', unit:' + JSON.stringify(p.unit || 'adet') + '})">Sepete Ekle</button>' +
             '</div>';
         }).join("");
 
@@ -482,7 +587,11 @@
     });
 
     document.getElementById("refreshBtn").addEventListener("click", load);
+    document.getElementById("placeOrderBtn").addEventListener("click", placeOrder);
+    document.getElementById("clearCartBtn").addEventListener("click", function(){ cart = []; writeCart(); renderCart(); });
 
+    cart = readCart();
+    renderCart();
     load();
   </script>
 </body>
