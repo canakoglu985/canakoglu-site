@@ -285,11 +285,11 @@ code.inline{
           <div class="grid-3">
             <div class="field"><label>Barkod</label><input id="pBarcode" /></div>
             <div class="field"><label>Ürün Adı</label><input id="pName" /></div>
-            <div class="field"><label>Fiyat</label><input id="pPrice" type="number" step="0.01" /></div>
+            <div class="field"><label>Satış Fiyatı</label><input id="pPrice" type="number" step="0.01" /></div>
             <div class="field"><label>Kategori</label><input id="pCategory" /></div>
             <div class="field"><label>Birim</label><input id="pUnit" placeholder="adet / kg" /></div>
             <div class="field"><label>Stok</label><input id="pStock" type="number" step="1" /></div>
-            <div class="field"><label>Ürün Görseli</label><input type="file" id="pImageFile" accept="image/*" /><input id="pImage" placeholder="Yüklenince otomatik dolacak" readonly style="margin-top:8px" /></div>
+            <div class="field"><label>Görsel URL</label><input id="pImage" /></div>
             <div class="field"><label>Kampanya Etiketi</label><input id="pCampaign" /></div>
             <div class="field"><label>Eski Fiyat</label><input id="pOldPrice" type="number" step="0.01" /></div>
             <div class="field">
@@ -306,6 +306,19 @@ code.inline{
           <div class="row-actions" style="margin-top:10px">
             <button id="saveProductBtn" class="btn primary" type="button">Ürünü Kaydet</button>
             <button id="clearProductBtn" class="btn secondary" type="button">Formu Temizle</button>
+          </div>
+          <div class="item-box" style="margin-top:12px">
+            <h4 style="margin:0 0 8px">CSV ile Toplu Ürün Yükleme</h4>
+            <div class="small muted" style="margin-bottom:10px">Kolonlar: <code class="inline">barkod</code>, <code class="inline">urun_adi</code>, <code class="inline">satis_fiyati</code>, <code class="inline">gorsel_url</code>. İsteğe bağlı: <code class="inline">kategori</code>, <code class="inline">stok</code>, <code class="inline">birim</code>, <code class="inline">kampanya_etiketi</code>, <code class="inline">eski_fiyat</code>, <code class="inline">aciklama</code>, <code class="inline">aktif</code></div>
+            <div class="row-actions">
+              <input id="csvFileInput" type="file" accept=".csv,text/csv" style="max-width:320px" />
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--navy);margin:0">
+                <input id="csvAddMissingCheckbox" type="checkbox" style="width:auto" checked />
+                Barkodu sistemde olmayan ürünleri de ekle
+              </label>
+              <button id="importCsvBtn" class="btn purple" type="button">CSV Yükle</button>
+            </div>
+            <div id="csvStatus" class="status-box">Hazır.</div>
           </div>
           <div id="productFormStatus" class="status-box">Hazır.</div>
         </div>
@@ -501,25 +514,6 @@ function escapeHtml(value=''){
 function money(v){
   const num = Number(v || 0);
   return new Intl.NumberFormat('tr-TR', { style:'currency', currency:'TRY', maximumFractionDigits:2 }).format(num);
-}
-
-async function uploadImage(file){
-  const safeName = String(file.name || 'image').replace(/[^a-zA-Z0-9._-]/g, '_');
-  const fileName = Date.now() + "_" + safeName;
-
-  const { error } = await client.storage
-    .from('products')
-    .upload(fileName, file);
-
-  if(error){
-    throw error;
-  }
-
-  const { data } = client.storage
-    .from('products')
-    .getPublicUrl(fileName);
-
-  return data.publicUrl;
 }
 function setLoginStatus(text, ok=false){
   const el = document.getElementById('loginStatus');
@@ -809,8 +803,8 @@ function renderProducts(){
       <td>
         <div class="row-actions">
           <button class="btn secondary" type="button" onclick="editProduct('${String(p.id).replace(/'/g, "\'")}')">Düzenle</button>
-          <button class="btn ${'${p.is_active === false ? "primary" : "danger"}'}" type="button" onclick="toggleProductActive('${String(p.id).replace(/'/g, "\'")}', ${'${p.is_active === false ? "true" : "false"}'})">
-            ${'${p.is_active === false ? "Aktif Yap" : "Pasif Yap"}'}
+          <button class="btn ${p.is_active === false ? "primary" : "danger"}" type="button" onclick="toggleProductActive('${String(p.id).replace(/'/g, "\'")}', ${p.is_active === false ? "true" : "false"})">
+            ${p.is_active === false ? "Aktif Yap" : "Pasif Yap"}
           </button>
         </div>
       </td>
@@ -826,7 +820,6 @@ function clearProductForm(){
   document.getElementById('pUnit').value = 'adet';
   document.getElementById('pStock').value = '';
   document.getElementById('pImage').value = '';
-  if(document.getElementById('pImageFile')) document.getElementById('pImageFile').value = '';
   document.getElementById('pCampaign').value = '';
   document.getElementById('pOldPrice').value = '';
   document.getElementById('pFeatured').value = 'false';
@@ -857,16 +850,6 @@ function editProduct(id){
 }
 async function saveProduct(){
   try{
-    let imageUrl = document.getElementById('pImage').value.trim() || null;
-    const fileInput = document.getElementById('pImageFile');
-    const selectedFile = fileInput?.files?.[0] || null;
-
-    if(selectedFile){
-      setBoxStatus('productFormStatus', 'Görsel yükleniyor...');
-      imageUrl = await uploadImage(selectedFile);
-      document.getElementById('pImage').value = imageUrl || '';
-    }
-
     const payload = {
       barcode: document.getElementById('pBarcode').value.trim() || null,
       name: document.getElementById('pName').value.trim(),
@@ -874,7 +857,7 @@ async function saveProduct(){
       category: document.getElementById('pCategory').value.trim() || null,
       unit: document.getElementById('pUnit').value.trim() || 'adet',
       stock_qty: Number(document.getElementById('pStock').value || 0),
-      image_url: imageUrl,
+      image_url: document.getElementById('pImage').value.trim() || null,
       campaign_label: document.getElementById('pCampaign').value.trim() || null,
       compare_at_price: Number(document.getElementById('pOldPrice').value || 0) || null,
       is_featured: document.getElementById('pFeatured').value === 'true',
@@ -938,6 +921,153 @@ async function toggleProductActive(id, nextState){
   }catch(err){
     console.error(err);
     setBoxStatus('productFormStatus', 'Ürün durumu değiştirilemedi: ' + (err.message || err));
+  }
+}
+
+function normalizeCsvHeader(value=''){
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/İ/g,'i')
+    .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u')
+    .replace(/\s+/g,'_');
+}
+function parseCsvLine(line=''){
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    const next = line[i+1];
+    if(ch === '"' && inQuotes && next === '"'){
+      current += '"';
+      i++;
+      continue;
+    }
+    if(ch === '"'){
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if(ch === ',' && !inQuotes){
+      result.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  result.push(current);
+  return result.map(v => String(v).trim());
+}
+function parseCsvText(text=''){
+  const lines = String(text || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .filter(line => line.trim());
+
+  if(!lines.length) return [];
+
+  const headers = parseCsvLine(lines[0]).map(normalizeCsvHeader);
+  return lines.slice(1).map(line => {
+    const values = parseCsvLine(line);
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index] ?? '';
+    });
+    return row;
+  });
+}
+function csvBool(value=''){
+  const v = String(value || '').trim().toLowerCase();
+  if(['1','true','evet','aktif','yes'].includes(v)) return true;
+  if(['0','false','hayir','hayır','pasif','no'].includes(v)) return false;
+  return true;
+}
+async function importProductsFromCsv(){
+  try{
+    const file = document.getElementById('csvFileInput')?.files?.[0];
+    const addMissing = document.getElementById('csvAddMissingCheckbox')?.checked === true;
+
+    if(!file){
+      setBoxStatus('csvStatus', 'Önce bir CSV dosyası seç.', false);
+      return;
+    }
+
+    setBoxStatus('csvStatus', 'CSV okunuyor...', true);
+    const text = await file.text();
+    const rows = parseCsvText(text);
+
+    if(!rows.length){
+      setBoxStatus('csvStatus', 'CSV içinde veri bulunamadı.', false);
+      return;
+    }
+
+    const parsed = rows.map(row => ({
+      barcode: String(row.barkod || row.barcode || '').trim() || null,
+      name: String(row.urun_adi || row.urunadı || row.urunadi || row.name || '').trim() || null,
+      price: Number(row.satis_fiyati || row.fiyat || row.price || 0),
+      image_url: String(row.gorsel_url || row.image_url || row.resim_url || '').trim() || null,
+      category: String(row.kategori || row.category || '').trim() || null,
+      stock_qty: Number(row.stok || row.stock || 0),
+      unit: String(row.birim || row.unit || 'adet').trim() || 'adet',
+      campaign_label: String(row.kampanya_etiketi || row.kampanya || row.campaign_label || '').trim() || null,
+      compare_at_price: Number(row.eski_fiyat || row.old_price || row.compare_at_price || 0) || null,
+      description: String(row.aciklama || row.description || '').trim() || null,
+      is_active: csvBool(row.aktif || row.is_active || row.durum)
+    })).filter(item => item.barcode && item.name && item.price > 0);
+
+    if(!parsed.length){
+      setBoxStatus('csvStatus', 'Geçerli ürün satırı bulunamadı. Zorunlu alanlar: barkod, urun_adi, satis_fiyati.', false);
+      return;
+    }
+
+    const uniqueBarcodes = [...new Set(parsed.map(p => p.barcode))];
+
+    const existingRes = await client
+      .from('products')
+      .select('id, barcode')
+      .in('barcode', uniqueBarcodes);
+
+    if(existingRes.error) throw existingRes.error;
+
+    const existingBarcodeSet = new Set((existingRes.data || []).map(p => String(p.barcode || '').trim()));
+
+    const toUpdate = parsed.filter(p => existingBarcodeSet.has(p.barcode));
+    const toInsert = addMissing
+      ? parsed.filter(p => !existingBarcodeSet.has(p.barcode))
+      : [];
+
+    let updatedCount = 0;
+    let insertedCount = 0;
+    let skippedCount = 0;
+
+    if(toUpdate.length){
+      const res = await client.from('products').upsert(toUpdate, { onConflict: 'barcode' });
+      if(res.error) throw res.error;
+      updatedCount = toUpdate.length;
+    }
+
+    if(toInsert.length){
+      const res = await client.from('products').insert(toInsert);
+      if(res.error) throw res.error;
+      insertedCount = toInsert.length;
+    }
+
+    if(!addMissing){
+      skippedCount = parsed.filter(p => !existingBarcodeSet.has(p.barcode)).length;
+    }
+
+    const summary = addMissing
+      ? `CSV tamamlandı. Güncellenen: ${updatedCount}, Eklenen: ${insertedCount}.`
+      : `CSV tamamlandı. Güncellenen: ${updatedCount}, Atlanan yeni ürün: ${skippedCount}.`;
+
+    setBoxStatus('csvStatus', summary, true);
+    topNote('CSV içe aktarma tamamlandı');
+    document.getElementById('csvFileInput').value = '';
+    await loadAllData();
+  }catch(err){
+    console.error(err);
+    setBoxStatus('csvStatus', 'CSV yüklenemedi: ' + (err.message || err), false);
   }
 }
 async function loadServiceAreas(){
@@ -1272,6 +1402,7 @@ document.getElementById('password').addEventListener('keydown', (e) => {
 });
 document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
 document.getElementById('clearProductBtn').addEventListener('click', clearProductForm);
+document.getElementById('importCsvBtn').addEventListener('click', importProductsFromCsv);
 document.getElementById('saveServiceBtn').addEventListener('click', saveServiceAreas);
 document.getElementById('saveCampaignBtn').addEventListener('click', saveCampaignSettings);
 document.getElementById('orderSearch').addEventListener('input', () => renderOrderRows('ordersBodyFull'));
