@@ -296,6 +296,36 @@
     .stepper-sub{display:block;color:#6f8196;font-size:11px;font-weight:700;margin-top:2px}
     .add-first-btn{width:100%;justify-content:center;border-radius:16px;padding:13px 14px;font-size:15px}
 
+  
+    .notify-overlay{
+      position:fixed; inset:0; background:rgba(9,26,47,.38);
+      display:none; align-items:center; justify-content:center; z-index:6000; padding:18px;
+      backdrop-filter: blur(4px);
+    }
+    .notify-overlay.open{ display:flex; }
+    .notify-card{
+      width:min(460px,100%); background:#fff; border:1px solid var(--border); border-radius:26px;
+      box-shadow:0 24px 60px rgba(18,50,85,.22); overflow:hidden;
+    }
+    .notify-top{
+      padding:18px 20px;
+      background:linear-gradient(135deg,#082b78 0%,#123e97 55%,#f28a12 100%);
+      color:#fff;
+    }
+    .notify-badge{
+      display:inline-flex; padding:7px 10px; border-radius:999px; background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.16); font-size:12px; font-weight:900;
+    }
+    .notify-title{
+      margin:12px 0 0; font-size:24px; font-weight:900; line-height:1.15;
+    }
+    .notify-body{
+      padding:18px 20px 20px; color:var(--text); line-height:1.7;
+    }
+    .notify-actions{
+      display:flex; justify-content:flex-end; gap:10px; padding:0 20px 20px;
+    }
+
   </style>
 </head>
 <body>
@@ -423,6 +453,20 @@
       <button class="btn ghost" type="button" onclick="closeProductDetail()">Kapat</button>
     </div>
     <div id="productDetailContent" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+
+<div id="notifyOverlay" class="notify-overlay">
+  <div class="notify-card">
+    <div class="notify-top">
+      <span class="notify-badge">Çanakoğlu Kapıda</span>
+      <div id="notifyTitle" class="notify-title">Bilgilendirme</div>
+    </div>
+    <div id="notifyMessage" class="notify-body">İşlem hazırlanıyor.</div>
+    <div class="notify-actions">
+      <button id="notifyOkBtn" class="btn primary" type="button">Tamam</button>
+    </div>
   </div>
 </div>
 
@@ -933,8 +977,7 @@ async function goToAccountForOrder() {
     const ok = confirm("Konumuna göre hizmet alanı dışındasın görünüyor. Yine de adresin siparişte tekrar kontrol edilecek. Devam edilsin mi?");
     if (!ok) return;
   }
-  alert("Siparişi tamamlamak için hesap sayfasına yönlendiriliyorsun.");
-  window.location.href = "hesap.html?redirect=order";
+  showNotify("Siparişe Devam", "Siparişi tamamlamak için hesap sayfasına yönlendiriliyorsun.", () => { window.location.href = "hesap.html?redirect=order"; });
 }
 
 document.getElementById("searchInput").addEventListener("input", renderProducts);
@@ -965,6 +1008,33 @@ renderCart();
 })();
 </script>
 <script>
+
+function showNotify(title, message, onOk) {
+  const overlay = document.getElementById("notifyOverlay");
+  const titleEl = document.getElementById("notifyTitle");
+  const msgEl = document.getElementById("notifyMessage");
+  const okBtn = document.getElementById("notifyOkBtn");
+  if (!overlay || !titleEl || !msgEl || !okBtn) return;
+
+  titleEl.textContent = title || "Bilgilendirme";
+  msgEl.textContent = message || "";
+  overlay.classList.add("open");
+
+  const close = () => {
+    overlay.classList.remove("open");
+    okBtn.onclick = null;
+  };
+
+  okBtn.onclick = () => {
+    close();
+    if (typeof onOk === "function") onOk();
+  };
+
+  overlay.onclick = (e) => {
+    if (e.target === overlay) close();
+  };
+}
+
 const scrollTopBtn = document.getElementById("scrollTopBtn");
 if (scrollTopBtn) {
   window.addEventListener("scroll", () => {
