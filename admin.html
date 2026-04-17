@@ -790,8 +790,8 @@ function renderProducts(){
       <td>
         <div class="row-actions">
           <button class="btn secondary" type="button" onclick="editProduct('${String(p.id).replace(/'/g, "\'")}')">Düzenle</button>
-          <button class="btn ${'${p.is_active === false ? "primary" : "danger"}'}" type="button" onclick="toggleProductActive('${String(p.id).replace(/'/g, "\'")}', ${'${p.is_active === false ? "true" : "false"}'})">
-            ${'${p.is_active === false ? "Aktif Yap" : "Pasif Yap"}'}
+          <button class="btn ${p.is_active === false ? "primary" : "danger"}" type="button" onclick="toggleProductActive('${String(p.id).replace(/'/g, "\'")}', ${p.is_active === false ? "true" : "false"})">
+            ${p.is_active === false ? "Aktif Yap" : "Pasif Yap"}
           </button>
         </div>
       </td>
