@@ -1,67 +1,239 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Admin Banner Panel</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Çanakoğlu Banner Yönetimi</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#eef3f9;--card:#fff;--text:#17324f;--muted:#6f8196;--primary:#f49a27;--primary2:#ffb34d;
+    --navy:#1d4678;--border:#dbe6f1;--danger:#d93025;--success:#1e7b36;--soft:0 8px 20px rgba(18,50,85,.07)
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--soft)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .field{margin-bottom:12px}
+  label{display:block;font-size:13px;color:var(--navy);font-weight:800;margin-bottom:6px}
+  input,select,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14px;font:inherit;background:#fff}
+  textarea{min-height:96px;resize:vertical}
+  .btn{border:none;border-radius:14px;padding:12px 16px;font-weight:800;cursor:pointer}
+  .primary{background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);color:#fff}
+  .secondary{background:#edf4fb;color:var(--navy);border:1px solid var(--border)}
+  .danger{background:var(--danger);color:#fff}
+  .status{margin-top:10px;padding:12px;border-radius:14px;background:#f7f9fc;border:1px solid var(--border);font-weight:800}
+  .ok{color:var(--success)} .err{color:var(--danger)}
+  .banner-list{display:grid;gap:12px}
+  .banner-item{display:grid;grid-template-columns:220px 1fr auto;gap:14px;padding:14px;border:1px solid var(--border);border-radius:18px;background:#fbfcfe;align-items:center}
+  .banner-item img{width:220px;height:120px;object-fit:cover;border-radius:14px;border:1px solid var(--border);background:#f6f9fc}
+  .muted{color:var(--muted);font-size:13px}
+  .row-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900}
+  .active{background:#edf9f0;color:#1e7b36;border:1px solid #c6e7cf}
+  .passive{background:#fff1f1;color:#c62828;border:1px solid #f0c9c9}
+  @media (max-width:900px){
+    .grid{grid-template-columns:1fr}
+    .banner-item{grid-template-columns:1fr}
+    .banner-item img{width:100%}
+  }
+</style>
 </head>
 <body>
+<div class="wrap">
+  <div class="card" style="margin-bottom:18px">
+    <h1 style="margin:0 0 8px">📢 Reklam Bannerları</h1>
+    <div class="muted">Buradan slider için banner ekleyebilir, sıralayabilir ve aktif/pasif yapabilirsin.</div>
+  </div>
 
-<h2>📢 Reklam Bannerları</h2>
+  <div class="grid">
+    <div class="card">
+      <h2 style="margin-top:0">Banner Formu</h2>
+      <div class="field">
+        <label for="bTitle">Başlık</label>
+        <input id="bTitle" placeholder="Örn: Haftanın fırsatları" />
+      </div>
+      <div class="field">
+        <label for="bDesc">Açıklama</label>
+        <textarea id="bDesc" placeholder="Örn: Seçili ürünlerde özel fiyatlar"></textarea>
+      </div>
+      <div class="field">
+        <label for="bImage">Görsel URL</label>
+        <input id="bImage" placeholder="https://..." />
+      </div>
+      <div class="field">
+        <label for="bOrder">Sıra</label>
+        <input id="bOrder" type="number" value="0" />
+      </div>
+      <div class="field">
+        <label for="bActive">Durum</label>
+        <select id="bActive">
+          <option value="true">Aktif</option>
+          <option value="false">Pasif</option>
+        </select>
+      </div>
+      <div class="row-actions">
+        <button id="saveBannerBtn" class="btn primary" type="button">Banner Kaydet</button>
+        <button id="clearBannerBtn" class="btn secondary" type="button">Formu Temizle</button>
+      </div>
+      <div id="bannerStatus" class="status">Hazır.</div>
+    </div>
 
-<input id="bTitle" placeholder="Başlık"><br>
-<input id="bDesc" placeholder="Açıklama"><br>
-<input id="bImage" placeholder="Görsel URL"><br>
-<input id="bOrder" type="number" placeholder="Sıra"><br>
-
-<select id="bActive">
-  <option value="true">Aktif</option>
-  <option value="false">Pasif</option>
-</select><br><br>
-
-<button onclick="saveBanner()">Banner Kaydet</button>
-
-<hr>
-
-<div id="bannerList"></div>
+    <div class="card">
+      <h2 style="margin-top:0">Kayıtlı Bannerlar</h2>
+      <div id="bannerList" class="banner-list">
+        <div class="muted">Yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 const client = supabase.createClient(
   "https://jpguymicdiujhutnycvl.supabase.co",
-  "YOUR_ANON_KEY"
+  "sb_publishable_qhih14wKxwoit8TtaQwCvg_T04SQLAN"
 );
 
-async function saveBanner(){
-  const payload = {
-    title: document.getElementById('bTitle').value,
-    description: document.getElementById('bDesc').value,
-    image_url: document.getElementById('bImage').value,
-    sort_order: Number(document.getElementById('bOrder').value || 0),
-    is_active: document.getElementById('bActive').value === "true"
-  };
+let editingBannerId = null;
 
-  await client.from("banners").insert([payload]);
-  loadBanners();
+function setStatus(text, ok=true){
+  const el = document.getElementById('bannerStatus');
+  el.textContent = text;
+  el.className = 'status ' + (ok ? 'ok' : 'err');
+}
+
+function clearBannerForm(){
+  editingBannerId = null;
+  document.getElementById('bTitle').value = '';
+  document.getElementById('bDesc').value = '';
+  document.getElementById('bImage').value = '';
+  document.getElementById('bOrder').value = '0';
+  document.getElementById('bActive').value = 'true';
+  setStatus('Hazır.', true);
+}
+
+async function saveBanner(){
+  try{
+    const payload = {
+      title: document.getElementById('bTitle').value.trim(),
+      description: document.getElementById('bDesc').value.trim(),
+      image_url: document.getElementById('bImage').value.trim(),
+      sort_order: Number(document.getElementById('bOrder').value || 0),
+      is_active: document.getElementById('bActive').value === 'true'
+    };
+
+    if(!payload.title){
+      setStatus('Başlık gerekli.', false);
+      return;
+    }
+    if(!payload.image_url){
+      setStatus('Görsel URL gerekli.', false);
+      return;
+    }
+
+    let res;
+    if(editingBannerId){
+      res = await client.from('banners').update(payload).eq('id', editingBannerId);
+    }else{
+      res = await client.from('banners').insert([payload]);
+    }
+
+    if(res.error) throw res.error;
+
+    setStatus('Banner kaydedildi.', true);
+    clearBannerForm();
+    await loadBanners();
+  }catch(err){
+    console.error(err);
+    setStatus('Kaydetme hatası: ' + (err.message || err), false);
+  }
+}
+
+function editBanner(id){
+  const item = window.__bannerCache.find(b => String(b.id) === String(id));
+  if(!item) return;
+  editingBannerId = item.id;
+  document.getElementById('bTitle').value = item.title || '';
+  document.getElementById('bDesc').value = item.description || '';
+  document.getElementById('bImage').value = item.image_url || '';
+  document.getElementById('bOrder').value = item.sort_order ?? 0;
+  document.getElementById('bActive').value = String(item.is_active !== false);
+  setStatus('Banner düzenleme modunda.', true);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function toggleBanner(id, nextState){
+  try{
+    const { error } = await client.from('banners').update({ is_active: nextState }).eq('id', id);
+    if(error) throw error;
+    await loadBanners();
+  }catch(err){
+    console.error(err);
+    setStatus('Durum değişmedi: ' + (err.message || err), false);
+  }
+}
+
+async function deleteBanner(id){
+  const ok = confirm('Bu banner silinsin mi?');
+  if(!ok) return;
+  try{
+    const { error } = await client.from('banners').delete().eq('id', id);
+    if(error) throw error;
+    await loadBanners();
+  }catch(err){
+    console.error(err);
+    setStatus('Silme hatası: ' + (err.message || err), false);
+  }
 }
 
 async function loadBanners(){
-  const { data } = await client
-    .from("banners")
-    .select("*")
-    .order("sort_order");
+  try{
+    const { data, error } = await client
+      .from('banners')
+      .select('*')
+      .order('sort_order', { ascending: true });
 
-  document.getElementById("bannerList").innerHTML =
-    data.map(b => `
-      <div style="margin:10px 0;">
-        <img src="${b.image_url}" width="200"><br>
-        <b>${b.title}</b><br>
-        ${b.description}
+    if(error) throw error;
+
+    window.__bannerCache = data || [];
+    const box = document.getElementById('bannerList');
+
+    if(!data || !data.length){
+      box.innerHTML = '<div class="muted">Henüz banner yok.</div>';
+      return;
+    }
+
+    box.innerHTML = data.map(b => `
+      <div class="banner-item">
+        <img src="${String(b.image_url || '').replace(/"/g, '&quot;')}" alt="${String(b.title || '')}">
+        <div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <strong style="font-size:18px">${b.title || ''}</strong>
+            <span class="pill ${b.is_active === false ? 'passive' : 'active'}">${b.is_active === false ? 'pasif' : 'aktif'}</span>
+            <span class="muted">Sıra: ${b.sort_order ?? 0}</span>
+          </div>
+          <div class="muted" style="line-height:1.7">${b.description || ''}</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn secondary" type="button" onclick="editBanner('${b.id}')">Düzenle</button>
+          <button class="btn ${b.is_active === false ? 'primary' : 'secondary'}" type="button" onclick="toggleBanner('${b.id}', ${b.is_active === false ? 'true' : 'false'})">
+            ${b.is_active === false ? 'Aktif Yap' : 'Pasif Yap'}
+          </button>
+          <button class="btn danger" type="button" onclick="deleteBanner('${b.id}')">Sil</button>
+        </div>
       </div>
-    `).join("");
+    `).join('');
+  }catch(err){
+    console.error(err);
+    setStatus('Bannerlar yüklenemedi: ' + (err.message || err), false);
+  }
 }
+
+document.getElementById('saveBannerBtn').addEventListener('click', saveBanner);
+document.getElementById('clearBannerBtn').addEventListener('click', clearBannerForm);
 
 loadBanners();
 </script>
-
 </body>
 </html>
