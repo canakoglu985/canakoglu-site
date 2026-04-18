@@ -336,7 +336,83 @@
       image-rendering:-webkit-optimize-contrast;
       image-rendering:crisp-edges;
     }
-        </style>
+        
+    .ad-slider{
+      width:100%;
+      overflow:hidden;
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      margin:20px 0;
+      background:#fff;
+      position:relative;
+    }
+    .ad-slides{
+      display:flex;
+      width:100%;
+      transition:transform .55s ease;
+    }
+    .ad-slide{
+      min-width:100%;
+      position:relative;
+    }
+    .ad-slide img{
+      width:100%;
+      height:320px;
+      object-fit:cover;
+      display:block;
+    }
+    .ad-overlay{
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg, rgba(8,43,120,.68) 0%, rgba(8,43,120,.28) 45%, rgba(242,138,18,.18) 100%);
+      display:flex;
+      align-items:flex-end;
+      padding:26px;
+      color:#fff;
+    }
+    .ad-copy{
+      max-width:520px;
+    }
+    .ad-copy strong{
+      display:block;
+      font-size:34px;
+      line-height:1.08;
+      margin-bottom:10px;
+      font-weight:900;
+    }
+    .ad-copy span{
+      display:block;
+      line-height:1.7;
+      opacity:.95;
+      font-size:15px;
+    }
+    .ad-dots{
+      position:absolute;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      display:flex;
+      gap:8px;
+      z-index:3;
+    }
+    .ad-dot{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      border:none;
+      background:rgba(255,255,255,.45);
+      cursor:pointer;
+    }
+    .ad-dot.active{
+      background:#fff;
+    }
+    @media (max-width:760px){
+      .ad-slide img{height:220px;}
+      .ad-copy strong{font-size:24px;}
+      .ad-copy span{font-size:13px;}
+    }
+
+</style>
 </head>
 <body>
 <header>
@@ -372,6 +448,53 @@
 </header>
 
 <div class="wrap">
+  <section class="ad-slider">
+    <div id="adSlides" class="ad-slides">
+      <div class="ad-slide">
+        <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop" alt="Taze ürünler">
+        <div class="ad-overlay">
+          <div class="ad-copy">
+            <strong>Taze ürünler şimdi kapında</strong>
+            <span>Mahalle marketinin hızlı teslimat avantajını güçlü kampanyalarla birleştir.</span>
+          </div>
+        </div>
+      </div>
+      <div class="ad-slide">
+        <img src="https://images.unsplash.com/photo-1608686207856-001b95cf60ca?q=80&w=1600&auto=format&fit=crop" alt="Kahvaltılık kampanya">
+        <div class="ad-overlay">
+          <div class="ad-copy">
+            <strong>Kahvaltılıkta haftanın fırsatları</strong>
+            <span>Süt, peynir, zeytin ve günlük ihtiyaçlarda seçili ürünler özel fiyatlarla.</span>
+          </div>
+        </div>
+      </div>
+      <div class="ad-slide">
+        <img src="https://images.unsplash.com/photo-1573246123716-6b1782bfc499?q=80&w=1600&auto=format&fit=crop" alt="Atıştırmalık ve içecekler">
+        <div class="ad-overlay">
+          <div class="ad-copy">
+            <strong>Atıştırmalık ve içeceklerde özel fiyat</strong>
+            <span>Günlük ihtiyaçlarını tek siparişte tamamla, kampanyaları kaçırma.</span>
+          </div>
+        </div>
+      </div>
+      <div class="ad-slide">
+        <img src="https://images.unsplash.com/photo-1488459716781-31db52582fe9?q=80&w=1600&auto=format&fit=crop" alt="Mahalle marketin online">
+        <div class="ad-overlay">
+          <div class="ad-copy">
+            <strong>Mahalle marketin artık daha güçlü</strong>
+            <span>Çanakoğlu Kapıda ile güvenli, hızlı ve düzenli online alışveriş deneyimi.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ad-dots">
+      <button class="ad-dot active" type="button" data-index="0"></button>
+      <button class="ad-dot" type="button" data-index="1"></button>
+      <button class="ad-dot" type="button" data-index="2"></button>
+      <button class="ad-dot" type="button" data-index="3"></button>
+    </div>
+  </section>
+
   <section class="hero">
     <div class="hero-copy">
       <span class="hero-badge">⚡ Çanakoğlu’na özel güçlü vitrin</span>
@@ -405,14 +528,6 @@
       </div>
     </div>
     <div id="campaignStrip" class="campaign-strip"></div>
-
-    <div class="section-head" style="margin-top:20px;">
-      <div>
-        <h2 class="section-title">Öne Çıkan Ürünler</h2>
-        <div class="section-sub">Admin panelden öne çıkarılan ürünler</div>
-      </div>
-    </div>
-    <div id="featuredProducts" class="products-grid"></div>
   </section>
 
   <section class="section" id="productsSection">
@@ -1063,73 +1178,38 @@ if (scrollTopBtn) {
   scrollTopBtn.addEventListener("click", goTop);
 }
 
-function renderProductCards(list, elementId){
-  const el = document.getElementById(elementId);
-  if(!el) return;
-  if(!list || !list.length){
-    el.innerHTML = '<div class="empty">Bu alanda ürün yok.</div>';
-    return;
-  }
-  el.innerHTML = list.map(product => {
-    const image = product.image_url
-      ? `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name || 'Ürün')}">`
-      : `<div class="fallback">Görsel yok</div>`;
-    const oldPrice = Number(product.compare_at_price || 0) > Number(product.price || 0)
-      ? `<div class="muted" style="text-decoration:line-through">${money(product.compare_at_price || 0)}</div>`
-      : '';
-    return `
-      <div class="card">
-        ${image}
-        <div class="name">${escapeHtml(product.name || 'Ürün')}</div>
-        <div class="muted">${escapeHtml(product.category || '')}</div>
-        <div class="card-price">${money(product.price || 0)}</div>
-        ${oldPrice}
-        <div class="card-actions">
-          <button class="btn-card add-first-btn" type="button" onclick="addToCart('${String(product.id)}')">Sepete Ekle</button>
-        </div>
-      </div>
-    `;
-  }).join('');
+let adSlideIndex = 0;
+let adSliderTimer = null;
+
+function goToAdSlide(index){
+  const slides = document.getElementById('adSlides');
+  const dots = document.querySelectorAll('.ad-dot');
+  if(!slides || !dots.length) return;
+
+  const total = dots.length;
+  adSlideIndex = (index + total) % total;
+  slides.style.transform = `translateX(-${adSlideIndex * 100}%)`;
+  dots.forEach((dot, i) => dot.classList.toggle('active', i === adSlideIndex));
 }
 
-function buildCampaignStrip(products){
-  const strip = document.getElementById('campaignStrip');
-  if(!strip) return;
-  if(!products || !products.length){
-    strip.innerHTML = '<div class="empty">Kampanyalı ürün bulunamadı.</div>';
-    return;
-  }
-  const mainProducts = products.slice(0, 3);
-  const mainLabel = String(mainProducts[0]?.campaign_label || 'Kampanya');
-  strip.innerHTML = `
-    <div class="campaign-main">
-      <span class="campaign-tag">🔥 ${escapeHtml(mainLabel)}</span>
-      <h3>Seçili ürünlerde özel fiyatlar</h3>
-      <p>Admin panelden kampanya etiketi verilen ürünler burada otomatik gösterilir.</p>
-    </div>
-    ${mainProducts.map(p => `
-      <div class="campaign-card">
-        <span class="badge">${escapeHtml(p.campaign_label || 'Kampanya')}</span>
-        <div class="title">${escapeHtml(p.name || 'Ürün')}</div>
-        <div class="muted">${escapeHtml(p.category || '')}</div>
-        <div class="card-price" style="font-size:24px">${money(p.price || 0)}</div>
-        <button class="btn-card" type="button" onclick="addToCart('${String(p.id)}')">Sepete Ekle</button>
-      </div>
-    `).join('')}
-  `;
+function startAdSlider(){
+  clearInterval(adSliderTimer);
+  adSliderTimer = setInterval(() => {
+    goToAdSlide(adSlideIndex + 1);
+  }, 3500);
 }
 
-function splitShowcaseProducts(allProducts){
-  const activeProducts = (allProducts || []).filter(p =>
-    p.is_active !== false && Number(p.stock_qty ?? p.stock ?? 0) > 0
-  );
-  const featured = activeProducts.filter(p => Boolean(p.is_featured));
-  const campaign = activeProducts.filter(p => String(p.campaign_label || '').trim());
-  const normal = activeProducts.filter(p => !Boolean(p.is_featured));
-  buildCampaignStrip(campaign);
-  renderProductCards(featured.length ? featured : activeProducts.slice(0, 8), 'featuredProducts');
-  renderProductCards(normal, 'allProductsGrid');
-}
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.ad-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      goToAdSlide(Number(dot.dataset.index || 0));
+      startAdSlider();
+    });
+  });
+
+  goToAdSlide(0);
+  startAdSlider();
+});
 
 </script>
 </body>
