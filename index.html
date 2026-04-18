@@ -391,6 +391,158 @@
   .slide-text p{font-size:14px;}
 }
 
+
+.discount-section{
+  margin:26px 0 10px;
+}
+.discount-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:14px;
+}
+.discount-title{
+  font-size:32px;
+  font-weight:900;
+  color:#17324f;
+  margin:0;
+}
+.discount-sub{
+  color:#6f8196;
+  margin-top:6px;
+}
+.discount-controls{
+  display:flex;
+  gap:10px;
+}
+.discount-arrow{
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  border:1px solid #dbe6f1;
+  background:#fff;
+  color:#17324f;
+  font-size:22px;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(18,50,85,.07);
+}
+.discount-track-wrap{
+  overflow:hidden;
+  border-radius:22px;
+}
+.discount-track{
+  display:flex;
+  gap:16px;
+  overflow-x:auto;
+  scroll-behavior:smooth;
+  padding-bottom:6px;
+}
+.discount-track::-webkit-scrollbar{
+  height:8px;
+}
+.discount-track::-webkit-scrollbar-thumb{
+  background:#dbe6f1;
+  border-radius:999px;
+}
+.discount-card{
+  min-width:260px;
+  max-width:260px;
+  background:#fff;
+  border:1px solid #dbe6f1;
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 8px 20px rgba(18,50,85,.07);
+  flex:0 0 auto;
+}
+.discount-top{
+  background:linear-gradient(135deg,#1547a7 0%, #0f60c8 100%);
+  color:#fff;
+  padding:12px 14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  min-height:60px;
+}
+.discount-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px 10px;
+  border-radius:999px;
+  background:#f49a27;
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+}
+.discount-body{
+  padding:16px;
+}
+.discount-image{
+  width:100%;
+  height:180px;
+  object-fit:contain;
+  background:#fff;
+  border-radius:16px;
+  margin-bottom:14px;
+}
+.discount-image-fallback{
+  width:100%;
+  height:180px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#f6f9fc;
+  color:#6f8196;
+  border-radius:16px;
+  margin-bottom:14px;
+  font-weight:800;
+}
+.discount-name{
+  font-size:20px;
+  font-weight:900;
+  color:#17324f;
+  margin:0 0 10px;
+  line-height:1.2;
+  min-height:48px;
+}
+.discount-category{
+  color:#6f8196;
+  font-size:13px;
+  margin-bottom:12px;
+}
+.discount-price-old{
+  text-decoration:line-through;
+  color:#6f8196;
+  font-weight:700;
+  margin-bottom:4px;
+}
+.discount-price-new{
+  font-size:38px;
+  line-height:1;
+  font-weight:900;
+  color:#0f60c8;
+  margin-bottom:16px;
+}
+.discount-btn{
+  width:100%;
+  border:none;
+  border-radius:14px;
+  padding:14px 16px;
+  background:#f49a27;
+  color:#fff;
+  font-size:16px;
+  font-weight:900;
+  cursor:pointer;
+}
+@media (max-width:760px){
+  .discount-title{font-size:24px}
+  .discount-card{min-width:220px;max-width:220px}
+  .discount-image,.discount-image-fallback{height:140px}
+  .discount-price-new{font-size:30px}
+}
+
 </style>
 </head>
 <body>
@@ -426,6 +578,23 @@
   </div>
 </header>
 <div class="slider" id="bannerSlider"></div>
+
+<section class="discount-section">
+  <div class="discount-head">
+    <div>
+      <h2 class="discount-title">İndirimdeki Ürünler</h2>
+      <div class="discount-sub">Kampanyalı ve fiyatı düşen ürünleri hızlıca sepete ekle</div>
+    </div>
+    <div class="discount-controls">
+      <button class="discount-arrow" type="button" onclick="scrollDiscounts(-1)">‹</button>
+      <button class="discount-arrow" type="button" onclick="scrollDiscounts(1)">›</button>
+    </div>
+  </div>
+  <div class="discount-track-wrap">
+    <div id="discountTrack" class="discount-track"></div>
+  </div>
+</section>
+
 
 <div class="wrap">
   <section class="hero">
@@ -1163,6 +1332,50 @@ function startBannerSliderFromDb() {
 
 
 loadBannersFromDb();
+
+function renderDiscountProducts(list){
+  const track = document.getElementById('discountTrack');
+  if(!track) return;
+
+  if(!list || !list.length){
+    track.innerHTML = '<div style="padding:18px;color:#6f8196;background:#fff;border:1px solid #dbe6f1;border-radius:18px;">Şu anda indirimli ürün bulunamadı.</div>';
+    return;
+  }
+
+  track.innerHTML = list.map(product => {
+    const imageHtml = product.image_url
+      ? `<img class="discount-image" src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name || 'Ürün')}">`
+      : `<div class="discount-image-fallback">Görsel yok</div>`;
+
+    const oldPrice = Number(product.compare_at_price || 0);
+    const newPrice = Number(product.price || 0);
+    const badgeText = product.campaign_label ? escapeHtml(product.campaign_label) : 'İndirim';
+
+    return `
+      <div class="discount-card">
+        <div class="discount-top">
+          <strong>Özel Fırsat</strong>
+          <span class="discount-badge">${badgeText}</span>
+        </div>
+        <div class="discount-body">
+          ${imageHtml}
+          <div class="discount-name">${escapeHtml(product.name || 'Ürün')}</div>
+          <div class="discount-category">${escapeHtml(product.category || '')}</div>
+          <div class="discount-price-old">${money(oldPrice)}</div>
+          <div class="discount-price-new">${money(newPrice)}</div>
+          <button class="discount-btn" type="button" onclick="addToCart('${String(product.id)}')">Sepete Ekle</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function scrollDiscounts(direction){
+  const track = document.getElementById('discountTrack');
+  if(!track) return;
+  track.scrollBy({ left: direction * 320, behavior: 'smooth' });
+}
+
 </script>
 </body>
 </html>
