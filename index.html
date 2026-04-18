@@ -405,6 +405,14 @@
       </div>
     </div>
     <div id="campaignStrip" class="campaign-strip"></div>
+
+    <div class="section-head" style="margin-top:20px;">
+      <div>
+        <h2 class="section-title">Öne Çıkan Ürünler</h2>
+        <div class="section-sub">Admin panelden öne çıkarılan ürünler</div>
+      </div>
+    </div>
+    <div id="featuredProducts" class="products-grid"></div>
   </section>
 
   <section class="section" id="productsSection">
@@ -1054,6 +1062,75 @@ if (scrollTopBtn) {
   });
   scrollTopBtn.addEventListener("click", goTop);
 }
+
+function renderProductCards(list, elementId){
+  const el = document.getElementById(elementId);
+  if(!el) return;
+  if(!list || !list.length){
+    el.innerHTML = '<div class="empty">Bu alanda ürün yok.</div>';
+    return;
+  }
+  el.innerHTML = list.map(product => {
+    const image = product.image_url
+      ? `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name || 'Ürün')}">`
+      : `<div class="fallback">Görsel yok</div>`;
+    const oldPrice = Number(product.compare_at_price || 0) > Number(product.price || 0)
+      ? `<div class="muted" style="text-decoration:line-through">${money(product.compare_at_price || 0)}</div>`
+      : '';
+    return `
+      <div class="card">
+        ${image}
+        <div class="name">${escapeHtml(product.name || 'Ürün')}</div>
+        <div class="muted">${escapeHtml(product.category || '')}</div>
+        <div class="card-price">${money(product.price || 0)}</div>
+        ${oldPrice}
+        <div class="card-actions">
+          <button class="btn-card add-first-btn" type="button" onclick="addToCart('${String(product.id)}')">Sepete Ekle</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function buildCampaignStrip(products){
+  const strip = document.getElementById('campaignStrip');
+  if(!strip) return;
+  if(!products || !products.length){
+    strip.innerHTML = '<div class="empty">Kampanyalı ürün bulunamadı.</div>';
+    return;
+  }
+  const mainProducts = products.slice(0, 3);
+  const mainLabel = String(mainProducts[0]?.campaign_label || 'Kampanya');
+  strip.innerHTML = `
+    <div class="campaign-main">
+      <span class="campaign-tag">🔥 ${escapeHtml(mainLabel)}</span>
+      <h3>Seçili ürünlerde özel fiyatlar</h3>
+      <p>Admin panelden kampanya etiketi verilen ürünler burada otomatik gösterilir.</p>
+    </div>
+    ${mainProducts.map(p => `
+      <div class="campaign-card">
+        <span class="badge">${escapeHtml(p.campaign_label || 'Kampanya')}</span>
+        <div class="title">${escapeHtml(p.name || 'Ürün')}</div>
+        <div class="muted">${escapeHtml(p.category || '')}</div>
+        <div class="card-price" style="font-size:24px">${money(p.price || 0)}</div>
+        <button class="btn-card" type="button" onclick="addToCart('${String(p.id)}')">Sepete Ekle</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+function splitShowcaseProducts(allProducts){
+  const activeProducts = (allProducts || []).filter(p =>
+    p.is_active !== false && Number(p.stock_qty ?? p.stock ?? 0) > 0
+  );
+  const featured = activeProducts.filter(p => Boolean(p.is_featured));
+  const campaign = activeProducts.filter(p => String(p.campaign_label || '').trim());
+  const normal = activeProducts.filter(p => !Boolean(p.is_featured));
+  buildCampaignStrip(campaign);
+  renderProductCards(featured.length ? featured : activeProducts.slice(0, 8), 'featuredProducts');
+  renderProductCards(normal, 'allProductsGrid');
+}
+
 </script>
 </body>
 </html>
