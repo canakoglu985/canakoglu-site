@@ -337,80 +337,59 @@
       image-rendering:crisp-edges;
     }
         
-    .ad-slider{
-      width:100%;
-      overflow:hidden;
-      border-radius:28px;
-      box-shadow:var(--shadow);
-      margin:20px 0;
-      background:#fff;
-      position:relative;
-    }
-    .ad-slides{
-      display:flex;
-      width:100%;
-      transition:transform .55s ease;
-    }
-    .ad-slide{
-      min-width:100%;
-      position:relative;
-    }
-    .ad-slide img{
-      width:100%;
-      height:320px;
-      object-fit:cover;
-      display:block;
-    }
-    .ad-overlay{
-      position:absolute;
-      inset:0;
-      background:linear-gradient(90deg, rgba(8,43,120,.68) 0%, rgba(8,43,120,.28) 45%, rgba(242,138,18,.18) 100%);
-      display:flex;
-      align-items:flex-end;
-      padding:26px;
-      color:#fff;
-    }
-    .ad-copy{
-      max-width:520px;
-    }
-    .ad-copy strong{
-      display:block;
-      font-size:34px;
-      line-height:1.08;
-      margin-bottom:10px;
-      font-weight:900;
-    }
-    .ad-copy span{
-      display:block;
-      line-height:1.7;
-      opacity:.95;
-      font-size:15px;
-    }
-    .ad-dots{
-      position:absolute;
-      left:50%;
-      bottom:16px;
-      transform:translateX(-50%);
-      display:flex;
-      gap:8px;
-      z-index:3;
-    }
-    .ad-dot{
-      width:10px;
-      height:10px;
-      border-radius:50%;
-      border:none;
-      background:rgba(255,255,255,.45);
-      cursor:pointer;
-    }
-    .ad-dot.active{
-      background:#fff;
-    }
-    @media (max-width:760px){
-      .ad-slide img{height:220px;}
-      .ad-copy strong{font-size:24px;}
-      .ad-copy span{font-size:13px;}
-    }
+.slider{
+  position:relative;
+  overflow:hidden;
+  margin:20px 0;
+  border-radius:24px;
+  background:#fff;
+  min-height:320px;
+}
+.slide{
+  display:none;
+  position:relative;
+}
+.slide.active{
+  display:block;
+}
+.slide img{
+  width:100%;
+  height:320px;
+  object-fit:cover;
+  display:block;
+}
+.slide-text{
+  position:absolute;
+  left:28px;
+  bottom:28px;
+  color:#fff;
+  z-index:2;
+  max-width:560px;
+}
+.slide-text h2{
+  margin:0 0 10px;
+  font-size:46px;
+  line-height:1.05;
+  font-weight:900;
+  text-shadow:0 4px 18px rgba(0,0,0,.30);
+}
+.slide-text p{
+  margin:0;
+  font-size:18px;
+  line-height:1.6;
+  text-shadow:0 2px 10px rgba(0,0,0,.30);
+}
+.slide-overlay{
+  position:absolute;
+  inset:0;
+  background:linear-gradient(90deg, rgba(8,43,120,.72) 0%, rgba(8,43,120,.32) 45%, rgba(242,138,18,.20) 100%);
+}
+@media (max-width:760px){
+  .slide img{height:220px;}
+  .slide-text{left:18px;bottom:18px;max-width:80%;}
+  .slide-text h2{font-size:28px;}
+  .slide-text p{font-size:14px;}
+}
 
 </style>
 </head>
@@ -446,55 +425,9 @@
     </div>
   </div>
 </header>
+<div class="slider" id="bannerSlider"></div>
 
 <div class="wrap">
-  <section class="ad-slider">
-    <div id="adSlides" class="ad-slides">
-      <div class="ad-slide">
-        <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop" alt="Taze ürünler">
-        <div class="ad-overlay">
-          <div class="ad-copy">
-            <strong>Taze ürünler şimdi kapında</strong>
-            <span>Mahalle marketinin hızlı teslimat avantajını güçlü kampanyalarla birleştir.</span>
-          </div>
-        </div>
-      </div>
-      <div class="ad-slide">
-        <img src="https://images.unsplash.com/photo-1608686207856-001b95cf60ca?q=80&w=1600&auto=format&fit=crop" alt="Kahvaltılık kampanya">
-        <div class="ad-overlay">
-          <div class="ad-copy">
-            <strong>Kahvaltılıkta haftanın fırsatları</strong>
-            <span>Süt, peynir, zeytin ve günlük ihtiyaçlarda seçili ürünler özel fiyatlarla.</span>
-          </div>
-        </div>
-      </div>
-      <div class="ad-slide">
-        <img src="https://images.unsplash.com/photo-1573246123716-6b1782bfc499?q=80&w=1600&auto=format&fit=crop" alt="Atıştırmalık ve içecekler">
-        <div class="ad-overlay">
-          <div class="ad-copy">
-            <strong>Atıştırmalık ve içeceklerde özel fiyat</strong>
-            <span>Günlük ihtiyaçlarını tek siparişte tamamla, kampanyaları kaçırma.</span>
-          </div>
-        </div>
-      </div>
-      <div class="ad-slide">
-        <img src="https://images.unsplash.com/photo-1488459716781-31db52582fe9?q=80&w=1600&auto=format&fit=crop" alt="Mahalle marketin online">
-        <div class="ad-overlay">
-          <div class="ad-copy">
-            <strong>Mahalle marketin artık daha güçlü</strong>
-            <span>Çanakoğlu Kapıda ile güvenli, hızlı ve düzenli online alışveriş deneyimi.</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="ad-dots">
-      <button class="ad-dot active" type="button" data-index="0"></button>
-      <button class="ad-dot" type="button" data-index="1"></button>
-      <button class="ad-dot" type="button" data-index="2"></button>
-      <button class="ad-dot" type="button" data-index="3"></button>
-    </div>
-  </section>
-
   <section class="hero">
     <div class="hero-copy">
       <span class="hero-badge">⚡ Çanakoğlu’na özel güçlü vitrin</span>
@@ -1178,39 +1111,58 @@ if (scrollTopBtn) {
   scrollTopBtn.addEventListener("click", goTop);
 }
 
-let adSlideIndex = 0;
-let adSliderTimer = null;
+let bannerIndex = 0;
+let bannerTimer = null;
 
-function goToAdSlide(index){
-  const slides = document.getElementById('adSlides');
-  const dots = document.querySelectorAll('.ad-dot');
-  if(!slides || !dots.length) return;
+async function loadBannersFromDb() {
+  const { data, error } = await client
+    .from("banners")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
 
-  const total = dots.length;
-  adSlideIndex = (index + total) % total;
-  slides.style.transform = `translateX(-${adSlideIndex * 100}%)`;
-  dots.forEach((dot, i) => dot.classList.toggle('active', i === adSlideIndex));
+  if (error) {
+    console.error("Banner yükleme hatası:", error);
+    return;
+  }
+
+  const slider = document.getElementById("bannerSlider");
+  if (!slider) return;
+
+  if (!data || data.length === 0) {
+    slider.innerHTML = "<div style='padding:24px'>Banner yok</div>";
+    return;
+  }
+
+  slider.innerHTML = data.map((b, i) => `
+    <div class="slide ${i === 0 ? "active" : ""}">
+      <img src="${b.image_url}" alt="${b.title || "Banner"}" />
+      <div class="slide-overlay"></div>
+      <div class="slide-text">
+        <h2>${b.title || ""}</h2>
+        <p>${b.description || ""}</p>
+      </div>
+    </div>
+  `).join("");
+
+  startBannerSliderFromDb();
 }
 
-function startAdSlider(){
-  clearInterval(adSliderTimer);
-  adSliderTimer = setInterval(() => {
-    goToAdSlide(adSlideIndex + 1);
-  }, 3500);
+function startBannerSliderFromDb() {
+  clearInterval(bannerTimer);
+  const slides = document.querySelectorAll("#bannerSlider .slide");
+  if (!slides.length) return;
+
+  bannerIndex = 0;
+  bannerTimer = setInterval(() => {
+    slides[bannerIndex].classList.remove("active");
+    bannerIndex = (bannerIndex + 1) % slides.length;
+    slides[bannerIndex].classList.add("active");
+  }, 4000);
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.ad-dot').forEach(dot => {
-    dot.addEventListener('click', () => {
-      goToAdSlide(Number(dot.dataset.index || 0));
-      startAdSlider();
-    });
-  });
 
-  goToAdSlide(0);
-  startAdSlider();
-});
-
+loadBannersFromDb();
 </script>
 </body>
 </html>
