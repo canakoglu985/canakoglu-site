@@ -1190,6 +1190,7 @@ async function loadProducts() {
     if (error) throw error;
 
     allProducts = (data || []).map(normalizeProduct).filter(p => p.price >= 0);
+    renderDiscountProducts(allProducts.slice(0, 12));
     categoryOptions(allProducts);
     renderProducts();
     renderCampaignStrip();
@@ -1198,6 +1199,7 @@ async function loadProducts() {
   } catch (err) {
     console.error(err);
     allProducts = [];
+    renderDiscountProducts([]);
     renderProducts();
     status.textContent = "Ürünler alınamadı: " + (err.message || err);
     status.className = "status error";
@@ -1343,13 +1345,13 @@ function renderDiscountProducts(list){
   }
 
   track.innerHTML = list.map(product => {
-    const imageHtml = product.image_url
-      ? `<img class="discount-image" src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name || 'Ürün')}">`
+    const imageHtml = product.image
+      ? `<img class="discount-image" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name || 'Ürün')}">`
       : `<div class="discount-image-fallback">Görsel yok</div>`;
 
-    const oldPrice = Number(product.compare_at_price || 0);
+    const oldPrice = Number(product.comparePrice || product.compare_at_price || 0);
     const newPrice = Number(product.price || 0);
-    const badgeText = product.campaign_label ? escapeHtml(product.campaign_label) : 'İndirim';
+    const badgeText = product.campaignLabel ? escapeHtml(product.campaignLabel) : 'İndirim';
 
     return `
       <div class="discount-card">
