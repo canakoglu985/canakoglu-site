@@ -3,307 +3,353 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Canakoglu Kapida</title>
+  <title>Çanakoğlu Online Market</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
-      --bg:#f3f6fb;
+      --bg:#f4f7fb;
       --surface:#ffffff;
-      --surface-soft:#f8fbff;
+      --surface-soft:#f8fbfe;
       --text:#17324f;
-      --muted:#70839a;
+      --muted:#6d8196;
       --navy:#1d4678;
-      --navy-dark:#13385d;
-      --line:#dbe6f1;
+      --navy-deep:#102b47;
+      --line:#dce7f1;
       --accent:#f49a27;
-      --accent-2:#ffbe59;
-      --success:#1f8a49;
-      --danger:#d93025;
-      --warning:#c97507;
-      --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffbe59 100%);
-      --soft-shadow:0 10px 24px rgba(18,50,85,.07);
-      --hero-shadow:0 20px 44px rgba(18,50,85,.12);
+      --accent-2:#ffbc59;
+      --green:#1f8a49;
+      --red:#d93025;
+      --orange:#c97507;
+      --hero:linear-gradient(135deg,#16385f 0%, #215792 52%, #2d7ed1 100%);
+      --warm:linear-gradient(135deg,#f49a27 0%, #ffbc59 100%);
+      --shadow:0 16px 36px rgba(15,39,68,.08);
+      --soft-shadow:0 8px 20px rgba(18,50,85,.06);
+      --radius-xl:28px;
+      --radius-lg:22px;
+      --radius-md:18px;
+      --radius-sm:14px;
     }
 
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
     body{
       margin:0;
-      background:var(--bg);
+      background:
+        radial-gradient(circle at top left, rgba(244,154,39,.10), transparent 20%),
+        var(--bg);
       color:var(--text);
-      font-family:Arial,sans-serif;
-      overflow-x:hidden;
+      font-family:Segoe UI, Arial, sans-serif;
     }
-    body.drawer-open,
-    body.modal-open{
-      overflow:hidden;
-    }
-
     a{text-decoration:none;color:inherit}
     button,input,select{font:inherit}
 
     .container{
-      width:min(1320px, calc(100% - 32px));
+      width:min(1360px, calc(100% - 28px));
       margin:0 auto;
     }
 
     .site-header{
       position:sticky;
       top:0;
-      z-index:80;
-      background:rgba(255,255,255,.95);
-      backdrop-filter:blur(12px);
-      border-bottom:1px solid rgba(219,230,241,.9);
+      z-index:40;
+      background:rgba(244,247,251,.92);
+      backdrop-filter:blur(14px);
+      border-bottom:1px solid rgba(220,231,241,.9);
     }
-    .header-inner{
-      display:grid;
-      grid-template-columns:280px minmax(320px,1fr) auto;
-      gap:16px;
+    .header-top{
+      display:flex;
       align-items:center;
+      justify-content:space-between;
+      gap:16px;
       padding:14px 0;
+      flex-wrap:wrap;
     }
-
     .brand{
       display:flex;
       align-items:center;
-      gap:12px;
+      gap:14px;
       min-width:0;
     }
     .brand-logo{
-      width:70px;
-      height:70px;
-      border-radius:50%;
+      width:52px;
+      height:52px;
+      border-radius:18px;
+      overflow:hidden;
       background:#fff;
-      border:2px solid #f0d4a7;
-      display:grid;
-      place-items:center;
-      color:var(--navy);
-      font-size:14px;
-      font-weight:900;
-      line-height:1.05;
+      border:1px solid rgba(29,70,120,.08);
       box-shadow:var(--soft-shadow);
       flex-shrink:0;
-      text-align:center;
+    }
+    .brand-logo img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
     }
     .brand-title{
       margin:0;
-      color:#173b77;
       font-size:28px;
-      line-height:.94;
-      font-weight:900;
+      line-height:1;
+      color:var(--navy-deep);
+      font-weight:950;
       letter-spacing:-.03em;
     }
     .brand-sub{
-      margin:6px 0 0;
-      color:#667a91;
+      margin:5px 0 0;
+      color:var(--muted);
       font-size:13px;
-      line-height:1.2;
       font-weight:700;
-      max-width:180px;
     }
 
-    .top-search{
-      display:grid;
-      grid-template-columns:1fr auto;
+    .header-nav{
+      display:flex;
+      align-items:center;
       gap:10px;
-      padding:8px;
-      border-radius:20px;
-      background:#fff;
-      border:1px solid var(--line);
-      box-shadow:var(--soft-shadow);
-      min-width:0;
+      flex-wrap:wrap;
     }
-    .search-input{
-      width:100%;
-      min-width:0;
-      border:none;
-      outline:none;
-      background:#f8fafc;
-      border:1px solid #e7eef7;
-      border-radius:16px;
-      padding:15px 16px;
-      color:var(--text);
-    }
-
     .btn{
       border:none;
       border-radius:16px;
-      padding:13px 18px;
+      padding:12px 16px;
       cursor:pointer;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       gap:8px;
       font-weight:900;
-      white-space:nowrap;
       transition:transform .18s ease, filter .18s ease;
     }
-    .btn:hover{
-      transform:translateY(-1px);
-      filter:brightness(1.02);
-    }
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.02)}
     .btn.primary{
       color:#fff;
-      background:var(--orange-gradient);
-      box-shadow:0 10px 20px rgba(244,154,39,.22);
+      background:var(--warm);
+      box-shadow:0 10px 20px rgba(244,154,39,.20);
     }
     .btn.secondary{
-      color:var(--navy-dark);
+      color:var(--navy);
       background:#fff;
       border:1px solid var(--line);
       box-shadow:var(--soft-shadow);
     }
-    .btn.ghost{
-      color:var(--navy-dark);
-      background:#f7fbff;
-      border:1px solid var(--line);
-    }
-
-    .header-actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .account-btn{
-      min-width:112px;
-    }
-    .cart-pill{
-      min-width:154px;
-      justify-content:flex-start;
-      position:relative;
-      padding-right:44px;
-    }
-    .cart-pill-text{
-      display:grid;
-      gap:2px;
-      text-align:left;
-    }
-    .cart-pill-text strong{
-      font-size:13px;
-      line-height:1.1;
-    }
-    .cart-pill-text span{
-      font-size:12px;
-      color:var(--muted);
-      font-weight:700;
-      line-height:1.1;
-    }
-    .cart-count{
-      position:absolute;
-      right:12px;
-      top:50%;
-      transform:translateY(-50%);
-      width:28px;
-      height:28px;
-      border-radius:50%;
-      display:grid;
-      place-items:center;
-      background:#fff3df;
-      border:1px solid #f0d4a7;
-      color:var(--warning);
-      font-size:12px;
-      font-weight:900;
-    }
 
     .page{
-      padding:18px 0 32px;
+      padding:18px 0 30px;
     }
 
-    .hero-note{
+    .hero-grid{
+      display:grid;
+      grid-template-columns:1.3fr .7fr;
+      gap:18px;
+      margin-bottom:18px;
+    }
+    .hero-main{
+      position:relative;
+      overflow:hidden;
+      background:var(--hero);
+      color:#fff;
+      border-radius:34px;
+      padding:34px;
+      box-shadow:var(--shadow);
+      min-height:320px;
+    }
+    .hero-main::before,
+    .hero-main::after{
+      content:"";
+      position:absolute;
+      border-radius:50%;
+      background:rgba(255,255,255,.10);
+    }
+    .hero-main::before{
+      width:260px;
+      height:260px;
+      right:-70px;
+      top:-60px;
+    }
+    .hero-main::after{
+      width:180px;
+      height:180px;
+      right:160px;
+      bottom:-80px;
+    }
+    .hero-content{position:relative;z-index:1;max-width:760px}
+    .hero-label{
+      display:inline-flex;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.16);
+      letter-spacing:.05em;
+      text-transform:uppercase;
+    }
+    .hero-title{
+      margin:16px 0 12px;
+      font-size:clamp(36px, 5vw, 58px);
+      line-height:.97;
+      font-weight:950;
+      letter-spacing:-.05em;
+      max-width:10.5ch;
+    }
+    .hero-copy{
+      margin:0;
+      max-width:56ch;
+      line-height:1.7;
+      color:rgba(255,255,255,.92);
+      font-size:16px;
+    }
+    .hero-chips{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:20px;
+    }
+    .hero-chip{
+      padding:10px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.14);
+      font-size:13px;
+      font-weight:800;
+    }
+
+    .hero-side{
+      display:grid;
+      gap:18px;
+    }
+    .hero-card{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:22px;
+      box-shadow:var(--soft-shadow);
+    }
+    .hero-card.orange{
+      background:linear-gradient(135deg,#fff1df 0%, #fff8ef 100%);
+      border-color:#f4d9b5;
+    }
+    .hero-card.blue{
+      background:linear-gradient(135deg,#edf5ff 0%, #f8fbff 100%);
+      border-color:#d6e5f7;
+    }
+    .hero-card-label{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      margin-bottom:10px;
+    }
+    .hero-card-title{
+      margin:0 0 8px;
+      font-size:28px;
+      line-height:1.05;
+      color:var(--navy-deep);
+      font-weight:950;
+      letter-spacing:-.03em;
+    }
+    .hero-card-copy{
+      margin:0;
+      color:var(--muted);
+      line-height:1.65;
+      font-size:14px;
+    }
+
+    .banner-note{
       display:none;
-      margin-bottom:14px;
-      padding:15px 18px;
-      border-radius:18px;
+      margin-bottom:18px;
+      padding:16px 18px;
+      border-radius:20px;
       background:#fff;
       border:1px solid var(--line);
       box-shadow:var(--soft-shadow);
       color:var(--navy);
       font-weight:800;
     }
-
-    .hero-wrap{
-      margin-bottom:20px;
+    .showcase-wrap{
+      display:none;
+      margin-bottom:18px;
     }
-    .hero-slider{
+    .showcase{
       position:relative;
       overflow:hidden;
-      border-radius:32px;
-      box-shadow:var(--hero-shadow);
-      min-height:290px;
-      background:#dfe8f4;
+      border-radius:30px;
+      box-shadow:var(--shadow);
     }
-    .hero-track{
+    .showcase-track{
       display:flex;
       transition:transform .45s ease;
     }
-    .hero-slide{
+    .showcase-slide{
       flex:0 0 100%;
-      min-height:290px;
       position:relative;
       overflow:hidden;
-      display:flex;
-      align-items:flex-end;
+      min-height:250px;
       padding:28px;
       color:#fff;
-      background-size:cover;
-      background-position:center;
+      background:linear-gradient(135deg,#14365d 0%, #27639f 52%, #f49a27 100%);
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:18px;
     }
-    .hero-slide::before{
+    .showcase-slide.alt{
+      background:linear-gradient(135deg,#f49a27 0%, #ffbc59 46%, #204d82 100%);
+    }
+    .showcase-slide.soft{
+      background:linear-gradient(135deg,#23578f 0%, #2d7ed1 52%, #25a36d 100%);
+    }
+    .showcase-slide::before{
       content:"";
       position:absolute;
-      inset:0;
-      background:linear-gradient(90deg, rgba(12,31,57,.78) 0%, rgba(12,31,57,.45) 42%, rgba(12,31,57,.12) 100%);
+      width:250px;
+      height:250px;
+      right:-80px;
+      bottom:-90px;
+      border-radius:50%;
+      background:rgba(255,255,255,.10);
     }
-    .hero-content{
-      position:relative;
-      z-index:1;
-      max-width:560px;
-    }
-    .hero-kicker{
+    .showcase-slide > *{position:relative;z-index:1}
+    .showcase-head{
       display:inline-flex;
+      width:max-content;
       padding:8px 12px;
       border-radius:999px;
-      background:rgba(255,255,255,.14);
-      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.18);
       font-size:12px;
       font-weight:900;
-      margin-bottom:14px;
-      text-transform:uppercase;
       letter-spacing:.05em;
+      text-transform:uppercase;
     }
-    .hero-title{
-      margin:0 0 8px;
-      font-size:clamp(36px, 4vw, 58px);
-      line-height:.95;
-      font-weight:900;
+    .showcase-title{
+      margin:14px 0 10px;
+      font-size:clamp(30px, 4vw, 44px);
+      line-height:.98;
+      font-weight:950;
       letter-spacing:-.04em;
+      max-width:11ch;
     }
-    .hero-copy{
+    .showcase-copy{
       margin:0;
+      max-width:48ch;
       font-size:16px;
-      line-height:1.6;
+      line-height:1.65;
       color:rgba(255,255,255,.92);
     }
-    .hero-cta{
-      margin-top:18px;
-    }
-    .hero-link{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
+    .showcase-link{
+      width:max-content;
       padding:14px 18px;
       border-radius:999px;
       background:#fff;
-      color:var(--navy-dark);
+      color:var(--navy);
       font-weight:900;
       box-shadow:0 10px 20px rgba(18,50,85,.18);
     }
-    .hero-nav{
+    .showcase-nav{
       position:absolute;
-      left:18px;
-      right:18px;
+      left:14px;
+      right:14px;
       top:50%;
       transform:translateY(-50%);
       display:flex;
@@ -311,79 +357,45 @@
       pointer-events:none;
       z-index:2;
     }
-    .hero-arrow{
+    .showcase-arrow{
       pointer-events:auto;
-      width:42px;
-      height:42px;
+      width:46px;
+      height:46px;
       border:none;
       border-radius:50%;
       cursor:pointer;
       background:rgba(255,255,255,.92);
-      color:var(--navy-dark);
-      font-size:20px;
+      color:var(--navy);
+      font-size:22px;
       font-weight:900;
       box-shadow:var(--soft-shadow);
     }
-    .hero-dots{
+    .showcase-dots{
       display:flex;
       justify-content:center;
       gap:8px;
       margin-top:12px;
     }
-    .hero-dot{
+    .showcase-dot{
       width:10px;
       height:10px;
       border:none;
       border-radius:50%;
       cursor:pointer;
-      background:#c8d8ea;
+      background:#c9d7e6;
     }
-    .hero-dot.active{
-      background:var(--accent);
-      transform:scale(1.14);
-    }
+    .showcase-dot.active{background:var(--accent);transform:scale(1.14)}
 
-    .main-stack{
-      display:grid;
-      gap:18px;
-      min-width:0;
-    }
-    .section{
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:30px;
-      box-shadow:var(--soft-shadow);
-      padding:22px;
-      min-width:0;
-    }
-    .section-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:end;
-      gap:14px;
-      flex-wrap:wrap;
-      margin-bottom:16px;
-    }
-    .section-title{
-      margin:0;
-      color:var(--navy-dark);
-      font-size:26px;
-      line-height:1;
-      font-weight:900;
-      letter-spacing:-.03em;
-    }
-    .section-copy{
-      margin:6px 0 0;
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.55;
-    }
-
-    .filters{
+    .search-bar{
       display:grid;
       grid-template-columns:1fr 220px auto;
       gap:10px;
-      margin-bottom:16px;
+      padding:18px;
+      border-radius:26px;
+      background:#fff;
+      border:1px solid var(--line);
+      box-shadow:var(--soft-shadow);
+      margin-bottom:14px;
     }
     .field{
       width:100%;
@@ -395,67 +407,76 @@
       outline:none;
     }
 
-    .category-row{
+    .chips{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
-      margin-bottom:8px;
+      margin-bottom:18px;
     }
-    .category-chip{
+    .chip{
       border:none;
       cursor:pointer;
-      padding:11px 14px;
       border-radius:999px;
+      padding:11px 14px;
       background:#fff;
       border:1px solid var(--line);
       color:var(--navy);
       font-weight:900;
       box-shadow:var(--soft-shadow);
     }
-    .category-chip.active{
-      background:var(--orange-gradient);
+    .chip.active{
       color:#fff;
+      background:var(--warm);
       border-color:transparent;
     }
 
-    .discount-wrap{
-      position:relative;
-      min-width:0;
-    }
-    .discount-rail{
+    .layout{
       display:grid;
-      grid-auto-flow:column;
-      grid-auto-columns:224px;
-      gap:14px;
-      overflow-x:auto;
-      scroll-behavior:smooth;
-      padding:2px 2px 6px;
-      scrollbar-width:none;
+      grid-template-columns:minmax(0,1fr) 360px;
+      gap:18px;
+      align-items:start;
     }
-    .discount-rail::-webkit-scrollbar{
-      display:none;
-    }
-    .rail-controls{
-      position:absolute;
-      right:0;
-      top:-54px;
-      display:flex;
-      gap:10px;
-    }
-    .rail-btn{
-      width:38px;
-      height:38px;
-      border:none;
-      border-radius:50%;
+    .panel{
       background:#fff;
       border:1px solid var(--line);
-      color:var(--navy-dark);
-      font-size:18px;
-      font-weight:900;
-      cursor:pointer;
+      border-radius:30px;
       box-shadow:var(--soft-shadow);
+      padding:22px;
     }
+    .panel-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:end;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .panel-title{
+      margin:0;
+      color:var(--navy-deep);
+      font-size:30px;
+      font-weight:950;
+      letter-spacing:-.04em;
+    }
+    .panel-copy{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.6;
+    }
+    .status{
+      margin-top:12px;
+      font-size:13px;
+      font-weight:800;
+    }
+    .status.ok{color:var(--green)}
+    .status.error{color:var(--red)}
 
+    .products-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+    }
     .product-card{
       display:flex;
       flex-direction:column;
@@ -465,36 +486,11 @@
       background:linear-gradient(180deg,#fff,#f9fbfe);
       border:1px solid rgba(29,70,120,.12);
       box-shadow:var(--soft-shadow);
-      min-width:0;
-    }
-    .product-topbar{
-      margin:-14px -14px 0;
-      padding:12px 14px;
-      border-radius:24px 24px 0 0;
-      background:linear-gradient(135deg,#1d56a3 0%,#2c74d8 100%);
-      color:#fff;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-      min-height:52px;
-    }
-    .product-topbar strong{
-      font-size:13px;
-      line-height:1.2;
-    }
-    .mini-badge{
-      padding:6px 10px;
-      border-radius:999px;
-      background:#ffa72e;
-      font-size:11px;
-      font-weight:900;
-      white-space:nowrap;
     }
     .product-image,
     .product-fallback{
       width:100%;
-      height:170px;
+      height:180px;
       border-radius:18px;
       background:#eef4f9;
       border:1px solid var(--line);
@@ -505,21 +501,43 @@
       color:var(--muted);
       font-weight:800;
     }
-    .product-name{
-      color:var(--navy-dark);
-      font-size:18px;
-      line-height:1.2;
+    .product-tags{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .tag{
+      padding:7px 10px;
+      border-radius:999px;
+      background:#eef4ff;
+      border:1px solid #d3e1f0;
+      color:#225996;
+      font-size:11px;
       font-weight:900;
-      min-height:44px;
-      word-break:break-word;
+    }
+    .tag.campaign{
+      background:#fff5e7;
+      border-color:#f1d7b2;
+      color:var(--orange);
+    }
+    .product-name{
+      color:var(--navy);
+      font-size:20px;
+      line-height:1.22;
+      font-weight:950;
+      min-height:48px;
+      letter-spacing:-.02em;
     }
     .product-meta{
-      color:var(--muted);
-      font-size:13px;
       display:flex;
       justify-content:space-between;
       gap:10px;
-      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .price-block{
+      display:grid;
+      gap:3px;
     }
     .old-price{
       min-height:16px;
@@ -529,110 +547,39 @@
       text-decoration:line-through;
     }
     .price{
-      color:#1f5fcc;
-      font-size:32px;
-      line-height:1;
-      font-weight:900;
+      color:var(--navy-deep);
+      font-size:30px;
+      font-weight:950;
       letter-spacing:-.03em;
     }
     .stock{
       font-size:13px;
       font-weight:900;
     }
-    .stock.ok{color:var(--success)}
-    .stock.low{color:var(--warning)}
-    .stock.out{color:var(--danger)}
+    .stock.ok{color:var(--green)}
+    .stock.low{color:var(--orange)}
+    .stock.out{color:var(--red)}
     .product-actions{
       display:grid;
-      grid-template-columns:1fr;
+      grid-template-columns:1fr auto;
       gap:10px;
     }
 
-    .catalog-grid{
+    .cart-panel{
+      position:sticky;
+      top:90px;
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
       gap:16px;
-      margin-top:16px;
-      min-width:0;
-    }
-
-    .cart-overlay{
-      position:fixed;
-      inset:0;
-      background:rgba(10,22,37,.36);
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .22s ease;
-      z-index:90;
-    }
-    .cart-overlay.open{
-      opacity:1;
-      pointer-events:auto;
-    }
-    .cart-drawer{
-      position:fixed;
-      top:0;
-      right:0;
-      width:min(430px,100%);
-      height:100vh;
-      background:#fff;
-      box-shadow:-18px 0 44px rgba(18,50,85,.14);
-      z-index:100;
-      transform:translateX(100%);
-      transition:transform .25s ease;
-      display:grid;
-      grid-template-rows:auto 1fr auto;
-    }
-    .cart-drawer.open{
-      transform:translateX(0);
-    }
-    .drawer-head{
-      display:flex;
-      justify-content:space-between;
-      gap:14px;
-      align-items:start;
-      padding:20px 20px 12px;
-      border-bottom:1px solid var(--line);
-    }
-    .drawer-title{
-      margin:0;
-      font-size:28px;
-      line-height:1;
-      color:var(--navy-dark);
-      font-weight:900;
-    }
-    .drawer-copy{
-      margin:6px 0 0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.5;
-    }
-    .drawer-close{
-      width:40px;
-      height:40px;
-      border:none;
-      border-radius:50%;
-      cursor:pointer;
-      background:#fff;
-      border:1px solid var(--line);
-      color:var(--navy-dark);
-      font-size:20px;
-      font-weight:900;
-      flex-shrink:0;
-    }
-    .drawer-body{
-      overflow:auto;
-      padding:14px 20px 18px;
     }
     .notice{
-      padding:15px 16px;
-      border-radius:18px;
+      padding:16px;
+      border-radius:20px;
       background:linear-gradient(180deg,#fbfdff,#f4f8fc);
       border:1px solid var(--line);
       color:var(--navy);
       font-size:13px;
-      line-height:1.65;
       font-weight:800;
+      line-height:1.65;
     }
     .cart-items{
       display:grid;
@@ -640,12 +587,12 @@
       margin-top:14px;
     }
     .cart-empty{
-      padding:22px 14px;
-      border-radius:18px;
-      border:1px dashed var(--line);
-      background:var(--surface-soft);
+      padding:24px 16px;
       text-align:center;
       color:var(--muted);
+      background:var(--surface-soft);
+      border:1px dashed var(--line);
+      border-radius:18px;
       font-weight:800;
     }
     .cart-item{
@@ -656,23 +603,23 @@
       background:var(--surface-soft);
       border:1px solid var(--line);
     }
-    .cart-item-top{
+    .cart-top{
       display:flex;
       justify-content:space-between;
       gap:10px;
       align-items:start;
     }
-    .cart-item-name{
+    .cart-name{
       color:var(--navy);
       font-weight:900;
-      line-height:1.35;
+      line-height:1.4;
     }
-    .cart-item-total{
-      color:var(--navy-dark);
+    .cart-total{
+      color:var(--navy-deep);
       font-weight:900;
       white-space:nowrap;
     }
-    .cart-item-sub{
+    .cart-sub{
       color:var(--muted);
       font-size:13px;
     }
@@ -686,26 +633,19 @@
       height:34px;
       border:none;
       border-radius:12px;
+      cursor:pointer;
       background:#fff;
       border:1px solid var(--line);
       color:var(--navy);
       font-size:18px;
       font-weight:900;
-      cursor:pointer;
     }
-    .qty strong{
-      min-width:16px;
-      text-align:center;
-    }
+    .qty strong{min-width:16px;text-align:center}
 
-    .drawer-footer{
-      border-top:1px solid var(--line);
-      padding:16px 20px 20px;
-      background:#fff;
-    }
     .summary{
       display:grid;
       gap:10px;
+      margin-top:14px;
     }
     .summary-line{
       display:flex;
@@ -717,8 +657,8 @@
     .summary-line.total{
       padding-top:10px;
       border-top:1px solid var(--line);
-      font-size:19px;
-      color:var(--navy-dark);
+      font-size:20px;
+      color:var(--navy-deep);
     }
     .stack{
       display:grid;
@@ -726,417 +666,156 @@
       margin-top:14px;
     }
 
-    .checkout-modal{
-      position:fixed;
-      inset:0;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:18px;
-      background:rgba(10,22,37,.46);
-      z-index:130;
-    }
-    .checkout-modal.open{
-      display:flex;
-    }
-    .checkout-card{
-      width:min(560px,100%);
-      max-height:90vh;
-      overflow:auto;
-      background:#fff;
-      border-radius:30px;
-      border:1px solid var(--line);
-      box-shadow:0 28px 70px rgba(18,50,85,.22);
-    }
-    .checkout-head{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:start;
-      padding:22px 22px 16px;
-      border-bottom:1px solid var(--line);
-    }
-    .checkout-head h3{
-      margin:0;
-      color:var(--navy-dark);
-      font-size:34px;
-      line-height:.95;
-      font-weight:900;
-    }
-    .checkout-head p{
-      margin:8px 0 0;
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.55;
-    }
-    .checkout-close{
-      width:40px;
-      height:40px;
-      border:none;
-      border-radius:50%;
-      cursor:pointer;
-      background:#fff;
-      border:1px solid var(--line);
-      color:var(--navy-dark);
-      font-size:20px;
-      font-weight:900;
-      flex-shrink:0;
-    }
-    .checkout-body{
-      padding:20px 22px 22px;
-    }
-    .summary-box{
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:20px;
-      overflow:hidden;
-    }
-    .summary-box-head{
-      padding:18px;
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:center;
-      color:var(--navy-dark);
-      font-weight:900;
-      font-size:18px;
-    }
-    .summary-box-body{
-      padding:0 18px 18px;
-      display:grid;
-      gap:12px;
-    }
-    .summary-info{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      color:var(--navy);
-      font-size:15px;
-      font-weight:800;
-    }
-    .summary-info.total{
-      padding-top:12px;
-      border-top:1px solid var(--line);
-      font-size:18px;
-      color:var(--navy-dark);
-    }
-    .summary-warning{
-      margin:16px 0;
-      padding:14px 16px;
-      border-radius:18px;
-      background:#fff7f8;
-      color:#ee3f6e;
-      border:1px solid #ffd4e0;
-      font-size:14px;
-      font-weight:800;
-      line-height:1.55;
-    }
-    .choice-box{
-      padding:18px;
-      border:1px solid var(--line);
-      border-radius:20px;
-      background:var(--surface-soft);
-    }
-    .choice-box h4{
-      margin:0 0 8px;
-      color:var(--navy-dark);
-      font-size:18px;
-      line-height:1.35;
-    }
-    .choice-box p{
-      margin:0 0 16px;
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.65;
-    }
-    .choice-option{
-      display:flex;
-      gap:12px;
-      align-items:flex-start;
-      padding:14px 0;
-      border-top:1px solid #e7eef6;
-      cursor:pointer;
-    }
-    .choice-option:first-of-type{
-      border-top:none;
-      padding-top:0;
-    }
-    .choice-option input{
-      margin-top:4px;
-      width:22px;
-      height:22px;
-      accent-color:#f49a27;
-      flex-shrink:0;
-    }
-    .choice-option strong{
-      display:block;
-      color:var(--navy-dark);
-      font-size:16px;
-      margin-bottom:4px;
-    }
-    .choice-option span{
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.55;
-    }
-    .checkout-actions{
-      display:grid;
-      gap:10px;
-      margin-top:18px;
-    }
-
-    .status{
-      margin-top:12px;
-      font-size:13px;
-      font-weight:800;
-    }
-    .status.ok{color:var(--success)}
-    .status.error{color:var(--danger)}
-
-    @media (max-width:1180px){
-      .header-inner{
+    @media (max-width:1120px){
+      .hero-grid,
+      .layout{
         grid-template-columns:1fr;
       }
+      .cart-panel{position:static}
     }
-
     @media (max-width:760px){
-      .container{
-        width:min(100% - 18px, 1320px);
-      }
-      .brand-title{
-        font-size:24px;
-      }
-      .top-search{
-        grid-template-columns:1fr;
-      }
-      .header-actions{
-        justify-content:flex-start;
-      }
-      .hero-slide{
-        min-height:230px;
-        padding:22px;
-      }
-      .filters{
-        grid-template-columns:1fr;
-      }
-      .catalog-grid{
-        grid-template-columns:1fr;
-      }
-      .cart-drawer{
-        width:100%;
-      }
-      .checkout-head h3{
-        font-size:28px;
-      }
+      .container{width:min(100% - 18px, 1360px)}
+      .brand-title{font-size:23px}
+      .hero-main,
+      .hero-card,
+      .panel{padding:18px}
+      .search-bar{grid-template-columns:1fr}
+      .products-grid{grid-template-columns:1fr}
+      .product-actions{grid-template-columns:1fr}
     }
   </style>
 </head>
 <body>
   <header class="site-header">
-    <div class="container header-inner">
+    <div class="container header-top">
       <a class="brand" href="index.html">
-        <div class="brand-logo">canakoglu<br>Logo</div>
+        <div class="brand-logo">
+          <img src="logo.png" alt="Canakoglu Logo" />
+        </div>
         <div>
-          <h1 class="brand-title">Canakoglu<br>Kapida</h1>
-          <p class="brand-sub">Tek tikla kapimda - mahalle marketin</p>
+          <h1 class="brand-title">Çanakoğlu Online Market</h1>
+          <p class="brand-sub">Mahalle market sıcaklığı, hızlı teslimat rahatlığı</p>
         </div>
       </a>
 
-      <div class="top-search">
-        <input id="searchInput" class="search-input" type="text" placeholder="Urun, kategori veya kampanya ara..." />
-        <button id="searchBtn" class="btn primary" type="button">Ara</button>
-      </div>
-
-      <div class="header-actions">
-        <a class="btn secondary account-btn" href="hesap.html">Hesabim</a>
-        <button id="headerCartBtn" class="btn secondary cart-pill" type="button">
-          <div class="cart-pill-text">
-            <strong>Sepetim</strong>
-            <span id="headerCartTotal">0,00 TL</span>
-          </div>
-          <div id="headerCartCount" class="cart-count">0</div>
-        </button>
-      </div>
+      <nav class="header-nav">
+        <a class="btn secondary" href="hesap.html">Hesabım</a>
+        <a class="btn secondary" href="admin.html">Admin Panel</a>
+      </nav>
     </div>
   </header>
 
   <main class="page">
     <div class="container">
-      <div id="heroNoteBox" class="hero-note"></div>
-
-      <section class="hero-wrap">
-        <div class="hero-slider">
-          <div id="heroTrack" class="hero-track"></div>
-          <div class="hero-nav">
-            <button id="heroPrev" class="hero-arrow" type="button">&#8249;</button>
-            <button id="heroNext" class="hero-arrow" type="button">&#8250;</button>
+      <section class="hero-grid">
+        <section class="hero-main">
+          <div class="hero-content">
+            <div class="hero-label">Online Market</div>
+            <h2 class="hero-title">Günlük ihtiyaçların tek ekranda</h2>
+            <p class="hero-copy">
+              Büyük market hissini koruyan temiz bir vitrin, sade sepet akışı ve ayrı hesap ekranıyla hızlı alışveriş deneyimi.
+            </p>
+            <div class="hero-chips">
+              <div class="hero-chip">Aynı gün teslimat</div>
+              <div class="hero-chip">Kolay sepet yönetimi</div>
+              <div class="hero-chip">Kampanya odaklı vitrin</div>
+            </div>
           </div>
+        </section>
+
+        <div class="hero-side">
+          <section class="hero-card orange">
+            <div class="hero-card-label">Bugünün Vurgusu</div>
+            <h3 class="hero-card-title">Kampanyaları öne çıkar</h3>
+            <p class="hero-card-copy">Admin panelden belirlediğin banner ve kampanyalar ana sayfada güçlü şekilde görünür.</p>
+          </section>
+          <section class="hero-card blue">
+            <div class="hero-card-label">Sipariş Akışı</div>
+            <h3 class="hero-card-title">Sepet → Hesap → Sipariş</h3>
+            <p class="hero-card-copy">Müşteri önce ürünlerini seçer, ardından hesap ekranında giriş yapıp siparişini tamamlar.</p>
+          </section>
         </div>
-        <div id="heroDots" class="hero-dots"></div>
       </section>
 
-      <div class="main-stack">
-        <section class="section">
-          <div class="section-head">
+      <div id="bannerNoteBox" class="banner-note"></div>
+
+      <section id="showcaseWrap" class="showcase-wrap">
+        <div id="showcaseBanners" class="showcase">
+          <div id="showcaseTrack" class="showcase-track"></div>
+          <div class="showcase-nav">
+            <button id="showcasePrev" class="showcase-arrow" type="button" aria-label="Önceki">‹</button>
+            <button id="showcaseNext" class="showcase-arrow" type="button" aria-label="Sonraki">›</button>
+          </div>
+        </div>
+        <div id="showcaseDots" class="showcase-dots"></div>
+      </section>
+
+      <section class="search-bar">
+        <input id="searchInput" class="field" type="text" placeholder="Ürün, kategori veya kampanya ara" />
+        <select id="categoryFilter" class="field">
+          <option value="">Tüm Kategoriler</option>
+        </select>
+        <button id="refreshBtn" class="btn secondary" type="button">Yenile</button>
+      </section>
+
+      <div id="categoryChips" class="chips"></div>
+
+      <div class="layout">
+        <section class="panel">
+          <div class="panel-head">
             <div>
-              <h2 class="section-title">Indirimdeki Urunler</h2>
-              <p class="section-copy">Kampanyali ve fiyati dusen urunleri hizlica sepete ekle</p>
+              <h3 class="panel-title">Ürünler</h3>
+              <p class="panel-copy">Temiz kart yapısı, kategori filtreleri ve kampanya etiketleriyle modern market vitrini.</p>
             </div>
           </div>
-
-          <div class="discount-wrap">
-            <div class="rail-controls">
-              <button id="railPrev" class="rail-btn" type="button">&#8249;</button>
-              <button id="railNext" class="rail-btn" type="button">&#8250;</button>
-            </div>
-            <div id="discountRail" class="discount-rail"></div>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-head">
-            <div>
-              <h2 class="section-title">Urun Vitrini</h2>
-              <p class="section-copy">Temiz kategori yapisi, modern kartlar ve hizli sepete ekleme akisi.</p>
-            </div>
-          </div>
-
-          <div class="filters">
-            <input id="catalogSearchInput" class="field" type="text" placeholder="Urun, kategori veya kampanya ara" />
-            <select id="categoryFilter" class="field">
-              <option value="">Tum Kategoriler</option>
-            </select>
-            <button id="refreshBtn" class="btn secondary" type="button">Yenile</button>
-          </div>
-
-          <div id="categoryChips" class="category-row"></div>
-
-          <div id="catalogGrid" class="catalog-grid"></div>
+          <div id="productsGrid" class="products-grid"></div>
           <div id="productsStatus" class="status"></div>
         </section>
+
+        <aside class="cart-panel">
+          <section class="panel">
+            <div class="panel-head" style="margin-bottom:10px">
+              <div>
+                <h3 class="panel-title" style="font-size:26px">Sepetim</h3>
+                <p class="panel-copy">Siparişi hesap ekranında tamamlarsın.</p>
+              </div>
+            </div>
+
+            <div class="notice">
+              Sipariş vermek için önce <a href="hesap.html" style="text-decoration:underline;color:var(--navy-deep)">hesap sayfasından giriş yap</a>.
+              Bu alanda ürünlerini seçer ve sipariş bilgini hazırlarsın.
+            </div>
+
+            <div id="cartItems" class="cart-items"></div>
+
+            <div class="summary">
+              <div class="summary-line"><span>Ara Toplam</span><span id="subtotalText">0,00 TL</span></div>
+              <div class="summary-line"><span>Teslimat</span><span id="deliveryText">0,00 TL</span></div>
+              <div class="summary-line total"><span>Genel Toplam</span><span id="grandTotalText">0,00 TL</span></div>
+            </div>
+
+            <div class="stack">
+              <select id="deliverySlot" class="field">
+                <option value="Hemen">Hemen</option>
+                <option value="09:00 - 12:00">09:00 - 12:00</option>
+                <option value="12:00 - 15:00">12:00 - 15:00</option>
+                <option value="15:00 - 18:00">15:00 - 18:00</option>
+                <option value="18:00 - 21:00">18:00 - 21:00</option>
+              </select>
+
+              <select id="paymentMethod" class="field">
+                <option value="Kapıda Nakit">Kapıda Nakit</option>
+                <option value="Kapıda Kart">Kapıda Kart</option>
+              </select>
+
+              <button id="placeOrderBtn" class="btn primary" type="button">Siparişe Geç</button>
+              <button id="clearCartBtn" class="btn secondary" type="button">Sepeti Temizle</button>
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   </main>
-
-  <div id="cartOverlay" class="cart-overlay"></div>
-
-  <aside id="cartDrawer" class="cart-drawer" aria-hidden="true">
-    <div class="drawer-head">
-      <div>
-        <h3 class="drawer-title">Sepetim</h3>
-        <p class="drawer-copy">Siparise gecmeden once urunlerini kontrol et.</p>
-      </div>
-      <button id="cartCloseBtn" class="drawer-close" type="button">×</button>
-    </div>
-
-    <div class="drawer-body">
-      <div class="notice">
-        Siparis vermeden once teslimat saati ve odeme tipini sec.
-        Ardindan siparis ozeti ekrani acilacak.
-      </div>
-
-      <div id="cartItems" class="cart-items"></div>
-    </div>
-
-    <div class="drawer-footer">
-      <div class="summary">
-        <div class="summary-line"><span>Ara Toplam</span><span id="subtotalText">0,00 TL</span></div>
-        <div class="summary-line"><span>Teslimat</span><span id="deliveryText">0,00 TL</span></div>
-        <div class="summary-line total"><span>Genel Toplam</span><span id="grandTotalText">0,00 TL</span></div>
-      </div>
-
-      <div class="stack">
-        <select id="deliverySlot" class="field">
-          <option value="Hemen">Hemen</option>
-          <option value="09:00 - 12:00">09:00 - 12:00</option>
-          <option value="12:00 - 15:00">12:00 - 15:00</option>
-          <option value="15:00 - 18:00">15:00 - 18:00</option>
-          <option value="18:00 - 21:00">18:00 - 21:00</option>
-        </select>
-
-        <select id="paymentMethod" class="field">
-          <option value="Kapida Nakit">Kapida Nakit</option>
-          <option value="Kapida Kart">Kapida Kart</option>
-        </select>
-
-        <button id="placeOrderBtn" class="btn primary" type="button">Siparis Ver</button>
-        <button id="clearCartBtn" class="btn secondary" type="button">Sepeti Temizle</button>
-      </div>
-    </div>
-  </aside>
-
-  <div id="checkoutModal" class="checkout-modal">
-    <div class="checkout-card">
-      <div class="checkout-head">
-        <div>
-          <h3>Sepet Ozeti</h3>
-          <p>Siparisi gondermeden once son kez kontrol et.</p>
-        </div>
-        <button id="checkoutCloseBtn" class="checkout-close" type="button">×</button>
-      </div>
-
-      <div class="checkout-body">
-        <div class="summary-box">
-          <div class="summary-box-head">
-            <span>Sepet Ozeti</span>
-            <span id="checkoutItemCount">0 Urun</span>
-          </div>
-          <div class="summary-box-body">
-            <div class="summary-info">
-              <span>Toplam Tutar</span>
-              <span id="checkoutSubtotalText">0,00 TL</span>
-            </div>
-            <div class="summary-info">
-              <span>Teslimat</span>
-              <span id="checkoutDeliveryText">0,00 TL</span>
-            </div>
-            <div class="summary-info total">
-              <span>Odenecek Tutar</span>
-              <span id="checkoutGrandText">0,00 TL</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="summary-warning">
-          Siparisi verdiginde stokta tukenmis urun cikarsa hangi secenegi tercih ettigini bize bildir.
-        </div>
-
-        <div class="choice-box">
-          <h4>Sepetine ekledigin urunlerden biri bitmisse ne yapalim?</h4>
-          <p>Stokta olmayan urunlerde seni arayalim mi, benzerini getirelim mi, yoksa o urunu cikartalim mi? Siparis notuna bu tercih kaydedilecek.</p>
-
-          <label class="choice-option">
-            <input type="radio" name="stockIssueChoice" value="Beni arayin" checked />
-            <div>
-              <strong>Benzer urun icin beni arayin</strong>
-              <span>Stokta olmayan urun icin seni telefonla arayip onay alalim.</span>
-            </div>
-          </label>
-
-          <label class="choice-option">
-            <input type="radio" name="stockIssueChoice" value="Benzerini getirin" />
-            <div>
-              <strong>Benzerini getirin</strong>
-              <span>Benzer urun veya yakin marka ile siparisi tamamlayalim.</span>
-            </div>
-          </label>
-
-          <label class="choice-option">
-            <input type="radio" name="stockIssueChoice" value="Benzer urun istemiyorum" />
-            <div>
-              <strong>Benzer urun istemiyorum</strong>
-              <span>Stokta yoksa o urunu siparisten cikaralim, sadece mevcut urunleri gonderelim.</span>
-            </div>
-          </label>
-        </div>
-
-        <div class="checkout-actions">
-          <button id="confirmCheckoutBtn" class="btn primary" type="button">Devam Et</button>
-          <button id="backToCartBtn" class="btn ghost" type="button">Sepete Don</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script>
     const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
@@ -1147,33 +826,12 @@
     const CHECKOUT_META_KEY = "canakoglu_checkout_meta_v1";
     const HOME_BANNER_KEY = "home_banner_v1";
 
-    const DEFAULT_HERO_SLIDES = [
-      {
-        title: "Buyuk Indirim Haftasi",
-        subtitle: "Secili urunlerde yuzde 30'a varan indirim",
-        button: "Indirimleri Gor",
-        image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1600&q=80"
-      },
-      {
-        title: "Mahalle marketin artik online",
-        subtitle: "Gunluk ihtiyaclarini tek ekranda sec, hizlica siparise donustur",
-        button: "Urunleri Incele",
-        image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=80"
-      },
-      {
-        title: "Canakoglu Kapida",
-        subtitle: "Guclu vitrin, sade alisveris akisi ve profesyonel market deneyimi",
-        button: "Hesabima Git",
-        image: "https://images.unsplash.com/photo-1604719312566-8912e9c8a213?auto=format&fit=crop&w=1600&q=80"
-      }
-    ];
-
     let allProducts = [];
     let cart = readCart();
-    let heroSlides = [];
-    let currentHeroIndex = 0;
-    let heroTimer = null;
-    let activeCategory = "";
+    let activeChip = "";
+    let bannerSlides = [];
+    let currentBannerIndex = 0;
+    let bannerTimer = null;
 
     function money(value) {
       return new Intl.NumberFormat("tr-TR", {
@@ -1203,8 +861,8 @@
     function normalizeProduct(row) {
       return {
         id: row.id,
-        name: row.name || row.product_name || row.title || "Urun",
-        category: row.category || "Diger",
+        name: row.name || row.product_name || row.title || "Ürün",
+        category: row.category || "Diğer",
         price: Number(row.price || 0),
         comparePrice: Number(row.compare_at_price || 0),
         unit: row.unit || "adet",
@@ -1217,7 +875,7 @@
     function renderCategoryOptions(products) {
       const categories = [...new Set(products.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "tr"));
       const select = document.getElementById("categoryFilter");
-      select.innerHTML = '<option value="">Tum Kategoriler</option>' + categories.map((item) => `
+      select.innerHTML = '<option value="">Tüm Kategoriler</option>' + categories.map((item) => `
         <option value="${escapeHtml(item)}">${escapeHtml(item)}</option>
       `).join("");
     }
@@ -1225,120 +883,104 @@
     function renderCategoryChips(products) {
       const box = document.getElementById("categoryChips");
       const categories = [...new Set(products.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "tr"));
-      const entries = ["Tumu", ...categories];
+      const entries = ["Tümü", ...categories];
       box.innerHTML = entries.map((item) => {
-        const value = item === "Tumu" ? "" : item;
-        return `<button class="category-chip ${activeCategory === value ? "active" : ""}" type="button" onclick="setCategory('${escapeHtml(value)}')">${escapeHtml(item)}</button>`;
+        const value = item === "Tümü" ? "" : item;
+        return `<button class="chip ${activeChip === value ? "active" : ""}" type="button" onclick="setCategoryChip('${escapeHtml(value)}')">${escapeHtml(item)}</button>`;
       }).join("");
     }
 
-    function setCategory(value) {
-      activeCategory = value;
+    function setCategoryChip(value) {
+      activeChip = value;
       document.getElementById("categoryFilter").value = value;
       renderCategoryChips(allProducts);
-      renderCatalog();
+      renderProducts();
     }
 
     function stockClass(product) {
-      const n = Number(product.stock ?? 0);
+      const value = Number(product.stock ?? 0);
       if (product.stock === null) return "ok";
-      if (n <= 0) return "out";
-      if (n <= 5) return "low";
+      if (value <= 0) return "out";
+      if (value <= 5) return "low";
       return "ok";
     }
 
     function stockLabel(product) {
       if (product.stock === null) return "Stok bilgisi yok";
-      const n = Number(product.stock || 0);
-      if (n <= 0) return "Tukendi";
-      if (n <= 5) return `Az stok (${n})`;
-      return `Stokta (${n})`;
-    }
-
-    function getCatalogQuery() {
-      return document.getElementById("catalogSearchInput").value.trim().toLocaleLowerCase("tr-TR");
+      const value = Number(product.stock || 0);
+      if (value <= 0) return "Tükendi";
+      if (value <= 5) return `Az stok (${value})`;
+      return `Stokta (${value})`;
     }
 
     function getFilteredProducts() {
-      const query = getCatalogQuery();
+      const search = document.getElementById("searchInput").value.trim().toLocaleLowerCase("tr-TR");
       const category = document.getElementById("categoryFilter").value;
+
       return allProducts.filter((product) => {
-        const textBlob = [product.name, product.category, product.campaignLabel].join(" ").toLocaleLowerCase("tr-TR");
-        const searchOk = !query || textBlob.includes(query);
-        const categoryOk = !category || product.category === category;
-        return searchOk && categoryOk;
+        const textMatch = !search || [product.name, product.category, product.campaignLabel]
+          .join(" ")
+          .toLocaleLowerCase("tr-TR")
+          .includes(search);
+        const categoryMatch = !category || product.category === category;
+        return textMatch && categoryMatch;
       });
     }
 
-    function productCard(product, compact) {
-      const disabled = product.stock !== null && Number(product.stock) <= 0;
-      const oldPrice = product.comparePrice > product.price ? money(product.comparePrice) : "&nbsp;";
-      const image = product.image
-        ? `<a href="urun.html?id=${encodeURIComponent(product.id)}"><img class="product-image" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" onerror="this.outerHTML='<div class=\\'product-fallback\\'>Gorsel yok</div>'"></a>`
-        : `<a href="urun.html?id=${encodeURIComponent(product.id)}" class="product-fallback">Gorsel yok</a>`;
-
-      return `
-        <article class="product-card">
-          <div class="product-topbar">
-            <strong>${compact ? "Ozel Firsat" : escapeHtml(product.category)}</strong>
-            ${product.campaignLabel ? `<span class="mini-badge">${escapeHtml(product.campaignLabel)}</span>` : `<span class="mini-badge">indirim</span>`}
-          </div>
-          ${image}
-          <a class="product-name" href="urun.html?id=${encodeURIComponent(product.id)}">${escapeHtml(product.name)}</a>
-          <div class="product-meta">
-            <span>${escapeHtml(product.unit)}</span>
-            <span class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</span>
-          </div>
-          <div class="old-price">${oldPrice}</div>
-          <div class="price">${money(product.price)}</div>
-          <div class="product-actions">
-            <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${String(product.id).replaceAll("'", "\\'")}')">
-              ${disabled ? "Tukendi" : "Sepete Ekle"}
-            </button>
-          </div>
-        </article>
-      `;
-    }
-
-    function renderCatalog() {
-      const grid = document.getElementById("catalogGrid");
+    function renderProducts() {
+      const grid = document.getElementById("productsGrid");
       const status = document.getElementById("productsStatus");
       const products = getFilteredProducts();
 
       if (!products.length) {
-        grid.innerHTML = '<div class="cart-empty" style="grid-column:1/-1">Aramana uygun urun bulunamadi.</div>';
+        grid.innerHTML = '<div class="cart-empty" style="grid-column:1/-1">Aramana uygun ürün bulunamadı.</div>';
         status.className = "status";
         status.textContent = "";
         return;
       }
 
-      grid.innerHTML = products.map((product) => productCard(product, false)).join("");
+      grid.innerHTML = products.map((product) => {
+        const disabled = product.stock !== null && Number(product.stock) <= 0;
+        const oldPrice = product.comparePrice > product.price ? money(product.comparePrice) : "&nbsp;";
+        const image = product.image
+          ? `<a href="urun.html?id=${encodeURIComponent(product.id)}"><img class="product-image" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" onerror="this.outerHTML='<div class=\\'product-fallback\\'>Görsel yok</div>'"></a>`
+          : `<a href="urun.html?id=${encodeURIComponent(product.id)}" class="product-fallback">Görsel yok</a>`;
+        return `
+          <article class="product-card">
+            ${image}
+            <div class="product-tags">
+              <span class="tag">${escapeHtml(product.category)}</span>
+              ${product.campaignLabel ? `<span class="tag campaign">${escapeHtml(product.campaignLabel)}</span>` : ""}
+            </div>
+            <a class="product-name" href="urun.html?id=${encodeURIComponent(product.id)}">${escapeHtml(product.name)}</a>
+            <div class="product-meta">
+              <span>${escapeHtml(product.unit)}</span>
+              <span class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</span>
+            </div>
+            <div class="price-block">
+              <div class="old-price">${oldPrice}</div>
+              <div class="price">${money(product.price)}</div>
+            </div>
+            <div class="product-actions">
+              <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${String(product.id).replaceAll("'", "\\'")}')">
+                ${disabled ? "Tükendi" : "Sepete Ekle"}
+              </button>
+              <a class="btn secondary" href="urun.html?id=${encodeURIComponent(product.id)}">Detay</a>
+            </div>
+          </article>
+        `;
+      }).join("");
+
       status.className = "status ok";
-      status.textContent = `${products.length} urun listeleniyor.`;
-    }
-
-    function renderDiscountRail() {
-      const rail = document.getElementById("discountRail");
-      const discounted = allProducts.filter((product) =>
-        product.comparePrice > product.price || String(product.campaignLabel || "").trim()
-      );
-      const source = discounted.length ? discounted : allProducts.slice(0, 12);
-
-      if (!source.length) {
-        rail.innerHTML = '<div class="cart-empty">Indirim urunu bulunamadi.</div>';
-        return;
-      }
-
-      rail.innerHTML = source.map((product) => productCard(product, true)).join("");
+      status.textContent = `${products.length} ürün listeleniyor.`;
     }
 
     function addToCart(productId) {
       const product = allProducts.find((item) => String(item.id) === String(productId));
       if (!product) return;
-
-      const found = cart.find((item) => String(item.id) === String(product.id));
-      if (found) {
-        found.quantity += 1;
+      const existing = cart.find((item) => String(item.id) === String(product.id));
+      if (existing) {
+        existing.quantity += 1;
       } else {
         cart.push({
           id: product.id,
@@ -1348,10 +990,8 @@
           quantity: 1
         });
       }
-
       writeCart();
       renderCart();
-      openCartDrawer();
     }
 
     function updateCartItem(productId, delta) {
@@ -1370,31 +1010,20 @@
       localStorage.removeItem(CHECKOUT_META_KEY);
       writeCart();
       renderCart();
-      closeCheckoutModal();
-    }
-
-    function getCartSummary() {
-      const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
-      const delivery = subtotal > 0 ? 0 : 0;
-      const total = subtotal + delivery;
-      const count = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-      return { subtotal, delivery, total, count };
     }
 
     function renderCart() {
       const box = document.getElementById("cartItems");
-      const placeOrderBtn = document.getElementById("placeOrderBtn");
-      const summary = getCartSummary();
+      const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+      const delivery = subtotal > 0 ? 0 : 0;
+      const grandTotal = subtotal + delivery;
 
-      document.getElementById("subtotalText").textContent = money(summary.subtotal);
-      document.getElementById("deliveryText").textContent = money(summary.delivery);
-      document.getElementById("grandTotalText").textContent = money(summary.total);
-      document.getElementById("headerCartTotal").textContent = money(summary.total);
-      document.getElementById("headerCartCount").textContent = summary.count;
-      placeOrderBtn.disabled = !cart.length;
+      document.getElementById("subtotalText").textContent = money(subtotal);
+      document.getElementById("deliveryText").textContent = money(delivery);
+      document.getElementById("grandTotalText").textContent = money(grandTotal);
 
       if (!cart.length) {
-        box.innerHTML = '<div class="cart-empty">Sepetin bos. Urun secerek hizlica baslayabilirsin.</div>';
+        box.innerHTML = '<div class="cart-empty">Sepetin boş. Ürün kartlarından ürün seçerek başlayabilirsin.</div>';
         return;
       }
 
@@ -1402,13 +1031,13 @@
         const lineTotal = Number(item.price || 0) * Number(item.quantity || 0);
         return `
           <div class="cart-item">
-            <div class="cart-item-top">
-              <div class="cart-item-name">${escapeHtml(item.name)}</div>
-              <div class="cart-item-total">${money(lineTotal)}</div>
+            <div class="cart-top">
+              <div class="cart-name">${escapeHtml(item.name)}</div>
+              <div class="cart-total">${money(lineTotal)}</div>
             </div>
-            <div class="cart-item-sub">${escapeHtml(item.unit || "adet")} - ${money(item.price)}</div>
+            <div class="cart-sub">${escapeHtml(item.unit || "adet")} • ${money(item.price)}</div>
             <div class="qty">
-              <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', -1)">-</button>
+              <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', -1)">−</button>
               <strong>${item.quantity}</strong>
               <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', 1)">+</button>
             </div>
@@ -1417,58 +1046,17 @@
       }).join("");
     }
 
-    function openCartDrawer() {
-      document.getElementById("cartDrawer").classList.add("open");
-      document.getElementById("cartOverlay").classList.add("open");
-      document.body.classList.add("drawer-open");
-      document.getElementById("cartDrawer").setAttribute("aria-hidden", "false");
-    }
-
-    function closeCartDrawer() {
-      document.getElementById("cartDrawer").classList.remove("open");
-      document.getElementById("cartOverlay").classList.remove("open");
-      document.body.classList.remove("drawer-open");
-      document.getElementById("cartDrawer").setAttribute("aria-hidden", "true");
-    }
-
-    function openCheckoutModal() {
-      if (!cart.length) {
-        alert("Sepet bos.");
-        return;
-      }
-
-      const summary = getCartSummary();
-      document.getElementById("checkoutItemCount").textContent = `${summary.count} Urun`;
-      document.getElementById("checkoutSubtotalText").textContent = money(summary.subtotal);
-      document.getElementById("checkoutDeliveryText").textContent = money(summary.delivery);
-      document.getElementById("checkoutGrandText").textContent = money(summary.total);
-
-      document.getElementById("checkoutModal").classList.add("open");
-      document.body.classList.add("modal-open");
-    }
-
-    function closeCheckoutModal() {
-      document.getElementById("checkoutModal").classList.remove("open");
-      document.body.classList.remove("modal-open");
-    }
-
-    function getStockIssueChoice() {
-      const checked = document.querySelector('input[name="stockIssueChoice"]:checked');
-      return checked ? checked.value : "Beni arayin";
-    }
-
     function storeCheckoutMeta() {
       const payload = {
         delivery_slot: document.getElementById("deliverySlot").value,
-        payment_method: document.getElementById("paymentMethod").value,
-        stock_issue_preference: getStockIssueChoice()
+        payment_method: document.getElementById("paymentMethod").value
       };
       localStorage.setItem(CHECKOUT_META_KEY, JSON.stringify(payload));
     }
 
     function goToAccountForOrder() {
       if (!cart.length) {
-        alert("Sepet bos.");
+        alert("Sepet boş.");
         return;
       }
       writeCart();
@@ -1476,94 +1064,93 @@
       window.location.href = "hesap.html?redirect=order";
     }
 
-    function heroHref(slide) {
-      const text = `${slide.title || ""} ${slide.subtitle || ""} ${slide.button || ""}`.toLocaleLowerCase("tr-TR");
-      if (text.includes("hesap")) return "hesap.html";
-      return "#catalogGrid";
+    function guessBannerHref(slide = {}) {
+      const blob = `${slide.title || ""} ${slide.subtitle || ""} ${slide.button || ""}`.toLocaleLowerCase("tr-TR");
+      if (blob.includes("hesap")) return "hesap.html";
+      return "#productsGrid";
     }
 
-    function scrollHeroTarget(event, href) {
+    function scrollToBannerTarget(event, href) {
       if (!href.startsWith("#")) return;
       event.preventDefault();
       const target = document.querySelector(href);
       if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    function updateHeroSlider() {
-      const track = document.getElementById("heroTrack");
-      const dots = document.querySelectorAll(".hero-dot");
-      if (!heroSlides.length) return;
-      track.style.transform = `translateX(-${currentHeroIndex * 100}%)`;
-      dots.forEach((dot, index) => dot.classList.toggle("active", index === currentHeroIndex));
+    function updateBannerSlider() {
+      const track = document.getElementById("showcaseTrack");
+      const dots = document.querySelectorAll(".showcase-dot");
+      if (!bannerSlides.length) return;
+      track.style.transform = `translateX(-${currentBannerIndex * 100}%)`;
+      dots.forEach((dot, index) => dot.classList.toggle("active", index === currentBannerIndex));
     }
 
-    function showHero(index) {
-      if (!heroSlides.length) return;
-      currentHeroIndex = (index + heroSlides.length) % heroSlides.length;
-      updateHeroSlider();
+    function showBanner(index) {
+      if (!bannerSlides.length) return;
+      currentBannerIndex = (index + bannerSlides.length) % bannerSlides.length;
+      updateBannerSlider();
     }
 
-    function stopHeroAutoplay() {
-      clearInterval(heroTimer);
+    function stopBannerAutoplay() {
+      clearInterval(bannerTimer);
     }
 
-    function startHeroAutoplay() {
-      stopHeroAutoplay();
-      if (heroSlides.length <= 1) return;
-      heroTimer = setInterval(() => {
-        showHero(currentHeroIndex + 1);
-      }, 5000);
+    function startBannerAutoplay() {
+      stopBannerAutoplay();
+      if (bannerSlides.length <= 1) return;
+      bannerTimer = setInterval(() => {
+        showBanner(currentBannerIndex + 1);
+      }, 4500);
     }
 
-    function renderHeroSlides(value) {
-      const noteBox = document.getElementById("heroNoteBox");
-      const track = document.getElementById("heroTrack");
-      const dots = document.getElementById("heroDots");
+    function renderHomeBanners(value = {}) {
+      const wrap = document.getElementById("showcaseWrap");
+      const note = document.getElementById("bannerNoteBox");
+      const track = document.getElementById("showcaseTrack");
+      const dots = document.getElementById("showcaseDots");
+      const variants = ["", "alt", "soft"];
 
-      if (value && value.note) {
-        noteBox.style.display = "block";
-        noteBox.textContent = value.note;
+      bannerSlides = Array.isArray(value.slides)
+        ? value.slides.filter((slide) => slide && (slide.title || slide.subtitle || slide.button)).slice(0, 3)
+        : [];
+      currentBannerIndex = 0;
+
+      if (value.note) {
+        note.style.display = "block";
+        note.textContent = value.note;
       } else {
-        noteBox.style.display = "none";
+        note.style.display = "none";
       }
 
-      const adminSlides = Array.isArray(value && value.slides)
-        ? value.slides.filter((slide) => slide && (slide.title || slide.subtitle || slide.button))
-        : [];
+      if (!bannerSlides.length) {
+        wrap.style.display = "none";
+        track.innerHTML = "";
+        dots.innerHTML = "";
+        stopBannerAutoplay();
+        return;
+      }
 
-      heroSlides = adminSlides.length
-        ? adminSlides.map((slide, index) => ({
-            title: slide.title || DEFAULT_HERO_SLIDES[index % DEFAULT_HERO_SLIDES.length].title,
-            subtitle: slide.subtitle || DEFAULT_HERO_SLIDES[index % DEFAULT_HERO_SLIDES.length].subtitle,
-            button: slide.button || DEFAULT_HERO_SLIDES[index % DEFAULT_HERO_SLIDES.length].button,
-            image: DEFAULT_HERO_SLIDES[index % DEFAULT_HERO_SLIDES.length].image
-          }))
-        : DEFAULT_HERO_SLIDES.slice();
-
-      currentHeroIndex = 0;
-
-      track.innerHTML = heroSlides.map((slide) => `
-        <article class="hero-slide" style="background-image:url('${escapeHtml(slide.image)}')">
-          <div class="hero-content">
-            <div class="hero-kicker">Canakoglu Kapida</div>
-            <h2 class="hero-title">${escapeHtml(slide.title)}</h2>
-            <p class="hero-copy">${escapeHtml(slide.subtitle)}</p>
-            <div class="hero-cta">
-              <a class="hero-link" href="${escapeHtml(heroHref(slide))}" onclick="scrollHeroTarget(event, '${escapeHtml(heroHref(slide))}')">${escapeHtml(slide.button || "Incele")}</a>
-            </div>
+      track.innerHTML = bannerSlides.map((slide, index) => `
+        <article class="showcase-slide ${variants[index] || ""}">
+          <div>
+            <div class="showcase-head">Vitrin Banneri</div>
+            <h3 class="showcase-title">${escapeHtml(slide.title || "Çanakoğlu Online")}</h3>
+            <p class="showcase-copy">${escapeHtml(slide.subtitle || "Güncel ürünler ve kampanyalar burada.")}</p>
           </div>
+          <a class="showcase-link" href="${escapeHtml(guessBannerHref(slide))}" onclick="scrollToBannerTarget(event, '${escapeHtml(guessBannerHref(slide))}')">${escapeHtml(slide.button || "İncele")}</a>
         </article>
       `).join("");
 
-      dots.innerHTML = heroSlides.map((_, index) => `
-        <button class="hero-dot ${index === 0 ? "active" : ""}" type="button" onclick="showHero(${index})"></button>
+      dots.innerHTML = bannerSlides.map((_, index) => `
+        <button class="showcase-dot ${index === 0 ? "active" : ""}" type="button" onclick="showBanner(${index})"></button>
       `).join("");
 
-      updateHeroSlider();
-      startHeroAutoplay();
+      wrap.style.display = "block";
+      updateBannerSlider();
+      startBannerAutoplay();
     }
 
-    async function loadHeroSlides() {
+    async function loadHomeBanners() {
       try {
         const { data, error } = await client
           .from("site_settings")
@@ -1572,18 +1159,17 @@
           .maybeSingle();
 
         if (error) throw error;
-        renderHeroSlides(data && data.value ? data.value : {});
+        renderHomeBanners(data?.value || {});
       } catch (err) {
         console.error(err);
-        renderHeroSlides({});
+        renderHomeBanners({});
       }
     }
 
     async function loadProducts() {
       const status = document.getElementById("productsStatus");
       status.className = "status";
-      status.textContent = "Urunler yukleniyor...";
-
+      status.textContent = "Ürünler yükleniyor...";
       try {
         const { data, error } = await client
           .from("products")
@@ -1597,78 +1183,45 @@
         allProducts = (data || []).map(normalizeProduct).filter((product) => product.price >= 0);
         renderCategoryOptions(allProducts);
         renderCategoryChips(allProducts);
-        renderDiscountRail();
-        renderCatalog();
+        renderProducts();
       } catch (err) {
         console.error(err);
-        document.getElementById("catalogGrid").innerHTML = '<div class="cart-empty" style="grid-column:1/-1">Urunler yuklenemedi.</div>';
-        document.getElementById("discountRail").innerHTML = '<div class="cart-empty">Veri alinamadi.</div>';
+        document.getElementById("productsGrid").innerHTML = '<div class="cart-empty">Ürünler yüklenemedi.</div>';
         status.className = "status error";
-        status.textContent = "Urunler alinamadi: " + (err.message || err);
+        status.textContent = "Ürünler alınamadı: " + (err.message || err);
       }
     }
 
-    document.getElementById("searchBtn").addEventListener("click", () => {
-      document.getElementById("catalogSearchInput").value = document.getElementById("searchInput").value;
-      renderCatalog();
-      document.getElementById("catalogGrid").scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    document.getElementById("searchInput").addEventListener("keydown", (event) => {
-      if (event.key === "Enter") document.getElementById("searchBtn").click();
-    });
-
-    document.getElementById("catalogSearchInput").addEventListener("input", renderCatalog);
+    document.getElementById("searchInput").addEventListener("input", renderProducts);
     document.getElementById("categoryFilter").addEventListener("change", (event) => {
-      activeCategory = event.target.value;
+      activeChip = event.target.value;
       renderCategoryChips(allProducts);
-      renderCatalog();
+      renderProducts();
     });
-
     document.getElementById("refreshBtn").addEventListener("click", loadProducts);
     document.getElementById("clearCartBtn").addEventListener("click", clearCart);
+    document.getElementById("placeOrderBtn").addEventListener("click", goToAccountForOrder);
     document.getElementById("deliverySlot").addEventListener("change", storeCheckoutMeta);
     document.getElementById("paymentMethod").addEventListener("change", storeCheckoutMeta);
-
-    document.getElementById("placeOrderBtn").addEventListener("click", openCheckoutModal);
-    document.getElementById("confirmCheckoutBtn").addEventListener("click", goToAccountForOrder);
-    document.getElementById("backToCartBtn").addEventListener("click", closeCheckoutModal);
-    document.getElementById("checkoutCloseBtn").addEventListener("click", closeCheckoutModal);
-
-    document.getElementById("headerCartBtn").addEventListener("click", openCartDrawer);
-    document.getElementById("cartCloseBtn").addEventListener("click", closeCartDrawer);
-    document.getElementById("cartOverlay").addEventListener("click", closeCartDrawer);
-
-    document.getElementById("checkoutModal").addEventListener("click", (event) => {
-      if (event.target.id === "checkoutModal") closeCheckoutModal();
+    document.getElementById("showcasePrev").addEventListener("click", () => {
+      showBanner(currentBannerIndex - 1);
+      startBannerAutoplay();
     });
-
-    document.getElementById("heroPrev").addEventListener("click", () => {
-      showHero(currentHeroIndex - 1);
-      startHeroAutoplay();
+    document.getElementById("showcaseNext").addEventListener("click", () => {
+      showBanner(currentBannerIndex + 1);
+      startBannerAutoplay();
     });
-    document.getElementById("heroNext").addEventListener("click", () => {
-      showHero(currentHeroIndex + 1);
-      startHeroAutoplay();
-    });
-    document.querySelector(".hero-slider").addEventListener("mouseenter", stopHeroAutoplay);
-    document.querySelector(".hero-slider").addEventListener("mouseleave", startHeroAutoplay);
-
-    document.getElementById("railPrev").addEventListener("click", () => {
-      document.getElementById("discountRail").scrollBy({ left: -476, behavior: "smooth" });
-    });
-    document.getElementById("railNext").addEventListener("click", () => {
-      document.getElementById("discountRail").scrollBy({ left: 476, behavior: "smooth" });
-    });
+    document.getElementById("showcaseBanners").addEventListener("mouseenter", stopBannerAutoplay);
+    document.getElementById("showcaseBanners").addEventListener("mouseleave", startBannerAutoplay);
 
     window.addToCart = addToCart;
     window.updateCartItem = updateCartItem;
-    window.setCategory = setCategory;
-    window.showHero = showHero;
-    window.scrollHeroTarget = scrollHeroTarget;
+    window.setCategoryChip = setCategoryChip;
+    window.showBanner = showBanner;
+    window.scrollToBannerTarget = scrollToBannerTarget;
 
     renderCart();
-    loadHeroSlides();
+    loadHomeBanners();
     loadProducts();
   </script>
 </body>
