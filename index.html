@@ -535,7 +535,7 @@
     .stock.out{color:var(--danger)}
     .product-actions{
       display:grid;
-      grid-template-columns:1fr auto;
+      grid-template-columns:1fr;
       gap:10px;
     }
 
@@ -752,9 +752,6 @@
         grid-template-columns:1fr;
       }
       .catalog-grid{
-        grid-template-columns:1fr;
-      }
-      .product-actions{
         grid-template-columns:1fr;
       }
       .cart-drawer{
@@ -1054,7 +1051,6 @@
             <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${String(product.id).replaceAll("'", "\\'")}')">
               ${disabled ? "Tukendi" : "Sepete Ekle"}
             </button>
-            <a class="btn secondary" href="urun.html?id=${encodeURIComponent(product.id)}">Detay</a>
           </div>
         </article>
       `;
