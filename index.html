@@ -14,7 +14,6 @@
       --muted:#70839a;
       --navy:#1d4678;
       --navy-dark:#13385d;
-      --blue:#2c72d6;
       --line:#dbe6f1;
       --accent:#f49a27;
       --accent-2:#ffbe59;
@@ -22,13 +21,8 @@
       --danger:#d93025;
       --warning:#c97507;
       --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffbe59 100%);
-      --blue-gradient:linear-gradient(135deg,#183f6b 0%,#2768b7 100%);
-      --hero-shadow:0 20px 44px rgba(18,50,85,.12);
       --soft-shadow:0 10px 24px rgba(18,50,85,.07);
-      --radius-xl:30px;
-      --radius-lg:24px;
-      --radius-md:18px;
-      --radius-sm:14px;
+      --hero-shadow:0 20px 44px rgba(18,50,85,.12);
     }
 
     *{box-sizing:border-box}
@@ -40,6 +34,7 @@
       font-family:Arial,sans-serif;
       overflow-x:hidden;
     }
+    body.drawer-open{overflow:hidden}
     a{text-decoration:none;color:inherit}
     button,input,select{font:inherit}
 
@@ -339,23 +334,15 @@
       transform:scale(1.14);
     }
 
-    .content-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1fr) 320px;
-      gap:18px;
-      align-items:start;
-    }
-
     .main-stack{
       display:grid;
       gap:18px;
       min-width:0;
     }
-
     .section{
       background:#fff;
       border:1px solid var(--line);
-      border-radius:var(--radius-xl);
+      border-radius:30px;
       box-shadow:var(--soft-shadow);
       padding:22px;
       min-width:0;
@@ -560,33 +547,73 @@
       min-width:0;
     }
 
-    .sidebar{
-      position:sticky;
-      top:96px;
-      min-width:0;
+    .cart-overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(10,22,37,.36);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .22s ease;
+      z-index:90;
     }
-    .cart-box{
+    .cart-overlay.open{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .cart-drawer{
+      position:fixed;
+      top:0;
+      right:0;
+      width:min(430px,100%);
+      height:100vh;
       background:#fff;
-      border:1px solid var(--line);
-      border-radius:28px;
-      box-shadow:var(--soft-shadow);
-      padding:18px;
+      box-shadow:-18px 0 44px rgba(18,50,85,.14);
+      z-index:100;
+      transform:translateX(100%);
+      transition:transform .25s ease;
+      display:grid;
+      grid-template-rows:auto 1fr auto;
     }
-    .cart-head{
-      margin-bottom:12px;
+    .cart-drawer.open{
+      transform:translateX(0);
     }
-    .cart-head h3{
+    .drawer-head{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:start;
+      padding:20px 20px 12px;
+      border-bottom:1px solid var(--line);
+    }
+    .drawer-title{
       margin:0;
-      font-size:24px;
+      font-size:28px;
       line-height:1;
       color:var(--navy-dark);
       font-weight:900;
     }
-    .cart-head p{
+    .drawer-copy{
       margin:6px 0 0;
       color:var(--muted);
       font-size:13px;
       line-height:1.5;
+    }
+    .drawer-close{
+      width:40px;
+      height:40px;
+      border:none;
+      border-radius:50%;
+      cursor:pointer;
+      background:#fff;
+      border:1px solid var(--line);
+      color:var(--navy-dark);
+      font-size:20px;
+      font-weight:900;
+      flex-shrink:0;
+    }
+    .drawer-body{
+      overflow:auto;
+      padding:14px 20px 18px;
     }
     .notice{
       padding:15px 16px;
@@ -662,10 +689,14 @@
       text-align:center;
     }
 
+    .drawer-footer{
+      border-top:1px solid var(--line);
+      padding:16px 20px 20px;
+      background:#fff;
+    }
     .summary{
       display:grid;
       gap:10px;
-      margin-top:14px;
     }
     .summary-line{
       display:flex;
@@ -698,12 +729,6 @@
       .header-inner{
         grid-template-columns:1fr;
       }
-      .content-grid{
-        grid-template-columns:1fr;
-      }
-      .sidebar{
-        position:static;
-      }
     }
 
     @media (max-width:760px){
@@ -731,6 +756,9 @@
       }
       .product-actions{
         grid-template-columns:1fr;
+      }
+      .cart-drawer{
+        width:100%;
       }
     }
   </style>
@@ -779,90 +807,95 @@
         <div id="heroDots" class="hero-dots"></div>
       </section>
 
-      <div class="content-grid">
-        <div class="main-stack">
-          <section class="section">
-            <div class="section-head">
-              <div>
-                <h2 class="section-title">Indirimdeki Urunler</h2>
-                <p class="section-copy">Kampanyali ve fiyati dusen urunleri hizlica sepete ekle</p>
-              </div>
+      <div class="main-stack">
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Indirimdeki Urunler</h2>
+              <p class="section-copy">Kampanyali ve fiyati dusen urunleri hizlica sepete ekle</p>
             </div>
+          </div>
 
-            <div class="discount-wrap">
-              <div class="rail-controls">
-                <button id="railPrev" class="rail-btn" type="button">&#8249;</button>
-                <button id="railNext" class="rail-btn" type="button">&#8250;</button>
-              </div>
-              <div id="discountRail" class="discount-rail"></div>
+          <div class="discount-wrap">
+            <div class="rail-controls">
+              <button id="railPrev" class="rail-btn" type="button">&#8249;</button>
+              <button id="railNext" class="rail-btn" type="button">&#8250;</button>
             </div>
-          </section>
+            <div id="discountRail" class="discount-rail"></div>
+          </div>
+        </section>
 
-          <section class="section">
-            <div class="section-head">
-              <div>
-                <h2 class="section-title">Urun Vitrini</h2>
-                <p class="section-copy">Temiz kategori yapisi, modern kartlar ve hizli sepete ekleme akisi.</p>
-              </div>
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Urun Vitrini</h2>
+              <p class="section-copy">Temiz kategori yapisi, modern kartlar ve hizli sepete ekleme akisi.</p>
             </div>
+          </div>
 
-            <div class="filters">
-              <input id="catalogSearchInput" class="field" type="text" placeholder="Urun, kategori veya kampanya ara" />
-              <select id="categoryFilter" class="field">
-                <option value="">Tum Kategoriler</option>
-              </select>
-              <button id="refreshBtn" class="btn secondary" type="button">Yenile</button>
-            </div>
+          <div class="filters">
+            <input id="catalogSearchInput" class="field" type="text" placeholder="Urun, kategori veya kampanya ara" />
+            <select id="categoryFilter" class="field">
+              <option value="">Tum Kategoriler</option>
+            </select>
+            <button id="refreshBtn" class="btn secondary" type="button">Yenile</button>
+          </div>
 
-            <div id="categoryChips" class="category-row"></div>
+          <div id="categoryChips" class="category-row"></div>
 
-            <div id="catalogGrid" class="catalog-grid"></div>
-            <div id="productsStatus" class="status"></div>
-          </section>
-        </div>
-
-        <aside class="sidebar">
-          <section class="cart-box">
-            <div class="cart-head">
-              <h3>Sepetim</h3>
-              <p>Siparisini hesap ekraninda tamamlarsin.</p>
-            </div>
-
-            <div class="notice">
-              Siparis vermek icin once <a href="hesap.html" style="text-decoration:underline;color:#14395f">hesap sayfasindan giris yap</a>.
-              Bu alanda urunlerini secip sepetini hazirlarsin.
-            </div>
-
-            <div id="cartItems" class="cart-items"></div>
-
-            <div class="summary">
-              <div class="summary-line"><span>Ara Toplam</span><span id="subtotalText">0,00 TL</span></div>
-              <div class="summary-line"><span>Teslimat</span><span id="deliveryText">0,00 TL</span></div>
-              <div class="summary-line total"><span>Genel Toplam</span><span id="grandTotalText">0,00 TL</span></div>
-            </div>
-
-            <div class="stack">
-              <select id="deliverySlot" class="field">
-                <option value="Hemen">Hemen</option>
-                <option value="09:00 - 12:00">09:00 - 12:00</option>
-                <option value="12:00 - 15:00">12:00 - 15:00</option>
-                <option value="15:00 - 18:00">15:00 - 18:00</option>
-                <option value="18:00 - 21:00">18:00 - 21:00</option>
-              </select>
-
-              <select id="paymentMethod" class="field">
-                <option value="Kapida Nakit">Kapida Nakit</option>
-                <option value="Kapida Kart">Kapida Kart</option>
-              </select>
-
-              <button id="placeOrderBtn" class="btn primary" type="button">Siparise Gec</button>
-              <button id="clearCartBtn" class="btn secondary" type="button">Sepeti Temizle</button>
-            </div>
-          </section>
-        </aside>
+          <div id="catalogGrid" class="catalog-grid"></div>
+          <div id="productsStatus" class="status"></div>
+        </section>
       </div>
     </div>
   </main>
+
+  <div id="cartOverlay" class="cart-overlay"></div>
+
+  <aside id="cartDrawer" class="cart-drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <h3 class="drawer-title">Sepetim</h3>
+        <p class="drawer-copy">Siparisini hesap ekraninda tamamlarsin.</p>
+      </div>
+      <button id="cartCloseBtn" class="drawer-close" type="button">×</button>
+    </div>
+
+    <div class="drawer-body">
+      <div class="notice">
+        Siparis vermek icin once <a href="hesap.html" style="text-decoration:underline;color:#14395f">hesap sayfasindan giris yap</a>.
+        Bu alanda urunlerini secip sepetini hazirlarsin.
+      </div>
+
+      <div id="cartItems" class="cart-items"></div>
+    </div>
+
+    <div class="drawer-footer">
+      <div class="summary">
+        <div class="summary-line"><span>Ara Toplam</span><span id="subtotalText">0,00 TL</span></div>
+        <div class="summary-line"><span>Teslimat</span><span id="deliveryText">0,00 TL</span></div>
+        <div class="summary-line total"><span>Genel Toplam</span><span id="grandTotalText">0,00 TL</span></div>
+      </div>
+
+      <div class="stack">
+        <select id="deliverySlot" class="field">
+          <option value="Hemen">Hemen</option>
+          <option value="09:00 - 12:00">09:00 - 12:00</option>
+          <option value="12:00 - 15:00">12:00 - 15:00</option>
+          <option value="15:00 - 18:00">15:00 - 18:00</option>
+          <option value="18:00 - 21:00">18:00 - 21:00</option>
+        </select>
+
+        <select id="paymentMethod" class="field">
+          <option value="Kapida Nakit">Kapida Nakit</option>
+          <option value="Kapida Kart">Kapida Kart</option>
+        </select>
+
+        <button id="placeOrderBtn" class="btn primary" type="button">Siparise Gec</button>
+        <button id="clearCartBtn" class="btn secondary" type="button">Sepeti Temizle</button>
+      </div>
+    </div>
+  </aside>
 
   <script>
     const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
@@ -1075,8 +1108,10 @@
           quantity: 1
         });
       }
+
       writeCart();
       renderCart();
+      openCartDrawer();
     }
 
     function updateCartItem(productId, delta) {
@@ -1132,6 +1167,20 @@
           </div>
         `;
       }).join("");
+    }
+
+    function openCartDrawer() {
+      document.getElementById("cartDrawer").classList.add("open");
+      document.getElementById("cartOverlay").classList.add("open");
+      document.body.classList.add("drawer-open");
+      document.getElementById("cartDrawer").setAttribute("aria-hidden", "false");
+    }
+
+    function closeCartDrawer() {
+      document.getElementById("cartDrawer").classList.remove("open");
+      document.getElementById("cartOverlay").classList.remove("open");
+      document.body.classList.remove("drawer-open");
+      document.getElementById("cartDrawer").setAttribute("aria-hidden", "true");
     }
 
     function storeCheckoutMeta() {
@@ -1291,9 +1340,7 @@
     });
 
     document.getElementById("searchInput").addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        document.getElementById("searchBtn").click();
-      }
+      if (event.key === "Enter") document.getElementById("searchBtn").click();
     });
 
     document.getElementById("catalogSearchInput").addEventListener("input", renderCatalog);
@@ -1308,9 +1355,10 @@
     document.getElementById("placeOrderBtn").addEventListener("click", goToAccountForOrder);
     document.getElementById("deliverySlot").addEventListener("change", storeCheckoutMeta);
     document.getElementById("paymentMethod").addEventListener("change", storeCheckoutMeta);
-    document.getElementById("headerCartBtn").addEventListener("click", () => {
-      document.querySelector(".cart-box").scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+
+    document.getElementById("headerCartBtn").addEventListener("click", openCartDrawer);
+    document.getElementById("cartCloseBtn").addEventListener("click", closeCartDrawer);
+    document.getElementById("cartOverlay").addEventListener("click", closeCartDrawer);
 
     document.getElementById("heroPrev").addEventListener("click", () => {
       showHero(currentHeroIndex - 1);
