@@ -28,7 +28,6 @@
     .media-box{height:520px;border-radius:22px;background:#f7f9fc;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
     .media-box img{max-width:100%;max-height:100%;object-fit:contain}
     .fallback{color:var(--muted);font-size:22px;font-weight:900}
-    .info-card{padding:24px}
     .badge{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;background:#edf4ff;color:#225996;border:1px solid #cddcf7;font-size:12px;font-weight:900}
     .title{font-size:42px;line-height:1.05;font-weight:900;margin:14px 0 10px;color:var(--navy)}
     .category{font-size:14px;color:var(--muted);margin-bottom:14px}
@@ -117,7 +116,7 @@
               <input id="qtyInput" type="number" min="1" value="1" />
               <button type="button" onclick="changeQty(1)">+</button>
             </div>
-            <button class="btn primary full" type="button" onclick="addCurrentProductToCart()">🛒 Sepete Ekle</button>
+            <button class="btn primary full" type="button" onclick="addCurrentProductToCart()">Sepete Ekle</button>
           </div>
 
           <div class="meta-grid">
@@ -142,17 +141,18 @@
 
 <script>
 const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
-const SUPABASE_KEY = "sb_publishable_qhih14wKxwoit8TtaQwCvg_T04SQLAN";
-const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
+const CART_KEY = "canakoglu_cart_v1";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentProduct = null;
 
 function money(v){
   const n = Number(v || 0);
-  return new Intl.NumberFormat('tr-TR', { style:'currency', currency:'TRY', maximumFractionDigits:2 }).format(n);
+  return new Intl.NumberFormat("tr-TR", { style:"currency", currency:"TRY", maximumFractionDigits:2 }).format(n);
 }
-function escapeHtml(str=''){
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+function escapeHtml(str=""){
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 function getParam(name){
   return new URL(window.location.href).searchParams.get(name);
@@ -160,120 +160,140 @@ function getParam(name){
 function normalizeProduct(row){
   return {
     ...row,
-    image: row.image || row.image_url || '',
-    comparePrice: Number(row.comparePrice || row.compare_at_price || 0),
-    campaignLabel: row.campaignLabel || row.campaign_label || ''
+    image: row.image_url || row.image || "",
+    comparePrice: Number(row.compare_at_price || row.comparePrice || 0),
+    campaignLabel: row.campaign_label || row.campaignLabel || "",
+    stockQty: Number(row.stock_qty ?? row.stock ?? 0)
   };
 }
 function changeQty(delta){
-  const input = document.getElementById('qtyInput');
+  const input = document.getElementById("qtyInput");
   let value = Number(input.value || 1);
   value += delta;
   if(value < 1) value = 1;
+  if(currentProduct?.stockQty > 0 && value > currentProduct.stockQty) value = currentProduct.stockQty;
   input.value = value;
 }
 function getCart(){
-  try { return JSON.parse(localStorage.getItem('canakoglu_cart') || '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
 }
 function saveCart(cart){
-  localStorage.setItem('canakoglu_cart', JSON.stringify(cart));
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
 }
 function addCurrentProductToCart(){
   if(!currentProduct) return;
-  const qty = Math.max(1, Number(document.getElementById('qtyInput').value || 1));
+  if(currentProduct.stockQty <= 0){
+    alert("Bu ürün stokta yok.");
+    return;
+  }
+  const qty = Math.max(1, Number(document.getElementById("qtyInput").value || 1));
   const cart = getCart();
-  const found = cart.find(item => String(item.id) === String(currentProduct.id));
+  const found = cart.find((item) => String(item.id) === String(currentProduct.id));
   if(found){
-    found.qty = Number(found.qty || 0) + qty;
+    found.quantity = Number(found.quantity || 0) + qty;
   }else{
-    cart.push({ id: currentProduct.id, name: currentProduct.name, price: Number(currentProduct.price || 0), image: currentProduct.image || '', qty });
+    cart.push({
+      id: currentProduct.id,
+      name: currentProduct.name,
+      price: Number(currentProduct.price || 0),
+      image: currentProduct.image || "",
+      unit: currentProduct.unit || "adet",
+      quantity: qty
+    });
   }
   saveCart(cart);
-  alert('Ürün sepete eklendi');
+  alert("Urun sepete eklendi");
 }
 function renderProduct(product){
   currentProduct = product;
-  document.getElementById('loadingBox').style.display = 'none';
-  document.getElementById('productPage').style.display = 'block';
+  document.getElementById("loadingBox").style.display = "none";
+  document.getElementById("productPage").style.display = "block";
 
-  document.getElementById('productImageBox').innerHTML = product.image
-    ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name || 'Ürün')}">`
+  document.getElementById("productImageBox").innerHTML = product.image
+    ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name || "Ürün")}">`
     : `<div class="fallback">Görsel yok</div>`;
 
-  document.getElementById('productTitle').textContent = product.name || 'Ürün';
-  document.getElementById('productCategory').textContent = product.category || 'Kategori yok';
-  document.getElementById('newPrice').textContent = money(product.price || 0);
+  document.getElementById("productTitle").textContent = product.name || "Ürün";
+  document.getElementById("productCategory").textContent = product.category || "Kategori yok";
+  document.getElementById("newPrice").textContent = money(product.price || 0);
 
-  const oldPriceEl = document.getElementById('oldPrice');
+  const oldPriceEl = document.getElementById("oldPrice");
   if(Number(product.comparePrice || 0) > Number(product.price || 0)){
-    oldPriceEl.style.display = 'block';
+    oldPriceEl.style.display = "block";
     oldPriceEl.textContent = money(product.comparePrice);
   } else {
-    oldPriceEl.style.display = 'none';
+    oldPriceEl.style.display = "none";
   }
 
-  const campaign = document.getElementById('campaignBadge');
+  const campaign = document.getElementById("campaignBadge");
   if(product.campaignLabel){
-    campaign.style.display = 'inline-flex';
+    campaign.style.display = "inline-flex";
     campaign.textContent = product.campaignLabel;
+  } else {
+    campaign.style.display = "none";
   }
 
-  const discount = document.getElementById('discountBadge');
+  const discount = document.getElementById("discountBadge");
   if(Number(product.comparePrice || 0) > Number(product.price || 0)){
     const percent = Math.round(((Number(product.comparePrice) - Number(product.price)) / Number(product.comparePrice)) * 100);
-    discount.style.display = 'inline-flex';
+    discount.style.display = "inline-flex";
     discount.textContent = `-%${percent}`;
+  } else {
+    discount.style.display = "none";
   }
 
-  const stock = Number(product.stock_qty ?? product.stock ?? 0);
-  const stockEl = document.getElementById('stockInfo');
-  stockEl.className = stock > 0 ? 'stock ok' : 'stock out';
-  stockEl.textContent = stock > 0 ? `Stokta var • ${stock} adet` : 'Stokta yok';
+  const stock = Number(product.stockQty || 0);
+  const stockEl = document.getElementById("stockInfo");
+  stockEl.className = stock > 0 ? "stock ok" : "stock out";
+  stockEl.textContent = stock > 0 ? `Stokta var • ${stock} adet` : "Stokta yok";
 
-  document.getElementById('productDesc').textContent = product.description || 'Bu ürün için açıklama eklenmemiş.';
-  document.getElementById('metaBarcode').textContent = product.barcode || '-';
-  document.getElementById('metaUnit').textContent = product.unit || 'adet';
-  document.getElementById('metaCategory').textContent = product.category || '-';
+  document.getElementById("productDesc").textContent = product.description || "Bu ürün için açıklama eklenmemiş.";
+  document.getElementById("metaBarcode").textContent = product.barcode || "-";
+  document.getElementById("metaUnit").textContent = product.unit || "adet";
+  document.getElementById("metaCategory").textContent = product.category || "-";
 }
 function renderRelated(list){
-  const grid = document.getElementById('relatedGrid');
+  const grid = document.getElementById("relatedGrid");
   if(!list || !list.length){
     grid.innerHTML = '<div class="muted">Benzer ürün bulunamadı.</div>';
     return;
   }
-  grid.innerHTML = list.map(item => `
+  grid.innerHTML = list.map((item) => `
     <a class="mini-card" href="urun.html?id=${encodeURIComponent(item.id)}">
-      ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name || 'Ürün')}">` : `<div class="mini-fallback">Görsel yok</div>`}
-      <div class="mini-name">${escapeHtml(item.name || 'Ürün')}</div>
-      <div class="muted">${escapeHtml(item.category || '')}</div>
+      ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name || "Ürün")}">` : `<div class="mini-fallback">Görsel yok</div>`}
+      <div class="mini-name">${escapeHtml(item.name || "Ürün")}</div>
+      <div class="muted">${escapeHtml(item.category || "")}</div>
       <div class="mini-price">${money(item.price || 0)}</div>
     </a>
-  `).join('');
+  `).join("");
 }
 async function loadPage(){
-  const id = getParam('id');
+  const id = getParam("id");
   if(!id){
-    document.getElementById('loadingBox').textContent = 'Ürün bulunamadı.';
+    document.getElementById("loadingBox").textContent = "Ürün bulunamadı.";
     return;
   }
-  const { data, error } = await client.from('products').select('*').eq('id', id).single();
+  const { data, error } = await client.from("products").select("*").eq("id", id).single();
   if(error || !data){
-    document.getElementById('loadingBox').textContent = 'Ürün yüklenemedi.';
+    document.getElementById("loadingBox").textContent = "Ürün yüklenemedi.";
     return;
   }
   const product = normalizeProduct(data);
   renderProduct(product);
 
   const { data: relatedData } = await client
-    .from('products')
-    .select('*')
-    .eq('is_active', true)
-    .eq('category', product.category)
-    .neq('id', product.id)
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .eq("category", product.category)
+    .neq("id", product.id)
     .limit(8);
 
   renderRelated((relatedData || []).map(normalizeProduct));
 }
+
+window.changeQty = changeQty;
+window.addCurrentProductToCart = addCurrentProductToCart;
 loadPage();
 </script>
 </body>
