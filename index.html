@@ -3,7 +3,435 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Çanakoğlu Online Market</title><!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Çanakoğlu Online Market</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg:#eef3f9; --card:#fff; --text:#17324f; --muted:#6f8196; --primary:#f49a27;
+      --navy:#1d4678; --border:#dbe6f1; --shadow:0 12px 30px rgba(18,50,85,.10);
+      --shadow-soft:0 8px 18px rgba(18,50,85,.07); --success:#39a852; --danger:#c62828;
+      --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text);
+    }
+    header {
+      background:linear-gradient(135deg, rgba(12,34,63,.98) 0%, rgba(20,55,94,.98) 45%, rgba(29,70,120,.98) 100%);
+      color:#fff; padding:16px 20px; position:sticky; top:0; z-index:40;
+      box-shadow:0 14px 34px rgba(10,28,52,.22);
+    }
+    .header-inner,.wrap { max-width:1280px; margin:0 auto; }
+    .header-inner {
+      display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;
+    }
+    .brand { display:flex; flex-direction:column; gap:6px; }
+    .brand-title { font-size:30px; font-weight:900; }
+    .brand-sub { font-size:14px; opacity:.9; }
+    .header-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .btn {
+      border:none; border-radius:14px; padding:12px 14px; font-weight:800; cursor:pointer;
+      text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;
+    }
+    .btn:hover { filter:brightness(1.03); transform:translateY(-1px); }
+    .primary { background:var(--orange-gradient); color:#fff; box-shadow:0 10px 20px rgba(244,154,39,.2); }
+    .secondary { background:#edf4fb; color:var(--navy); border:1px solid var(--border); }
+    .wrap { padding:20px; }
+    .hero {
+      background:linear-gradient(135deg,rgba(9,33,63,.96) 0%,rgba(22,55,94,.98) 52%,rgba(37,91,148,.95) 100%);
+      color:#fff; padding:28px; border-radius:26px; box-shadow:var(--shadow); margin-bottom:18px;
+    }
+    .hero h1 { margin:0 0 10px; font-size:38px; }
+    .hero p { margin:0; line-height:1.6; opacity:.95; }
+    .search-row {
+      background:var(--card); border:1px solid var(--border); border-radius:18px; padding:14px;
+      box-shadow:var(--shadow-soft); display:grid; grid-template-columns:1fr auto auto; gap:10px; margin-bottom:18px;
+    }
+    input, select {
+      width:100%; padding:12px; border:1px solid #c9d7e6; border-radius:14px; font:inherit; background:#fff;
+    }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:18px; align-items:start; }
+    .section {
+      background:var(--card); border:1px solid var(--border); border-radius:24px; padding:20px; box-shadow:var(--shadow-soft);
+    }
+    .section h2 { margin:0 0 12px; color:var(--navy); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
+    .card {
+      background:linear-gradient(180deg,#fff,#f8fafd); border:1px solid rgba(29,70,120,.10); border-radius:22px;
+      padding:16px; box-shadow:var(--shadow-soft); display:flex; flex-direction:column; gap:10px;
+    }
+    .product-image {
+      width:100%; height:150px; object-fit:cover; border-radius:18px; background:#f3f6fa; border:1px solid rgba(29,70,120,.08);
+    }
+    .fallback-image {
+      width:100%; height:150px; border-radius:18px; background:#f3f6fa; border:1px solid rgba(29,70,120,.08);
+      display:flex; align-items:center; justify-content:center; color:var(--muted); font-weight:700;
+    }
+    .badge {
+      display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; border-radius:999px;
+      background:#fff5e7; color:#c97507; font-size:12px; font-weight:900; width:max-content;
+      border:1px solid rgba(244,154,39,.18)
+    }
+    .name { font-size:18px; font-weight:800; color:var(--navy); line-height:1.4; min-height:48px; }
+    .price { font-size:28px; font-weight:900; color:#16375e; }
+    .muted { color:var(--muted); font-size:13px; }
+    .stock.ok { color:var(--success); font-weight:900; }
+    .stock.low { color:#c97507; font-weight:900; }
+    .stock.out { color:var(--danger); font-weight:900; }
+    .cart-box { position:sticky; top:88px; }
+    .cart-items { display:grid; gap:10px; }
+    .cart-item {
+      border:1px solid var(--border); border-radius:16px; padding:12px; background:#fbfcfe;
+    }
+    .row { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .qty { display:flex; gap:8px; align-items:center; margin-top:8px; }
+    .qty button {
+      width:32px; height:32px; border:none; border-radius:10px; cursor:pointer; background:#edf4fb; color:var(--navy); font-weight:900;
+    }
+    .summary {
+      margin-top:14px; border-top:1px solid var(--border); padding-top:12px; display:grid; gap:8px;
+    }
+    .summary-line { display:flex; justify-content:space-between; gap:10px; font-weight:800; }
+    .summary-line.total { font-size:18px; color:var(--navy); }
+    .notice {
+      padding:12px 14px; border-radius:14px; background:#f7f9fc; border:1px solid var(--border);
+      color:var(--navy); font-size:13px; font-weight:700; line-height:1.6;
+    }
+    .empty { padding:24px; text-align:center; color:var(--muted); }
+    .status { margin-top:10px; font-size:13px; font-weight:800; }
+    .status.error { color:var(--danger); }
+    .status.ok { color:var(--success); }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns:1fr; }
+      .cart-box { position:static; }
+      .search-row { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-title">Çanakoğlu Online Market</div>
+        <div class="brand-sub">Sade market ekranı • hesap işlemleri ayrı sayfada</div>
+      </div>
+      <div class="header-actions">
+        <a class="btn secondary" href="hesap.html">Hesabım</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="hero">
+      <h1>Günlük ihtiyaçlarını hızlıca seç</h1>
+      <p>Bu sayfa sadece ürünler, sepet ve sipariş özeti içindir. Giriş, kayıt, çıkış ve Siparişlerim işlemleri <strong>hesap.html</strong> sayfasında olacak.</p>
+    </section>
+
+    <section class="search-row">
+      <input id="searchInput" type="text" placeholder="Ürün ara..." />
+      <select id="categoryFilter">
+        <option value="">Tüm Kategoriler</option>
+      </select>
+      <button class="btn secondary" id="refreshBtn" type="button">Yenile</button>
+    </section>
+
+    <div class="layout">
+      <section class="section">
+        <h2>Ürünler</h2>
+        <div id="productsStatus" class="status"></div>
+        <div id="productsGrid" class="grid"></div>
+      </section>
+
+      <aside class="section cart-box">
+        <h2>Sepet</h2>
+
+        <div class="notice">
+          Sipariş vermek için önce <a href="hesap.html" style="color:#1d4678;font-weight:900;">hesap sayfasından giriş yap</a>.
+          Bu sayfada sadece sepetini hazırlarsın.
+        </div>
+
+        <div id="cartItems" class="cart-items" style="margin-top:14px"></div>
+
+        <div class="summary">
+          <div class="summary-line"><span>Ara Toplam</span><span id="subtotalText">0,00 TL</span></div>
+          <div class="summary-line"><span>Teslimat</span><span id="deliveryText">0,00 TL</span></div>
+          <div class="summary-line total"><span>Genel Toplam</span><span id="grandTotalText">0,00 TL</span></div>
+        </div>
+
+        <div style="display:grid; gap:10px; margin-top:14px;">
+          <select id="deliverySlot">
+            <option value="Hemen">Hemen</option>
+            <option value="09:00 - 12:00">09:00 - 12:00</option>
+            <option value="12:00 - 15:00">12:00 - 15:00</option>
+            <option value="15:00 - 18:00">15:00 - 18:00</option>
+            <option value="18:00 - 21:00">18:00 - 21:00</option>
+          </select>
+
+          <select id="paymentMethod">
+            <option value="Kapıda Nakit">Kapıda Nakit</option>
+            <option value="Kapıda Kart">Kapıda Kart</option>
+          </select>
+
+          <button id="placeOrderBtn" class="btn primary" type="button">Sipariş Ver</button>
+          <button id="clearCartBtn" class="btn secondary" type="button">Sepeti Temizle</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const CART_KEY = "canakoglu_cart_v1";
+let allProducts = [];
+let cart = readCart();
+
+function money(value) {
+  return new Intl.NumberFormat('tr-TR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value || 0)) + " TL";
+}
+
+function normalizeProduct(row) {
+  const image =
+    row.image_url || row.image || row.photo_url || row.photo || row.cover_url || "";
+  const name = row.name || row.product_name || row.title || "Ürün";
+  const price = Number(row.price || row.unit_price || row.sale_price || 0);
+  const category = row.category || row.category_name || "Diğer";
+  const stockRaw = row.stock ?? row.quantity ?? row.inventory ?? null;
+  const stock = stockRaw === null ? null : Number(stockRaw);
+  const unit = row.unit || "adet";
+  return {
+    id: row.id,
+    name,
+    price,
+    category,
+    stock,
+    unit,
+    image,
+    raw: row
+  };
+}
+
+function readCart() {
+  try {
+    return JSON.parse(localStorage.getItem(CART_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function writeCart() {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+}
+
+function categoryOptions(products) {
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+  const select = document.getElementById("categoryFilter");
+  select.innerHTML = '<option value="">Tüm Kategoriler</option>' +
+    categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+}
+
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function stockClass(product) {
+  if (product.stock === null) return "ok";
+  if (product.stock <= 0) return "out";
+  if (product.stock <= 5) return "low";
+  return "ok";
+}
+
+function stockLabel(product) {
+  if (product.stock === null) return "Stok bilgisi yok";
+  if (product.stock <= 0) return "Tükendi";
+  if (product.stock <= 5) return `Az stok (${product.stock})`;
+  return `Stokta (${product.stock})`;
+}
+
+function renderProducts() {
+  const grid = document.getElementById("productsGrid");
+  const search = document.getElementById("searchInput").value.trim().toLowerCase();
+  const category = document.getElementById("categoryFilter").value;
+
+  const filtered = allProducts.filter(product => {
+    const textHit = !search ||
+      product.name.toLowerCase().includes(search) ||
+      product.category.toLowerCase().includes(search);
+    const categoryHit = !category || product.category === category;
+    return textHit && categoryHit;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty">Ürün bulunamadı.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(product => {
+    const disabled = product.stock !== null && product.stock <= 0;
+    const imageHtml = product.image
+      ? `<img class="product-image" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" onerror="this.outerHTML='<div class=\'fallback-image\'>Görsel yok</div>'">`
+      : `<div class="fallback-image">Görsel yok</div>`;
+
+    return `
+      <div class="card">
+        ${imageHtml}
+        <span class="badge">${escapeHtml(product.category)}</span>
+        <div class="name">${escapeHtml(product.name)}</div>
+        <div class="price">${money(product.price)}</div>
+        <div class="muted">${escapeHtml(product.unit)}</div>
+        <div class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</div>
+        <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${String(product.id).replaceAll("'", "\\'")}')">
+          ${disabled ? "Tükendi" : "Sepete Ekle"}
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+function addToCart(productId) {
+  const product = allProducts.find(p => String(p.id) === String(productId));
+  if (!product) return;
+
+  const existing = cart.find(item => String(item.id) === String(product.id));
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      unit: product.unit,
+      quantity: 1
+    });
+  }
+  writeCart();
+  renderCart();
+}
+
+function updateCartItem(productId, delta) {
+  const item = cart.find(x => String(x.id) === String(productId));
+  if (!item) return;
+  item.quantity += delta;
+  if (item.quantity <= 0) {
+    cart = cart.filter(x => String(x.id) !== String(productId));
+  }
+  writeCart();
+  renderCart();
+}
+
+function clearCart() {
+  cart = [];
+  writeCart();
+  renderCart();
+}
+
+function totals() {
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+  const delivery = subtotal > 0 ? 0 : 0;
+  return {
+    subtotal,
+    delivery,
+    grandTotal: subtotal + delivery
+  };
+}
+
+function renderCart() {
+  const box = document.getElementById("cartItems");
+  const t = totals();
+
+  document.getElementById("subtotalText").textContent = money(t.subtotal);
+  document.getElementById("deliveryText").textContent = money(t.delivery);
+  document.getElementById("grandTotalText").textContent = money(t.grandTotal);
+
+  if (!cart.length) {
+    box.innerHTML = '<div class="empty">Sepet boş.</div>';
+    return;
+  }
+
+  box.innerHTML = cart.map(item => {
+    const line = Number(item.price || 0) * Number(item.quantity || 0);
+    return `
+      <div class="cart-item">
+        <div class="row">
+          <strong>${escapeHtml(item.name)}</strong>
+          <span>${money(line)}</span>
+        </div>
+        <div class="muted">${escapeHtml(item.unit || "adet")} • ${money(item.price)}</div>
+        <div class="qty">
+          <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', -1)">−</button>
+          <strong>${item.quantity}</strong>
+          <button type="button" onclick="updateCartItem('${String(item.id).replaceAll("'", "\\'")}', 1)">+</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function loadProducts() {
+  const status = document.getElementById("productsStatus");
+  status.textContent = "Ürünler yükleniyor...";
+
+  try {
+    const { data, error } = await client
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    allProducts = (data || []).map(normalizeProduct).filter(p => p.price >= 0);
+    categoryOptions(allProducts);
+    renderProducts();
+    status.textContent = allProducts.length ? `${allProducts.length} ürün yüklendi.` : "Ürün bulunamadı.";
+    status.className = "status ok";
+  } catch (err) {
+    console.error(err);
+    allProducts = [];
+    renderProducts();
+    status.textContent = "Ürünler alınamadı: " + (err.message || err);
+    status.className = "status error";
+  }
+}
+
+async function goToAccountForOrder() {
+  if (!cart.length) {
+    alert("Sepet boş.");
+    return;
+  }
+  writeCart();
+  window.location.href = "hesap.html?redirect=order";
+}
+
+document.getElementById("searchInput").addEventListener("input", renderProducts);
+document.getElementById("categoryFilter").addEventListener("change", renderProducts);
+document.getElementById("refreshBtn").addEventListener("click", loadProducts);
+document.getElementById("clearCartBtn").addEventListener("click", clearCart);
+document.getElementById("placeOrderBtn").addEventListener("click", goToAccountForOrder);
+
+window.addToCart = addToCart;
+window.updateCartItem = updateCartItem;
+
+renderCart();
+loadProducts();
+</script>
+</body>
+</html>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
