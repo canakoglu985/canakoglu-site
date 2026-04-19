@@ -905,53 +905,7 @@
 <button id="scrollTopBtn" type="button" aria-label="Yukarı çık">↑</button>
 
 
-<div id="productModalOverlay" class="product-modal-overlay">
-  <div class="product-modal">
-    <div class="product-modal-head">
-      <div>
-        <strong style="font-size:22px;color:#17324f">Ürün Detayı</strong>
-        <div class="muted">Ürünü inceleyip sepete ekleyebilirsin</div>
-      </div>
-      <button class="product-modal-close" type="button" onclick="closeProductPopup()">×</button>
-    </div>
-    <div class="product-modal-body">
-      <div id="productModalMedia" class="product-modal-media"></div>
-      <div class="product-modal-info">
-        <div id="productModalBadges" class="product-modal-badges"></div>
-        <h2 id="productModalTitle" class="product-modal-title">Ürün</h2>
-        <div id="productModalCategory" class="product-modal-category">Kategori</div>
-        <div class="product-modal-prices">
-          <div id="productModalOldPrice" class="product-modal-old" style="display:none"></div>
-          <div id="productModalNewPrice" class="product-modal-new"></div>
-        </div>
-        <div id="productModalStock" class="product-modal-stock stock-ok"></div>
-        <div id="productModalDesc" class="product-modal-desc">Açıklama bulunamadı.</div>
-        <div class="product-modal-buy">
-          <div class="product-qty">
-            <button type="button" onclick="changePopupQty(-1)">−</button>
-            <input id="productModalQty" type="number" min="1" value="1">
-            <button type="button" onclick="changePopupQty(1)">+</button>
-          </div>
-          <button class="btn primary add-first-btn" type="button" style="min-width:220px" onclick="addPopupProductToCart()">🛒 Sepete Ekle</button>
-        </div>
-        <div class="product-modal-meta">
-          <div class="product-meta-item">
-            <div class="label">Barkod</div>
-            <div id="productModalBarcode" class="value">-</div>
-          </div>
-          <div class="product-meta-item">
-            <div class="label">Birim</div>
-            <div id="productModalUnit" class="value">adet</div>
-          </div>
-          <div class="product-meta-item">
-            <div class="label">Kategori</div>
-            <div id="productModalMetaCategory" class="value">-</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+
 
 <script>
 const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
@@ -1609,7 +1563,7 @@ function renderDiscountProducts(list){
           <span class="discount-badge">${badgeText}</span>
         </div>
         <div class="discount-body">
-          <div style="display:block;color:inherit;cursor:pointer" onclick="openProductPopup('${String(product.id)}')">
+          <div style="display:block;color:inherit;cursor:pointer" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])'>
             ${imageHtml}
             <div class="discount-name">${escapeHtml(product.name || 'Ürün')}</div>
             <div class="discount-category">${escapeHtml(product.category || '')}</div>
@@ -1629,89 +1583,6 @@ function scrollDiscounts(direction){
   track.scrollBy({ left: direction * 320, behavior: 'smooth' });
 }
 
-
-let popupProduct = null;
-
-function findProductById(id){
-  const source = (typeof allProducts !== 'undefined' && Array.isArray(allProducts)) ? allProducts : [];
-  return source.find(p => String(p.id) === String(id)) || null;
-}
-
-function changePopupQty(delta){
-  const input = document.getElementById('productModalQty');
-  let value = Number(input.value || 1);
-  value += delta;
-  if(value < 1) value = 1;
-  input.value = value;
-}
-
-function openProductPopup(id){
-  const product = findProductById(id);
-  if(!product) return;
-
-  popupProduct = product;
-  document.getElementById('productModalQty').value = 1;
-  document.getElementById('productModalTitle').textContent = product.name || 'Ürün';
-  document.getElementById('productModalCategory').textContent = product.category || '';
-  document.getElementById('productModalNewPrice').textContent = money(product.price || 0);
-  document.getElementById('productModalBarcode').textContent = product.barcode || '-';
-  document.getElementById('productModalUnit').textContent = product.unit || 'adet';
-  document.getElementById('productModalMetaCategory').textContent = product.category || '-';
-  document.getElementById('productModalDesc').textContent = product.description || 'Bu ürün için açıklama eklenmemiş.';
-
-  const media = document.getElementById('productModalMedia');
-  media.innerHTML = product.image
-    ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name || 'Ürün')}">`
-    : `<div class="fallback">Görsel yok</div>`;
-
-  const oldPrice = Number(product.comparePrice || product.compare_at_price || 0);
-  const newPrice = Number(product.price || 0);
-  const oldPriceEl = document.getElementById('productModalOldPrice');
-  if(oldPrice > newPrice && oldPrice > 0){
-    oldPriceEl.style.display = 'block';
-    oldPriceEl.textContent = money(oldPrice);
-  }else{
-    oldPriceEl.style.display = 'none';
-    oldPriceEl.textContent = '';
-  }
-
-  const stock = Number(product.stock ?? product.stock_qty ?? 0);
-  const stockEl = document.getElementById('productModalStock');
-  stockEl.className = 'product-modal-stock ' + (stock > 0 ? 'stock-ok' : 'stock-out');
-  stockEl.textContent = stock > 0 ? `Stokta var • ${stock} adet` : 'Stokta yok';
-
-  const badges = [];
-  if(product.campaignLabel){
-    badges.push(`<span class="product-modal-badge badge-campaign">${escapeHtml(product.campaignLabel)}</span>`);
-  }
-  if(oldPrice > newPrice && oldPrice > 0){
-    const percent = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
-    badges.push(`<span class="product-modal-badge badge-discount">-%${percent}</span>`);
-  }
-  document.getElementById('productModalBadges').innerHTML = badges.join('');
-
-  document.getElementById('productModalOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeProductPopup(){
-  document.getElementById('productModalOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function addPopupProductToCart(){
-  if(!popupProduct) return;
-  const qty = Math.max(1, Number(document.getElementById('productModalQty').value || 1));
-  for(let i=0; i<qty; i++) addToCart(String(popupProduct.id));
-  closeProductPopup();
-}
-
-document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape') closeProductPopup();
-});
-document.getElementById('productModalOverlay').addEventListener('click', (e) => {
-  if(e.target.id === 'productModalOverlay') closeProductPopup();
-});
 
 </script>
 </body>
