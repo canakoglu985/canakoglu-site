@@ -544,200 +544,6 @@
   .discount-price-new{font-size:30px}
 }
 
-
-.product-modal-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(9,26,47,.56);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:7000;
-  padding:18px;
-  backdrop-filter:blur(4px);
-}
-.product-modal-overlay.open{display:flex}
-.product-modal{
-  width:min(1120px,100%);
-  max-height:92vh;
-  overflow:auto;
-  background:#fff;
-  border:1px solid #dbe6f1;
-  border-radius:28px;
-  box-shadow:0 24px 60px rgba(18,50,85,.24);
-}
-.product-modal-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  padding:18px 20px;
-  border-bottom:1px solid #eef3f9;
-  position:sticky;
-  top:0;
-  background:#fff;
-  z-index:5;
-}
-.product-modal-close{
-  width:42px;
-  height:42px;
-  border:none;
-  border-radius:50%;
-  background:#edf4fb;
-  color:#17324f;
-  font-size:22px;
-  font-weight:900;
-  cursor:pointer;
-}
-.product-modal-body{
-  display:grid;
-  grid-template-columns:1.02fr .98fr;
-  gap:20px;
-  padding:20px;
-}
-.product-modal-media{
-  background:#f7f9fc;
-  border:1px solid #dbe6f1;
-  border-radius:24px;
-  min-height:440px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-}
-.product-modal-media img{
-  max-width:100%;
-  max-height:100%;
-  object-fit:contain;
-}
-.product-modal-info{
-  display:grid;
-  align-content:start;
-  gap:12px;
-}
-.product-modal-title{
-  font-size:42px;
-  line-height:1.04;
-  font-weight:900;
-  color:#17324f;
-  margin:0;
-}
-.product-modal-category{
-  color:#6f8196;
-  font-size:14px;
-}
-.product-modal-badges{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.product-modal-badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding:8px 12px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:900;
-}
-.badge-campaign{background:#eef4ff;color:#225996;border:1px solid #cddcf7}
-.badge-discount{background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.22)}
-.product-modal-prices{
-  display:flex;
-  align-items:flex-end;
-  gap:12px;
-  flex-wrap:wrap;
-}
-.product-modal-old{
-  text-decoration:line-through;
-  color:#6f8196;
-  font-size:22px;
-  font-weight:800;
-}
-.product-modal-new{
-  font-size:48px;
-  line-height:1;
-  font-weight:900;
-  color:#0f60c8;
-}
-.product-modal-stock{
-  font-weight:900;
-}
-.stock-ok{color:#1e7b36}
-.stock-out{color:#d93025}
-.product-modal-desc{
-  background:#fbfcfe;
-  border:1px solid #dbe6f1;
-  border-radius:18px;
-  padding:16px;
-  color:#45607d;
-  line-height:1.75;
-}
-.product-modal-buy{
-  display:flex;
-  gap:12px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-.product-qty{
-  display:flex;
-  align-items:center;
-  background:#fff;
-  border:1px solid #dbe6f1;
-  border-radius:16px;
-  overflow:hidden;
-}
-.product-qty button{
-  width:44px;
-  height:48px;
-  border:none;
-  background:#fff;
-  font-size:22px;
-  font-weight:900;
-  color:#17324f;
-  cursor:pointer;
-}
-.product-qty input{
-  width:62px;
-  height:48px;
-  border:none;
-  outline:none;
-  text-align:center;
-  font-size:18px;
-  font-weight:900;
-  color:#17324f;
-}
-.product-modal-meta{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:12px;
-}
-.product-meta-item{
-  background:#fff;
-  border:1px solid #dbe6f1;
-  border-radius:18px;
-  padding:14px;
-}
-.product-meta-item .label{
-  font-size:12px;
-  color:#6f8196;
-  font-weight:900;
-  margin-bottom:8px;
-}
-.product-meta-item .value{
-  font-size:17px;
-  color:#17324f;
-  font-weight:900;
-  word-break:break-word;
-}
-@media (max-width:900px){
-  .product-modal-body{grid-template-columns:1fr}
-  .product-modal-media{min-height:280px}
-  .product-modal-title{font-size:30px}
-  .product-modal-new{font-size:36px}
-  .product-modal-meta{grid-template-columns:1fr}
-}
-
 </style>
 </head>
 <body>
@@ -903,9 +709,6 @@
 </div>
 
 <button id="scrollTopBtn" type="button" aria-label="Yukarı çık">↑</button>
-
-
-
 
 <script>
 const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
@@ -1542,10 +1345,16 @@ function renderDiscountProducts(list){
     return;
   }
 
+  list.forEach(product => {
+    if (typeof productDetailPayloads !== 'undefined') {
+      productDetailPayloads[String(product.id)] = product;
+    }
+  });
+
   track.innerHTML = list.map(product => {
     const imageHtml = product.image
-      ? `<img class="discount-image" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name || 'Ürün')}">`
-      : `<div class="discount-image-fallback">Görsel yok</div>`;
+      ? `<img class="discount-image" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name || 'Ürün')}" onerror="this.outerHTML='<div class=\'discount-image-fallback\'>Görsel yok</div>'" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])' style="cursor:pointer">`
+      : `<div class="discount-image-fallback" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])' style="cursor:pointer">Görsel yok</div>`;
 
     const oldPrice = Number(product.comparePrice || product.compare_at_price || 0);
     const newPrice = Number(product.price || 0);
@@ -1563,14 +1372,15 @@ function renderDiscountProducts(list){
           <span class="discount-badge">${badgeText}</span>
         </div>
         <div class="discount-body">
-          <div style="display:block;color:inherit;cursor:pointer" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])'>
-            ${imageHtml}
-            <div class="discount-name">${escapeHtml(product.name || 'Ürün')}</div>
-            <div class="discount-category">${escapeHtml(product.category || '')}</div>
-            ${oldPrice > 0 ? `<div class="discount-price-old">${money(oldPrice)}</div>` : `<div class="discount-price-old" style="visibility:hidden">0</div>`}
-            <div class="discount-price-new">${money(newPrice)}</div>
+          ${imageHtml}
+          <div class="discount-name" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])' style="cursor:pointer">${escapeHtml(product.name || 'Ürün')}</div>
+          <div class="discount-category">${escapeHtml(product.category || '')}</div>
+          ${oldPrice > 0 ? `<div class="discount-price-old">${money(oldPrice)}</div>` : `<div class="discount-price-old" style="visibility:hidden">0</div>`}
+          <div class="discount-price-new">${money(newPrice)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="discount-btn" type="button" onclick='openProductDetail(productDetailPayloads["${String(product.id)}"])' style="background:#edf4fb;color:#17324f">Detay</button>
+            <button class="discount-btn" type="button" onclick="addToCart('${String(product.id)}')">Sepete Ekle</button>
           </div>
-          <button class="discount-btn" type="button" onclick="addToCart('${String(product.id)}')">Sepete Ekle</button>
         </div>
       </div>
     `;
@@ -1582,7 +1392,6 @@ function scrollDiscounts(direction){
   if(!track) return;
   track.scrollBy({ left: direction * 320, behavior: 'smooth' });
 }
-
 
 </script>
 </body>
