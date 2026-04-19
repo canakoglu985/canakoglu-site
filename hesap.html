@@ -37,152 +37,50 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
 .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px} .meta-item{background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:10px}
 .items{margin-top:12px;border:1px solid var(--border);border-radius:14px;background:#fbfcfe;padding:12px}
 .empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:16px;background:#fbfcfe}
-.sep{height:1px;background:var(--border);margin:16px 0}
 .pill{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.2)}
 .hide{display:none !important}
 @media (max-width:960px){.layout{grid-template-columns:1fr}}
-
-.success-modal{
-  position:fixed; inset:0; background:rgba(9,26,47,.42);
-  display:none; align-items:center; justify-content:center; z-index:5000;
-  padding:20px;
-}
+.success-modal{position:fixed; inset:0; background:rgba(9,26,47,.42);display:none; align-items:center; justify-content:center; z-index:5000;padding:20px}
 .success-modal.open{ display:flex; }
-.success-card{
-  width:min(520px,100%);
-  background:#fff;
-  border:1px solid #dbe6f1;
-  border-radius:28px;
-  box-shadow:0 24px 60px rgba(18,50,85,.20);
-  overflow:hidden;
+.success-card{width:min(520px,100%);background:#fff;border:1px solid #dbe6f1;border-radius:28px;box-shadow:0 24px 60px rgba(18,50,85,.20);overflow:hidden}
+.success-top{background:linear-gradient(135deg, rgba(9,33,63,.96) 0%, rgba(22,55,94,.98) 52%, rgba(37,91,148,.95) 100%);color:#fff;padding:26px 24px 18px}
+.success-icon{width:64px; height:64px; border-radius:20px;display:flex; align-items:center; justify-content:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);font-size:30px; margin-bottom:14px}
+.success-top h3{margin:0 0 6px; font-size:28px; line-height:1.1}
+.success-top p{margin:0; color:rgba(255,255,255,.90); line-height:1.6}
+.success-body{padding:22px 24px}
+.success-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px}
+.success-mini{background:#f7f9fc; border:1px solid #dbe6f1; border-radius:16px; padding:12px}
+.success-mini strong{display:block; color:#1d4678; margin-bottom:4px}
+.success-list{background:#fbfcfe; border:1px solid #dbe6f1; border-radius:18px; padding:14px}
+.success-actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:18px}
+.success-mini.status-badge{background:#fff5e7}
+.success-mini.status-badge div{color:#c97507;font-weight:900}
+.pill.status-yeni{background:#fff5e7;color:#c97507;border-color:rgba(244,154,39,.2)}
+.pill.status-hazirlaniyor{background:#eef4ff;color:#225996;border-color:#cddcf7}
+.pill.status-yolda{background:#f3efff;color:#6a36c7;border-color:#ddd0ff}
+.pill.status-teslim{background:#edf9f0;color:#1e7b36;border-color:#c6e7cf}
+.pill.status-iptal{background:#fff1f1;color:#c62828;border-color:#f0c9c9}
+.detail-link,.reorder-btn,.receipt-btn{border:none;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer}
+.detail-link,.receipt-btn{background:#edf4fb;color:#1d4678}
+.reorder-btn{background:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);color:#fff}
+.detail-modal,.receipt-modal{position:fixed; inset:0; background:rgba(9,26,47,.40); display:none; align-items:center; justify-content:center; z-index:6000; padding:20px}
+.detail-modal.open,.receipt-modal.open{display:flex}
+.detail-card,.receipt-card{width:min(760px,100%); max-height:88vh; overflow:auto; background:#fff; border:1px solid #dbe6f1; border-radius:26px; box-shadow:0 24px 60px rgba(18,50,85,.20);padding:22px}
+.detail-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin:14px 0}
+.detail-mini{background:#f7f9fc; border:1px solid #dbe6f1; border-radius:14px; padding:12px}
+.service-warning{margin-top:12px;padding:12px 14px;border-radius:14px;background:#fff3f3;color:#c62828;border:1px solid #f0c9c9;font-size:13px;font-weight:800;line-height:1.6}
+.notify-toast{position:fixed; right:18px; bottom:18px; background:linear-gradient(135deg,#17324f 0%, #225996 100%);color:#fff; padding:16px 18px; border-radius:18px; box-shadow:0 18px 38px rgba(0,0,0,.24);z-index:7000; display:none; max-width:340px; border:1px solid rgba(255,255,255,.12)}
+.notify-toast.show{display:block}
+@media (max-width:700px){.success-grid{grid-template-columns:1fr}}
+@media (max-width:640px){
+  header{padding:12px 14px}.wrap{padding:12px}.brand-title{font-size:24px}.hero{padding:16px;border-radius:20px}.hero h1{font-size:26px}.card{padding:14px;border-radius:18px}.order{padding:12px;border-radius:16px}.meta{grid-template-columns:1fr 1fr}.detail-card,.receipt-card{padding:16px;border-radius:20px}.success-card{border-radius:20px}.success-top{padding:18px 16px 14px}.success-body{padding:16px}.success-actions .btn{width:100%}
 }
-.success-top{
-  background:linear-gradient(135deg, rgba(9,33,63,.96) 0%, rgba(22,55,94,.98) 52%, rgba(37,91,148,.95) 100%);
-  color:#fff;
-  padding:26px 24px 18px;
+@media print{
+  body *{visibility:hidden !important}
+  .receipt-modal, .receipt-modal *{visibility:visible !important}
+  .receipt-modal{position:absolute; inset:0; background:#fff}
+  .receipt-card{width:100%; max-height:none; box-shadow:none; border:none; padding:0}
 }
-.success-icon{
-  width:64px; height:64px; border-radius:20px;
-  display:flex; align-items:center; justify-content:center;
-  background:rgba(255,255,255,.12);
-  border:1px solid rgba(255,255,255,.16);
-  font-size:30px; margin-bottom:14px;
-}
-.success-top h3{
-  margin:0 0 6px; font-size:28px; line-height:1.1;
-}
-.success-top p{
-  margin:0; color:rgba(255,255,255,.90); line-height:1.6;
-}
-.success-body{
-  padding:22px 24px;
-}
-.success-grid{
-  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px;
-}
-.success-mini{
-  background:#f7f9fc; border:1px solid #dbe6f1; border-radius:16px; padding:12px;
-}
-.success-mini strong{
-  display:block; color:#1d4678; margin-bottom:4px;
-}
-.success-list{
-  background:#fbfcfe; border:1px solid #dbe6f1; border-radius:18px; padding:14px;
-}
-.success-actions{
-  display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;
-}
-@media (max-width:700px){
-  .success-grid{ grid-template-columns:1fr; }
-}
-
-
-.success-mini.status-badge{
-  background:#fff5e7;
-}
-.success-mini.status-badge div{
-  color:#c97507;
-  font-weight:900;
-}
-
-
-    .pill.status-yeni{background:#fff5e7;color:#c97507;border-color:rgba(244,154,39,.2)}
-    .pill.status-hazirlaniyor{background:#eef4ff;color:#225996;border-color:#cddcf7}
-    .pill.status-yolda{background:#f3efff;color:#6a36c7;border-color:#ddd0ff}
-    .pill.status-teslim{background:#edf9f0;color:#1e7b36;border-color:#c6e7cf}
-    .pill.status-iptal{background:#fff1f1;color:#c62828;border-color:#f0c9c9}
-
-
-    .detail-link{
-      border:none;background:#edf4fb;color:#1d4678;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer
-    }
-    .detail-modal{
-      position:fixed; inset:0; background:rgba(9,26,47,.40); display:none; align-items:center; justify-content:center; z-index:6000; padding:20px;
-    }
-    .detail-modal.open{ display:flex; }
-    .detail-card{
-      width:min(760px,100%); max-height:88vh; overflow:auto; background:#fff; border:1px solid #dbe6f1; border-radius:26px; box-shadow:0 24px 60px rgba(18,50,85,.20);
-      padding:22px;
-    }
-    .detail-grid{
-      display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin:14px 0;
-    }
-    .detail-mini{
-      background:#f7f9fc; border:1px solid #dbe6f1; border-radius:14px; padding:12px;
-    }
-
-
-    .reorder-btn{
-      border:none;background:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%);color:#fff;
-      border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer
-    }
-    @media (max-width: 640px){
-      header{padding:12px 14px}
-      .wrap{padding:12px}
-      .brand-title{font-size:24px}
-      .hero{padding:16px;border-radius:20px}
-      .hero h1{font-size:26px}
-      .card{padding:14px;border-radius:18px}
-      .order{padding:12px;border-radius:16px}
-      .meta{grid-template-columns:1fr 1fr}
-      .detail-card{padding:16px;border-radius:20px}
-      .success-card{border-radius:20px}
-      .success-top{padding:18px 16px 14px}
-      .success-body{padding:16px}
-      .success-actions .btn{width:100%}
-    }
-
-
-    .service-warning{
-      margin-top:12px;padding:12px 14px;border-radius:14px;background:#fff3f3;color:#c62828;
-      border:1px solid #f0c9c9;font-size:13px;font-weight:800;line-height:1.6;
-    }
-
-
-    .notify-toast{
-      position:fixed; right:18px; bottom:18px; background:linear-gradient(135deg,#17324f 0%, #225996 100%);
-      color:#fff; padding:16px 18px; border-radius:18px; box-shadow:0 18px 38px rgba(0,0,0,.24);
-      z-index:7000; display:none; max-width:340px; border:1px solid rgba(255,255,255,.12)
-    }
-    .notify-toast.show{display:block}
-    .receipt-btn{
-      border:none;background:#edf4fb;color:#1d4678;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer
-    }
-    .receipt-modal{
-      position:fixed; inset:0; background:rgba(9,26,47,.40); display:none; align-items:center; justify-content:center; z-index:6500; padding:20px;
-    }
-    .receipt-modal.open{display:flex}
-    .receipt-card{
-      width:min(760px,100%); max-height:88vh; overflow:auto; background:#fff; border:1px solid #dbe6f1; border-radius:24px; box-shadow:0 24px 60px rgba(18,50,85,.20); padding:22px;
-    }
-    .receipt-print-area{background:#fff}
-    @media print{
-      body *{visibility:hidden !important}
-      .receipt-modal, .receipt-modal *{visibility:visible !important}
-      .receipt-modal{position:absolute; inset:0; background:#fff}
-      .receipt-card{width:100%; max-height:none; box-shadow:none; border:none; padding:0}
-    }
-
 </style>
 </head>
 <body>
@@ -246,7 +144,6 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
   </div>
 </div>
 
-
 <div id="successModal" class="success-modal">
   <div class="success-card">
     <div class="success-top">
@@ -256,26 +153,11 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
     </div>
     <div class="success-body">
       <div class="success-grid">
-        <div class="success-mini">
-          <strong>Sipariş No</strong>
-          <div id="successOrderNo">-</div>
-        </div>
-        <div class="success-mini">
-          <strong>Toplam</strong>
-          <div id="successOrderTotal">-</div>
-        </div>
-        <div class="success-mini">
-          <strong>Teslimat</strong>
-          <div id="successOrderDelivery">-</div>
-        </div>
-        <div class="success-mini">
-          <strong>Ödeme</strong>
-          <div id="successOrderPayment">-</div>
-        </div>
-        <div class="success-mini status-badge">
-          <strong>Durum</strong>
-          <div id="successOrderStatus">Yeni</div>
-        </div>
+        <div class="success-mini"><strong>Sipariş No</strong><div id="successOrderNo">-</div></div>
+        <div class="success-mini"><strong>Toplam</strong><div id="successOrderTotal">-</div></div>
+        <div class="success-mini"><strong>Teslimat</strong><div id="successOrderDelivery">-</div></div>
+        <div class="success-mini"><strong>Ödeme</strong><div id="successOrderPayment">-</div></div>
+        <div class="success-mini status-badge"><strong>Durum</strong><div id="successOrderStatus">Yeni</div></div>
       </div>
       <div class="success-list">
         <strong style="display:block;color:#1d4678;margin-bottom:8px;">Ürünler</strong>
@@ -290,7 +172,6 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
   </div>
 </div>
 
-
 <div id="orderDetailModal" class="detail-modal">
   <div class="detail-card">
     <div class="row" style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
@@ -300,7 +181,6 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
     <div id="orderDetailContent" style="margin-top:14px;"></div>
   </div>
 </div>
-
 
 <div id="notifyToast" class="notify-toast"></div>
 
@@ -321,6 +201,8 @@ input,textarea{width:100%;padding:12px;border:1px solid #c9d7e6;border-radius:14
 const client = supabase.createClient("https://jpguymicdiujhutnycvl.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I");
 const CART_KEY = "canakoglu_cart_v1";
 const ORDER_PENDING_KEY = "canakoglu_pending_order_v1";
+const CHECKOUT_META_KEY = "canakoglu_checkout_meta_v1";
+const SERVICE_SETTINGS_KEY = "service_areas_v1";
 
 const authArea = document.getElementById("authArea");
 const tabLogin = document.getElementById("tabLogin");
@@ -331,131 +213,13 @@ const loginBtn = document.getElementById("loginBtn");
 const registerBtn = document.getElementById("registerBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 
-
 let __lastOrderStatuses = {};
 let __statusPollStarted = false;
-
-function showNotifyToast(title, text){
-  const el = document.getElementById("notifyToast");
-  if(!el) return;
-  el.innerHTML = `<div style="font-size:15px;font-weight:900;margin-bottom:4px;">${escapeHtml(title)}</div><div style="font-size:13px;line-height:1.5;opacity:.92;">${escapeHtml(text)}</div>`;
-  el.classList.add("show");
-  clearTimeout(window.__notifyToastTimer);
-  window.__notifyToastTimer = setTimeout(() => el.classList.remove("show"), 4200);
-}
-
-function openReceipt(order, items){
-  const total = order.total_amount ?? order.total ?? 0;
-  document.getElementById("receiptContent").innerHTML = `
-    <div style="padding:8px 0;">
-      <div style="text-align:center;margin-bottom:16px;">
-        <div style="font-size:26px;font-weight:900;color:#1d4678;">Çanakoğlu Online Market</div>
-        <div style="margin-top:4px;color:#6f8196;font-size:13px;">Sipariş Fişi</div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;">
-        <div class="detail-mini"><strong>Sipariş No</strong><div style="margin-top:4px;">${order.id}</div></div>
-        <div class="detail-mini"><strong>Tarih</strong><div style="margin-top:4px;">${new Date(order.created_at).toLocaleString("tr-TR")}</div></div>
-        <div class="detail-mini"><strong>Durum</strong><div style="margin-top:4px;">${orderStatusLabel(order.status)}</div></div>
-        <div class="detail-mini"><strong>Toplam</strong><div style="margin-top:4px;">${money(total)}</div></div>
-      </div>
-      <div class="items">
-        <strong>Ürünler</strong>
-        <table style="width:100%;border-collapse:collapse;margin-top:10px;">
-          <thead><tr><th style="text-align:left;border-bottom:1px solid #dbe6f1;padding:8px 0;">Ürün</th><th style="text-align:left;border-bottom:1px solid #dbe6f1;padding:8px 0;">Miktar</th><th style="text-align:right;border-bottom:1px solid #dbe6f1;padding:8px 0;">Tutar</th></tr></thead>
-          <tbody>
-            ${(items || []).map(item => `<tr><td style="padding:8px 0;border-bottom:1px solid #eef3f9;">${escapeHtml(item.product_name || "Ürün")}</td><td style="padding:8px 0;border-bottom:1px solid #eef3f9;">${item.quantity || 0} adet</td><td style="padding:8px 0;border-bottom:1px solid #eef3f9;text-align:right;">${money(item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0)))}</td></tr>`).join("")}
-          </tbody>
-        </table>
-      </div>
-      <div style="margin-top:14px;display:grid;gap:8px;">
-        <div><strong>Telefon:</strong> ${escapeHtml(order.phone || "-")}</div>
-        <div><strong>Teslimat:</strong> ${escapeHtml(order.delivery_slot || "-")}</div>
-        <div><strong>Ödeme:</strong> ${escapeHtml(order.payment_method || "-")}</div>
-      </div>
-    </div>
-  `;
-  document.getElementById("receiptModal").classList.add("open");
-}
-
-function closeReceipt(){
-  document.getElementById("receiptModal").classList.remove("open");
-}
-
-function printReceipt(){
-  window.print();
-}
-
-function maybeNotifyStatusChanges(orders){
-  const currentMap = {};
-  (orders || []).forEach(order => {
-    currentMap[String(order.id)] = String(order.status || "yeni").trim().toLowerCase();
-    const oldStatus = __lastOrderStatuses[String(order.id)];
-    const newStatus = currentMap[String(order.id)];
-    if(oldStatus && oldStatus !== newStatus){
-      showNotifyToast("Sipariş durumu güncellendi", `#${order.id} • ${orderStatusLabel(newStatus)}`);
-    }
-  });
-  __lastOrderStatuses = currentMap;
-}
-
-function startStatusPolling(){
-  if(__statusPollStarted) return;
-  __statusPollStarted = true;
-  setInterval(async () => {
-    if(document.hidden) return;
-    const user = await getCurrentUserFast();
-    if(!user) return;
-    await loadOrders();
-  }, 8000);
-}
-
-
-
 let orderSubmitLock = false;
 let lastSuccessOrder = null;
 
-function openSuccessModal(order, itemsPayload, totalAmount) {
-  lastSuccessOrder = { order, itemsPayload, totalAmount };
-  const modal = document.getElementById("successModal");
-  document.getElementById("successOrderNo").textContent = order?.id || "-";
-  document.getElementById("successOrderTotal").textContent = money(totalAmount || 0);
-  document.getElementById("successOrderDelivery").textContent = order?.delivery_slot || "-";
-  document.getElementById("successOrderPayment").textContent = order?.payment_method || "-";
-  document.getElementById("successOrderStatus").textContent = order?.status || "Yeni";
-  document.getElementById("successOrderItems").innerHTML = (itemsPayload || []).map(item =>
-    `<div style="margin-bottom:6px;">${escapeHtml(item.product_name)} — ${item.quantity} adet</div>`
-  ).join("") || "-";
-  modal.classList.add("open");
-}
-
-function closeSuccessModal() {
-  const modal = document.getElementById("successModal");
-  modal.classList.remove("open");
-  const ordersBox = document.getElementById("ordersBox");
-  if (ordersBox) ordersBox.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-async function sendOrderToWhatsApp() {
-  if (!lastSuccessOrder?.order) return;
-  const profile = await getCurrentProfile();
-  const phone = "905382998400";
-  const lines = [];
-  lines.push("Merhaba, siparişim oluşturuldu.");
-  lines.push("Sipariş No: " + (lastSuccessOrder.order.id || "-"));
-  lines.push("Müşteri: " + (profile?.full_name || profile?.email || "-"));
-  lines.push("Telefon: " + (profile?.phone || "-"));
-  lines.push("Adres: " + (profile?.address || "-"));
-  lines.push("Teslimat: " + (lastSuccessOrder.order.delivery_slot || "-"));
-  lines.push("Ödeme: " + (lastSuccessOrder.order.payment_method || "-"));
-  lines.push("Toplam: " + money(lastSuccessOrder.totalAmount || 0));
-  lines.push("");
-  (lastSuccessOrder.itemsPayload || []).forEach(item => {
-    lines.push(item.product_name + " — " + item.quantity + " adet");
-  });
-  const text = encodeURIComponent(lines.join("\n"));
-  window.open("https://wa.me/" + phone + "?text=" + text, "_blank");
-}
-
+function escapeHtml(text) { return String(text ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;"); }
+function money(v) { return new Intl.NumberFormat("tr-TR", {minimumFractionDigits:2, maximumFractionDigits:2}).format(Number(v||0)) + " TL"; }
 function setStatus(id, text, ok=false) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -464,9 +228,9 @@ function setStatus(id, text, ok=false) {
 }
 function setPageStatus(text, ok=false) { setStatus("pageStatus", text, ok); }
 function setButtonLoading(btn, loading, text) { btn.disabled = loading; btn.textContent = loading ? "Bekle..." : text; }
-function money(v) { return new Intl.NumberFormat("tr-TR", {minimumFractionDigits:2, maximumFractionDigits:2}).format(Number(v||0)) + " TL"; }
-function escapeHtml(text) { return String(text ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;"); }
 function readCart() { try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } }
+function writeCart(cart) { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+function readCheckoutMeta() { try { return JSON.parse(localStorage.getItem(CHECKOUT_META_KEY) || "{}"); } catch { return {}; } }
 function hasOrderIntent() {
   const params = new URLSearchParams(window.location.search);
   return params.get("redirect") === "order" || sessionStorage.getItem(ORDER_PENDING_KEY) === "1";
@@ -494,6 +258,128 @@ function showRegister() {
   paneRegister.classList.add("active");
 }
 function hideAuth() { authArea.classList.add("hide"); }
+function orderStatusLabel(value="yeni") {
+  const key = String(value || "yeni").trim().toLowerCase();
+  if (key === "hazirlaniyor") return "Hazırlanıyor";
+  if (key === "yolda") return "Yolda";
+  if (key === "teslim") return "Teslim";
+  if (key === "iptal") return "İptal";
+  return "Yeni";
+}
+function orderStatusClass(value="yeni") {
+  return "status-" + String(value || "yeni").trim().toLowerCase();
+}
+
+function showNotifyToast(title, text){
+  const el = document.getElementById("notifyToast");
+  if(!el) return;
+  el.innerHTML = `<div style="font-size:15px;font-weight:900;margin-bottom:4px;">${escapeHtml(title)}</div><div style="font-size:13px;line-height:1.5;opacity:.92;">${escapeHtml(text)}</div>`;
+  el.classList.add("show");
+  clearTimeout(window.__notifyToastTimer);
+  window.__notifyToastTimer = setTimeout(() => el.classList.remove("show"), 4200);
+}
+
+function openReceipt(order, items){
+  const total = order.total_amount ?? order.total ?? 0;
+  document.getElementById("receiptContent").innerHTML = `
+    <div style="padding:8px 0;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:26px;font-weight:900;color:#1d4678;">Çanakoğlu Online Market</div>
+        <div style="margin-top:4px;color:#6f8196;font-size:13px;">Sipariş Fişi</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;">
+        <div class="detail-mini"><strong>Sipariş No</strong><div style="margin-top:4px;">${escapeHtml(order.id)}</div></div>
+        <div class="detail-mini"><strong>Tarih</strong><div style="margin-top:4px;">${new Date(order.created_at).toLocaleString("tr-TR")}</div></div>
+        <div class="detail-mini"><strong>Durum</strong><div style="margin-top:4px;">${escapeHtml(orderStatusLabel(order.status))}</div></div>
+        <div class="detail-mini"><strong>Toplam</strong><div style="margin-top:4px;">${money(total)}</div></div>
+      </div>
+      <div class="items">
+        <strong>Ürünler</strong>
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+          <thead><tr><th style="text-align:left;border-bottom:1px solid #dbe6f1;padding:8px 0;">Ürün</th><th style="text-align:left;border-bottom:1px solid #dbe6f1;padding:8px 0;">Miktar</th><th style="text-align:right;border-bottom:1px solid #dbe6f1;padding:8px 0;">Tutar</th></tr></thead>
+          <tbody>
+            ${(items || []).map((item) => `<tr><td style="padding:8px 0;border-bottom:1px solid #eef3f9;">${escapeHtml(item.product_name || "Ürün")}</td><td style="padding:8px 0;border-bottom:1px solid #eef3f9;">${item.quantity || 0} adet</td><td style="padding:8px 0;border-bottom:1px solid #eef3f9;text-align:right;">${money(item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0)))}</td></tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px;display:grid;gap:8px;">
+        <div><strong>Telefon:</strong> ${escapeHtml(order.phone || "-")}</div>
+        <div><strong>Teslimat:</strong> ${escapeHtml(order.delivery_slot || "-")}</div>
+        <div><strong>Ödeme:</strong> ${escapeHtml(order.payment_method || "-")}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById("receiptModal").classList.add("open");
+}
+
+function closeReceipt(){ document.getElementById("receiptModal").classList.remove("open"); }
+function printReceipt(){ window.print(); }
+
+function maybeNotifyStatusChanges(orders){
+  const currentMap = {};
+  (orders || []).forEach((order) => {
+    currentMap[String(order.id)] = String(order.status || "yeni").trim().toLowerCase();
+    const oldStatus = __lastOrderStatuses[String(order.id)];
+    const newStatus = currentMap[String(order.id)];
+    if(oldStatus && oldStatus !== newStatus){
+      showNotifyToast("Sipariş durumu güncellendi", `#${order.id} • ${orderStatusLabel(newStatus)}`);
+    }
+  });
+  __lastOrderStatuses = currentMap;
+}
+
+function startStatusPolling(){
+  if(__statusPollStarted) return;
+  __statusPollStarted = true;
+  setInterval(async () => {
+    if(document.hidden) return;
+    const user = await getCurrentUserFast();
+    if(!user) return;
+    await loadOrders();
+  }, 8000);
+}
+
+function openSuccessModal(order, itemsPayload, totalAmount) {
+  lastSuccessOrder = { order, itemsPayload, totalAmount };
+  const modal = document.getElementById("successModal");
+  document.getElementById("successOrderNo").textContent = order?.id || "-";
+  document.getElementById("successOrderTotal").textContent = money(totalAmount || 0);
+  document.getElementById("successOrderDelivery").textContent = order?.delivery_slot || "-";
+  document.getElementById("successOrderPayment").textContent = order?.payment_method || "-";
+  document.getElementById("successOrderStatus").textContent = orderStatusLabel(order?.status || "Yeni");
+  document.getElementById("successOrderItems").innerHTML = (itemsPayload || []).map((item) =>
+    `<div style="margin-bottom:6px;">${escapeHtml(item.product_name)} — ${item.quantity} adet</div>`
+  ).join("") || "-";
+  modal.classList.add("open");
+}
+
+function closeSuccessModal() {
+  const modal = document.getElementById("successModal");
+  modal.classList.remove("open");
+  const ordersBox = document.getElementById("ordersBox");
+  if (ordersBox) ordersBox.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function sendOrderToWhatsApp() {
+  if (!lastSuccessOrder?.order) return;
+  const profile = await getCurrentProfile();
+  const phone = "905382998400";
+  const lines = [];
+  lines.push("Merhaba, siparişim oluşturuldu.");
+  lines.push("Sipariş No: " + (lastSuccessOrder.order.id || "-"));
+  lines.push("Müşteri: " + (profile?.full_name || profile?.email || "-"));
+  lines.push("Telefon: " + (profile?.phone || "-"));
+  lines.push("Adres: " + (profile?.address || "-"));
+  lines.push("Teslimat: " + (lastSuccessOrder.order.delivery_slot || "-"));
+  lines.push("Ödeme: " + (lastSuccessOrder.order.payment_method || "-"));
+  lines.push("Toplam: " + money(lastSuccessOrder.totalAmount || 0));
+  lines.push("");
+  (lastSuccessOrder.itemsPayload || []).forEach((item) => {
+    lines.push(item.product_name + " — " + item.quantity + " adet");
+  });
+  const text = encodeURIComponent(lines.join("\n"));
+  window.open("https://wa.me/" + phone + "?text=" + text, "_blank");
+}
 
 async function getCurrentUserFast() {
   try {
@@ -591,23 +477,22 @@ async function register() {
 async function logout() {
   try { await client.auth.signOut({ scope: "local" }); } catch {}
   document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
-  renderOrders([]);
+  renderOrders([], {});
   showLogin();
   setPageStatus("Çıkış yapıldı.", true);
 }
 
-
 async function getServiceAreaConfig(){
   try{
-    const { data, error } = await client.from("site_settings").select("*").eq("key","service_areas").maybeSingle();
+    const { data, error } = await client.from("site_settings").select("*").eq("key", SERVICE_SETTINGS_KEY).maybeSingle();
     if(error) return { enabled:false, areas:[], centerLat:null, centerLng:null, radiusKm:null };
     const value = data?.value || {};
     return {
       enabled: Boolean(value.enabled),
       areas: Array.isArray(value.areas) ? value.areas : [],
-      centerLat: value.centerLat ?? null,
-      centerLng: value.centerLng ?? null,
-      radiusKm: value.radiusKm ?? null
+      centerLat: value.center_lat ?? null,
+      centerLng: value.center_lng ?? null,
+      radiusKm: value.radius_km ?? null
     };
   }catch(err){
     console.error(err);
@@ -617,9 +502,9 @@ async function getServiceAreaConfig(){
 
 function addressMatchesServiceArea(address, areas){
   const normalizedAddress = String(address || "").toLocaleLowerCase("tr-TR");
-  const normalizedAreas = (areas || []).map(a => String(a || "").trim().toLocaleLowerCase("tr-TR")).filter(Boolean);
+  const normalizedAreas = (areas || []).map((a) => String(a || "").trim().toLocaleLowerCase("tr-TR")).filter(Boolean);
   if(!normalizedAreas.length) return true;
-  return normalizedAreas.some(area => normalizedAddress.includes(area));
+  return normalizedAreas.some((area) => normalizedAddress.includes(area));
 }
 
 function showServiceAreaWarning(message){
@@ -668,7 +553,7 @@ async function validateServiceAreaBeforeOrder(profile){
       const coords = JSON.parse(savedGeo);
       const dist = haversineKm(Number(coords.lat), Number(coords.lng), Number(config.centerLat), Number(config.centerLng));
       geoOk = dist <= Number(config.radiusKm);
-    }catch(err){}
+    }catch(_){}
   }
 
   if(!addressOk){
@@ -688,7 +573,6 @@ async function validateServiceAreaBeforeOrder(profile){
   hideServiceAreaWarning();
   return { ok: true };
 }
-
 
 async function createOrderFromCartIfNeeded() {
   if (!hasOrderIntent() || orderSubmitLock) return false;
@@ -713,6 +597,7 @@ async function createOrderFromCartIfNeeded() {
     return false;
   }
 
+  const checkoutMeta = readCheckoutMeta();
   orderSubmitLock = true;
   try {
     setPageStatus("Sipariş oluşturuluyor...", true);
@@ -723,9 +608,9 @@ async function createOrderFromCartIfNeeded() {
       customer_name: profile.full_name || profile.email || "Müşteri",
       phone: profile.phone || "",
       address: profile.address || "",
-      delivery_slot: "Müsait olan en kısa sürede",
-      payment_method: "Kapıda Nakit",
-      status: "Yeni",
+      delivery_slot: checkoutMeta.delivery_slot || "Müsait olan en kısa sürede",
+      payment_method: checkoutMeta.payment_method || "Kapıda Nakit",
+      status: "yeni",
       total_amount: totalAmount,
       total: totalAmount
     }]).select().single();
@@ -735,8 +620,9 @@ async function createOrderFromCartIfNeeded() {
       return false;
     }
 
-    const itemsPayload = cart.map(item => ({
+    const itemsPayload = cart.map((item) => ({
       order_id: order.id,
+      product_id: item.id,
       product_name: item.name,
       quantity: Number(item.quantity || 0),
       unit_price: Number(item.price || 0),
@@ -758,6 +644,7 @@ async function createOrderFromCartIfNeeded() {
     }
 
     localStorage.removeItem(CART_KEY);
+    localStorage.removeItem(CHECKOUT_META_KEY);
     clearOrderIntent();
     setPageStatus("Siparişiniz oluşturuldu.", true);
     openSuccessModal(order, itemsPayload, totalAmount);
@@ -775,14 +662,14 @@ function renderOrders(orders, itemsByOrder={}) {
     box.innerHTML = '<div class="empty">Henüz siparişin yok.</div>';
     return;
   }
-  box.innerHTML = orders.map(order => {
+  box.innerHTML = orders.map((order) => {
     const total = order.total_amount ?? order.total ?? 0;
     const items = itemsByOrder[order.id] || [];
-    const itemsHtml = items.map(item => `<li>${escapeHtml(item.product_name || "Ürün")} — ${item.quantity || 0} adet — ${money(item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0)))}</li>`).join("");
+    const itemsHtml = items.map((item) => `<li>${escapeHtml(item.product_name || "Ürün")} — ${item.quantity || 0} adet — ${money(item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0)))}</li>`).join("");
     return `
       <div class="order">
         <div class="order-top">
-          <strong>Sipariş #${order.id}</strong>
+          <strong>Sipariş #${escapeHtml(order.id)}</strong>
           <span class="pill ${orderStatusClass(order.status)}">${escapeHtml(orderStatusLabel(order.status))}</span>
         </div>
         <div class="muted" style="margin-top:6px;">${new Date(order.created_at).toLocaleString("tr-TR")}</div>
@@ -793,19 +680,24 @@ function renderOrders(orders, itemsByOrder={}) {
           <div class="meta-item"><strong>Telefon</strong><div style="margin-top:4px;">${escapeHtml(order.phone || "-")}</div></div>
         </div>
         <div class="items"><strong>Ürünler</strong><ul style="margin-top:8px;">${itemsHtml || "<li>Ürün bilgisi bulunamadı.</li>"}</ul></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+          <button class="detail-link" type="button" onclick="openOrderDetail('${escapeHtml(order.id)}')">Detay</button>
+          <button class="receipt-btn" type="button" onclick="openReceiptById('${escapeHtml(order.id)}')">Fiş</button>
+          <button class="reorder-btn" type="button" onclick="reorderItems('${escapeHtml(order.id)}')">Tekrar Sipariş</button>
+        </div>
       </div>`;
   }).join("");
 }
 
 async function loadOrders() {
   const user = await getCurrentUserFast();
-  if (!user) { renderOrders([]); return; }
-  const { data: orders, error } = await client.from("orders").select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id").eq("customer_id", user.id).order("created_at", { ascending: false });
-  if (error) { setPageStatus("Siparişler alınamadı: " + error.message); renderOrders([]); return; }
-  const ids = (orders || []).map(o => o.id).filter(Boolean);
+  if (!user) { renderOrders([], {}); return; }
+  const { data: orders, error } = await client.from("orders").select("id, created_at, payment_method, delivery_slot, total, total_amount, phone, status, customer_id, address").eq("customer_id", user.id).order("created_at", { ascending: false });
+  if (error) { setPageStatus("Siparişler alınamadı: " + error.message); renderOrders([], {}); return; }
+  const ids = (orders || []).map((o) => o.id).filter(Boolean);
   let itemsByOrder = {};
   if (ids.length) {
-    const { data: items } = await client.from("order_items").select("order_id, product_name, quantity, unit_price, line_total").in("order_id", ids);
+    const { data: items } = await client.from("order_items").select("order_id, product_id, product_name, quantity, unit_price, line_total").in("order_id", ids);
     itemsByOrder = (items || []).reduce((acc, item) => {
       if (!acc[item.order_id]) acc[item.order_id] = [];
       acc[item.order_id].push(item);
@@ -814,6 +706,53 @@ async function loadOrders() {
   }
   renderOrders(orders || [], itemsByOrder);
   maybeNotifyStatusChanges(orders || []);
+}
+
+function openOrderDetail(orderId) {
+  const order = (window.__lastRenderedOrders || []).find((item) => String(item.id) === String(orderId));
+  const items = (window.__lastItemsByOrder || {})[orderId] || [];
+  if (!order) return;
+  document.getElementById("orderDetailContent").innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-mini"><strong>Sipariş No</strong><div style="margin-top:4px;">#${escapeHtml(order.id)}</div></div>
+      <div class="detail-mini"><strong>Durum</strong><div style="margin-top:4px;">${escapeHtml(orderStatusLabel(order.status))}</div></div>
+      <div class="detail-mini"><strong>Tarih</strong><div style="margin-top:4px;">${new Date(order.created_at).toLocaleString("tr-TR")}</div></div>
+      <div class="detail-mini"><strong>Ödeme</strong><div style="margin-top:4px;">${escapeHtml(order.payment_method || "-")}</div></div>
+      <div class="detail-mini"><strong>Teslimat</strong><div style="margin-top:4px;">${escapeHtml(order.delivery_slot || "-")}</div></div>
+      <div class="detail-mini"><strong>Telefon</strong><div style="margin-top:4px;">${escapeHtml(order.phone || "-")}</div></div>
+    </div>
+    <div class="items">
+      <strong>Ürünler</strong>
+      <ul style="margin-top:8px;">
+        ${items.length ? items.map((item) => `<li>${escapeHtml(item.product_name || "Ürün")} — ${item.quantity || 0} adet — ${money(item.line_total ?? ((item.unit_price || 0) * (item.quantity || 0)))}</li>`).join("") : "<li>Ürün bilgisi bulunamadı.</li>"}
+      </ul>
+    </div>
+  `;
+  document.getElementById("orderDetailModal").classList.add("open");
+}
+
+function closeOrderDetail() {
+  document.getElementById("orderDetailModal").classList.remove("open");
+}
+
+function openReceiptById(orderId) {
+  const order = (window.__lastRenderedOrders || []).find((item) => String(item.id) === String(orderId));
+  const items = (window.__lastItemsByOrder || {})[orderId] || [];
+  if (!order) return;
+  openReceipt(order, items);
+}
+
+function reorderItems(orderId) {
+  const items = (window.__lastItemsByOrder || {})[orderId] || [];
+  if (!items.length) return;
+  const cart = items.map((item) => ({
+    id: item.product_id,
+    name: item.product_name,
+    price: Number(item.unit_price || 0),
+    quantity: Number(item.quantity || 1)
+  })).filter((item) => item.id);
+  writeCart(cart);
+  window.location.href = "index.html";
 }
 
 async function afterLoginOrExistingSession() {
@@ -839,17 +778,24 @@ loginBtn.addEventListener("click", login);
 registerBtn.addEventListener("click", register);
 logoutBtn.addEventListener("click", logout);
 
-
 document.getElementById("successModal").addEventListener("click", (e) => {
   if (e.target.id === "successModal") closeSuccessModal();
 });
-
 document.getElementById("orderDetailModal").addEventListener("click", (e) => {
   if (e.target.id === "orderDetailModal") closeOrderDetail();
 });
 document.getElementById("receiptModal").addEventListener("click", (e) => {
   if (e.target.id === "receiptModal") closeReceipt();
 });
+
+window.closeSuccessModal = closeSuccessModal;
+window.sendOrderToWhatsApp = sendOrderToWhatsApp;
+window.closeOrderDetail = closeOrderDetail;
+window.closeReceipt = closeReceipt;
+window.printReceipt = printReceipt;
+window.openOrderDetail = openOrderDetail;
+window.openReceiptById = openReceiptById;
+window.reorderItems = reorderItems;
 
 (async function init() {
   rememberOrderIntent();
