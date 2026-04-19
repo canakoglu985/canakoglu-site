@@ -1366,11 +1366,13 @@ function renderDiscountProducts(list){
           <span class="discount-badge">${badgeText}</span>
         </div>
         <div class="discount-body">
-          ${imageHtml}
-          <div class="discount-name">${escapeHtml(product.name || 'Ürün')}</div>
-          <div class="discount-category">${escapeHtml(product.category || '')}</div>
-          ${oldPrice > 0 ? `<div class="discount-price-old">${money(oldPrice)}</div>` : `<div class="discount-price-old" style="visibility:hidden">0</div>`}
-          <div class="discount-price-new">${money(newPrice)}</div>
+          <a href="urun.html?id=${encodeURIComponent(String(product.id))}" style="display:block;color:inherit">
+            ${imageHtml}
+            <div class="discount-name">${escapeHtml(product.name || 'Ürün')}</div>
+            <div class="discount-category">${escapeHtml(product.category || '')}</div>
+            ${oldPrice > 0 ? `<div class="discount-price-old">${money(oldPrice)}</div>` : `<div class="discount-price-old" style="visibility:hidden">0</div>`}
+            <div class="discount-price-new">${money(newPrice)}</div>
+          </a>
           <button class="discount-btn" type="button" onclick="addToCart('${String(product.id)}')">Sepete Ekle</button>
         </div>
       </div>
