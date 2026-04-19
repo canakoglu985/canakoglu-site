@@ -34,7 +34,11 @@
       font-family:Arial,sans-serif;
       overflow-x:hidden;
     }
-    body.drawer-open{overflow:hidden}
+    body.drawer-open,
+    body.modal-open{
+      overflow:hidden;
+    }
+
     a{text-decoration:none;color:inherit}
     button,input,select{font:inherit}
 
@@ -148,6 +152,11 @@
       background:#fff;
       border:1px solid var(--line);
       box-shadow:var(--soft-shadow);
+    }
+    .btn.ghost{
+      color:var(--navy-dark);
+      background:#f7fbff;
+      border:1px solid var(--line);
     }
 
     .header-actions{
@@ -717,6 +726,165 @@
       margin-top:14px;
     }
 
+    .checkout-modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background:rgba(10,22,37,.46);
+      z-index:130;
+    }
+    .checkout-modal.open{
+      display:flex;
+    }
+    .checkout-card{
+      width:min(560px,100%);
+      max-height:90vh;
+      overflow:auto;
+      background:#fff;
+      border-radius:30px;
+      border:1px solid var(--line);
+      box-shadow:0 28px 70px rgba(18,50,85,.22);
+    }
+    .checkout-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:start;
+      padding:22px 22px 16px;
+      border-bottom:1px solid var(--line);
+    }
+    .checkout-head h3{
+      margin:0;
+      color:var(--navy-dark);
+      font-size:34px;
+      line-height:.95;
+      font-weight:900;
+    }
+    .checkout-head p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.55;
+    }
+    .checkout-close{
+      width:40px;
+      height:40px;
+      border:none;
+      border-radius:50%;
+      cursor:pointer;
+      background:#fff;
+      border:1px solid var(--line);
+      color:var(--navy-dark);
+      font-size:20px;
+      font-weight:900;
+      flex-shrink:0;
+    }
+    .checkout-body{
+      padding:20px 22px 22px;
+    }
+    .summary-box{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:20px;
+      overflow:hidden;
+    }
+    .summary-box-head{
+      padding:18px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      color:var(--navy-dark);
+      font-weight:900;
+      font-size:18px;
+    }
+    .summary-box-body{
+      padding:0 18px 18px;
+      display:grid;
+      gap:12px;
+    }
+    .summary-info{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      color:var(--navy);
+      font-size:15px;
+      font-weight:800;
+    }
+    .summary-info.total{
+      padding-top:12px;
+      border-top:1px solid var(--line);
+      font-size:18px;
+      color:var(--navy-dark);
+    }
+    .summary-warning{
+      margin:16px 0;
+      padding:14px 16px;
+      border-radius:18px;
+      background:#fff7f8;
+      color:#ee3f6e;
+      border:1px solid #ffd4e0;
+      font-size:14px;
+      font-weight:800;
+      line-height:1.55;
+    }
+    .choice-box{
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:var(--surface-soft);
+    }
+    .choice-box h4{
+      margin:0 0 8px;
+      color:var(--navy-dark);
+      font-size:18px;
+      line-height:1.35;
+    }
+    .choice-box p{
+      margin:0 0 16px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.65;
+    }
+    .choice-option{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      padding:14px 0;
+      border-top:1px solid #e7eef6;
+      cursor:pointer;
+    }
+    .choice-option:first-of-type{
+      border-top:none;
+      padding-top:0;
+    }
+    .choice-option input{
+      margin-top:4px;
+      width:22px;
+      height:22px;
+      accent-color:#f49a27;
+      flex-shrink:0;
+    }
+    .choice-option strong{
+      display:block;
+      color:var(--navy-dark);
+      font-size:16px;
+      margin-bottom:4px;
+    }
+    .choice-option span{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.55;
+    }
+    .checkout-actions{
+      display:grid;
+      gap:10px;
+      margin-top:18px;
+    }
+
     .status{
       margin-top:12px;
       font-size:13px;
@@ -756,6 +924,9 @@
       }
       .cart-drawer{
         width:100%;
+      }
+      .checkout-head h3{
+        font-size:28px;
       }
     }
   </style>
@@ -853,15 +1024,15 @@
     <div class="drawer-head">
       <div>
         <h3 class="drawer-title">Sepetim</h3>
-        <p class="drawer-copy">Siparisini hesap ekraninda tamamlarsin.</p>
+        <p class="drawer-copy">Siparise gecmeden once urunlerini kontrol et.</p>
       </div>
       <button id="cartCloseBtn" class="drawer-close" type="button">×</button>
     </div>
 
     <div class="drawer-body">
       <div class="notice">
-        Siparis vermek icin once <a href="hesap.html" style="text-decoration:underline;color:#14395f">hesap sayfasindan giris yap</a>.
-        Bu alanda urunlerini secip sepetini hazirlarsin.
+        Siparis vermeden once teslimat saati ve odeme tipini sec.
+        Ardindan siparis ozeti ekrani acilacak.
       </div>
 
       <div id="cartItems" class="cart-items"></div>
@@ -888,11 +1059,84 @@
           <option value="Kapida Kart">Kapida Kart</option>
         </select>
 
-        <button id="placeOrderBtn" class="btn primary" type="button">Siparise Gec</button>
+        <button id="placeOrderBtn" class="btn primary" type="button">Siparis Ver</button>
         <button id="clearCartBtn" class="btn secondary" type="button">Sepeti Temizle</button>
       </div>
     </div>
   </aside>
+
+  <div id="checkoutModal" class="checkout-modal">
+    <div class="checkout-card">
+      <div class="checkout-head">
+        <div>
+          <h3>Sepet Ozeti</h3>
+          <p>Siparisi gondermeden once son kez kontrol et.</p>
+        </div>
+        <button id="checkoutCloseBtn" class="checkout-close" type="button">×</button>
+      </div>
+
+      <div class="checkout-body">
+        <div class="summary-box">
+          <div class="summary-box-head">
+            <span>Sepet Ozeti</span>
+            <span id="checkoutItemCount">0 Urun</span>
+          </div>
+          <div class="summary-box-body">
+            <div class="summary-info">
+              <span>Toplam Tutar</span>
+              <span id="checkoutSubtotalText">0,00 TL</span>
+            </div>
+            <div class="summary-info">
+              <span>Teslimat</span>
+              <span id="checkoutDeliveryText">0,00 TL</span>
+            </div>
+            <div class="summary-info total">
+              <span>Odenecek Tutar</span>
+              <span id="checkoutGrandText">0,00 TL</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-warning">
+          Siparisi verdiginde stokta tukenmis urun cikarsa hangi secenegi tercih ettigini bize bildir.
+        </div>
+
+        <div class="choice-box">
+          <h4>Sepetine ekledigin urunlerden biri bitmisse ne yapalim?</h4>
+          <p>Stokta olmayan urunlerde seni arayalim mi, benzerini getirelim mi, yoksa o urunu cikartalim mi? Siparis notuna bu tercih kaydedilecek.</p>
+
+          <label class="choice-option">
+            <input type="radio" name="stockIssueChoice" value="Beni arayin" checked />
+            <div>
+              <strong>Benzer urun icin beni arayin</strong>
+              <span>Stokta olmayan urun icin seni telefonla arayip onay alalim.</span>
+            </div>
+          </label>
+
+          <label class="choice-option">
+            <input type="radio" name="stockIssueChoice" value="Benzerini getirin" />
+            <div>
+              <strong>Benzerini getirin</strong>
+              <span>Benzer urun veya yakin marka ile siparisi tamamlayalim.</span>
+            </div>
+          </label>
+
+          <label class="choice-option">
+            <input type="radio" name="stockIssueChoice" value="Benzer urun istemiyorum" />
+            <div>
+              <strong>Benzer urun istemiyorum</strong>
+              <span>Stokta yoksa o urunu siparisten cikaralim, sadece mevcut urunleri gonderelim.</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="checkout-actions">
+          <button id="confirmCheckoutBtn" class="btn primary" type="button">Devam Et</button>
+          <button id="backToCartBtn" class="btn ghost" type="button">Sepete Don</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
@@ -1126,20 +1370,28 @@
       localStorage.removeItem(CHECKOUT_META_KEY);
       writeCart();
       renderCart();
+      closeCheckoutModal();
     }
 
-    function renderCart() {
-      const box = document.getElementById("cartItems");
+    function getCartSummary() {
       const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
       const delivery = subtotal > 0 ? 0 : 0;
       const total = subtotal + delivery;
       const count = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      return { subtotal, delivery, total, count };
+    }
 
-      document.getElementById("subtotalText").textContent = money(subtotal);
-      document.getElementById("deliveryText").textContent = money(delivery);
-      document.getElementById("grandTotalText").textContent = money(total);
-      document.getElementById("headerCartTotal").textContent = money(total);
-      document.getElementById("headerCartCount").textContent = count;
+    function renderCart() {
+      const box = document.getElementById("cartItems");
+      const placeOrderBtn = document.getElementById("placeOrderBtn");
+      const summary = getCartSummary();
+
+      document.getElementById("subtotalText").textContent = money(summary.subtotal);
+      document.getElementById("deliveryText").textContent = money(summary.delivery);
+      document.getElementById("grandTotalText").textContent = money(summary.total);
+      document.getElementById("headerCartTotal").textContent = money(summary.total);
+      document.getElementById("headerCartCount").textContent = summary.count;
+      placeOrderBtn.disabled = !cart.length;
 
       if (!cart.length) {
         box.innerHTML = '<div class="cart-empty">Sepetin bos. Urun secerek hizlica baslayabilirsin.</div>';
@@ -1179,10 +1431,37 @@
       document.getElementById("cartDrawer").setAttribute("aria-hidden", "true");
     }
 
+    function openCheckoutModal() {
+      if (!cart.length) {
+        alert("Sepet bos.");
+        return;
+      }
+
+      const summary = getCartSummary();
+      document.getElementById("checkoutItemCount").textContent = `${summary.count} Urun`;
+      document.getElementById("checkoutSubtotalText").textContent = money(summary.subtotal);
+      document.getElementById("checkoutDeliveryText").textContent = money(summary.delivery);
+      document.getElementById("checkoutGrandText").textContent = money(summary.total);
+
+      document.getElementById("checkoutModal").classList.add("open");
+      document.body.classList.add("modal-open");
+    }
+
+    function closeCheckoutModal() {
+      document.getElementById("checkoutModal").classList.remove("open");
+      document.body.classList.remove("modal-open");
+    }
+
+    function getStockIssueChoice() {
+      const checked = document.querySelector('input[name="stockIssueChoice"]:checked');
+      return checked ? checked.value : "Beni arayin";
+    }
+
     function storeCheckoutMeta() {
       const payload = {
         delivery_slot: document.getElementById("deliverySlot").value,
-        payment_method: document.getElementById("paymentMethod").value
+        payment_method: document.getElementById("paymentMethod").value,
+        stock_issue_preference: getStockIssueChoice()
       };
       localStorage.setItem(CHECKOUT_META_KEY, JSON.stringify(payload));
     }
@@ -1348,13 +1627,21 @@
 
     document.getElementById("refreshBtn").addEventListener("click", loadProducts);
     document.getElementById("clearCartBtn").addEventListener("click", clearCart);
-    document.getElementById("placeOrderBtn").addEventListener("click", goToAccountForOrder);
     document.getElementById("deliverySlot").addEventListener("change", storeCheckoutMeta);
     document.getElementById("paymentMethod").addEventListener("change", storeCheckoutMeta);
+
+    document.getElementById("placeOrderBtn").addEventListener("click", openCheckoutModal);
+    document.getElementById("confirmCheckoutBtn").addEventListener("click", goToAccountForOrder);
+    document.getElementById("backToCartBtn").addEventListener("click", closeCheckoutModal);
+    document.getElementById("checkoutCloseBtn").addEventListener("click", closeCheckoutModal);
 
     document.getElementById("headerCartBtn").addEventListener("click", openCartDrawer);
     document.getElementById("cartCloseBtn").addEventListener("click", closeCartDrawer);
     document.getElementById("cartOverlay").addEventListener("click", closeCartDrawer);
+
+    document.getElementById("checkoutModal").addEventListener("click", (event) => {
+      if (event.target.id === "checkoutModal") closeCheckoutModal();
+    });
 
     document.getElementById("heroPrev").addEventListener("click", () => {
       showHero(currentHeroIndex - 1);
