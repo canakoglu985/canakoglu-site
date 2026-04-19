@@ -469,12 +469,13 @@
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  padding:8px 10px;
+  padding:8px 12px;
   border-radius:999px;
   background:#f49a27;
   color:#fff;
-  font-size:11px;
+  font-size:12px;
   font-weight:900;
+  min-width:64px;
 }
 .discount-body{
   padding:16px;
@@ -1351,7 +1352,12 @@ function renderDiscountProducts(list){
 
     const oldPrice = Number(product.comparePrice || product.compare_at_price || 0);
     const newPrice = Number(product.price || 0);
-    const badgeText = product.campaignLabel ? escapeHtml(product.campaignLabel) : 'İndirim';
+    const discountPercent = oldPrice > newPrice && oldPrice > 0
+      ? Math.round(((oldPrice - newPrice) / oldPrice) * 100)
+      : 0;
+    const badgeText = discountPercent > 0
+      ? `-%${discountPercent}`
+      : (product.campaignLabel ? escapeHtml(product.campaignLabel) : 'Fırsat');
 
     return `
       <div class="discount-card">
@@ -1363,7 +1369,7 @@ function renderDiscountProducts(list){
           ${imageHtml}
           <div class="discount-name">${escapeHtml(product.name || 'Ürün')}</div>
           <div class="discount-category">${escapeHtml(product.category || '')}</div>
-          <div class="discount-price-old">${money(oldPrice)}</div>
+          ${oldPrice > 0 ? `<div class="discount-price-old">${money(oldPrice)}</div>` : `<div class="discount-price-old" style="visibility:hidden">0</div>`}
           <div class="discount-price-new">${money(newPrice)}</div>
           <button class="discount-btn" type="button" onclick="addToCart('${String(product.id)}')">Sepete Ekle</button>
         </div>
