@@ -544,6 +544,114 @@
   .discount-price-new{font-size:30px}
 }
 
+
+    .detail-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(9,26,47,.48);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:6500;
+      padding:18px;
+      backdrop-filter:blur(4px);
+    }
+    .detail-modal.open{display:flex}
+    .detail-card{
+      width:min(980px,100%);
+      max-height:90vh;
+      overflow:auto;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:28px;
+      box-shadow:0 24px 60px rgba(18,50,85,.22);
+      padding:22px;
+    }
+    .detail-card .row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:8px;
+    }
+    .detail-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin:14px 0 18px;
+    }
+    .detail-mini{
+      background:#f8fbff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+      color:var(--text);
+    }
+    .fallback-image{
+      width:100%;
+      border-radius:18px;
+      background:#f3f6fa;
+      color:#98a8ba;
+      border:1px solid rgba(29,70,120,.08);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:170px;
+      font-weight:800;
+    }
+    .promo-tag{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:8px 12px;
+      border-radius:999px;
+      background:#eef4ff;
+      color:#225996;
+      border:1px solid #cddcf7;
+      font-size:12px;
+      font-weight:900;
+      width:max-content;
+    }
+    .price-wrap{
+      display:flex;
+      align-items:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .price{
+      color:var(--navy);
+      font-size:28px;
+      font-weight:900;
+    }
+    .stock{
+      font-size:13px;
+      font-weight:800;
+      padding:8px 10px;
+      border-radius:999px;
+      width:max-content;
+      border:1px solid transparent;
+    }
+    .stock.ok{
+      background:#edf9f0;
+      color:#1e7b36;
+      border-color:#c6e7cf;
+    }
+    .stock.low{
+      background:#fff5e7;
+      color:#c97507;
+      border-color:rgba(242,138,18,.18);
+    }
+    .stock.out{
+      background:#fff1f1;
+      color:#c62828;
+      border-color:#f0c9c9;
+    }
+    @media (max-width:760px){
+      .detail-grid{grid-template-columns:1fr}
+      .detail-card{padding:16px}
+    }
+
 </style>
 </head>
 <body>
