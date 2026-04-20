@@ -18,8 +18,9 @@ header{background:linear-gradient(135deg, rgba(12,34,63,.98) 0%, rgba(20,55,94,.
 .header-inner,.wrap{max-width:1160px;margin:0 auto}
 .header-inner{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px}
-.brand-logo{width:68px;height:68px;border-radius:50%;overflow:hidden;border:1px solid rgba(255,255,255,.22);background:#fff;flex-shrink:0}
+.brand-logo{width:62px;height:62px;border-radius:50%;overflow:hidden;border:1px solid rgba(255,255,255,.22);background:#fff;flex-shrink:0}
 .brand-logo img{width:100%;height:100%;object-fit:cover;display:block}
+.brand-text{display:flex;flex-direction:column}
 .brand-title{font-size:32px;font-weight:900}
 .brand-sub{font-size:14px;opacity:.92;margin-top:6px}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
@@ -116,8 +117,8 @@ textarea{min-height:92px;resize:vertical}
 <header>
   <div class="header-inner">
     <div class="brand">
-      <div class="brand-logo"><img src="logo.png" alt="Canakoglu Logo"></div>
-      <div>
+      <div class="brand-logo"><img src="logo.png" alt="Çanakoğlu Logo"></div>
+      <div class="brand-text">
         <div class="brand-title">Hesabım</div>
         <div class="brand-sub">Giriş • kayıt • çıkış • siparişlerim</div>
       </div>
@@ -309,7 +310,6 @@ function showNotifyToast(title,text){
   clearTimeout(window.__notifyToastTimer);
   window.__notifyToastTimer = setTimeout(() => el.classList.remove("show"), 4200);
 }
-
 function openReceipt(order, items){
   const total = order.total_amount ?? order.total ?? 0;
   document.getElementById("receiptContent").innerHTML = `
@@ -350,7 +350,6 @@ function openReceipt(order, items){
 }
 function closeReceipt(){document.getElementById("receiptModal").classList.remove("open");}
 function printReceipt(){window.print();}
-
 function maybeNotifyStatusChanges(orders){
   const currentMap = {};
   (orders || []).forEach((order) => {
@@ -373,7 +372,6 @@ function startStatusPolling(){
     await loadOrders();
   }, 8000);
 }
-
 function openSuccessModal(order, itemsPayload, totalAmount){
   lastSuccessOrder = { order, itemsPayload, totalAmount };
   const modal = document.getElementById("successModal");
@@ -413,7 +411,6 @@ async function sendOrderToWhatsApp(){
   const text = encodeURIComponent(lines.join("\n"));
   window.open("https://wa.me/" + phone + "?text=" + text, "_blank");
 }
-
 async function getCurrentUserFast(){
   try{
     const { data: sessionData } = await client.auth.getSession();
@@ -443,7 +440,6 @@ async function refreshUserUI(){
   hideAuth();
   return true;
 }
-
 async function login(){
   setStatus("loginStatus", "");
   setButtonLoading(loginBtn, true, "Giriş Yap");
@@ -467,7 +463,6 @@ async function login(){
     setButtonLoading(loginBtn, false, "Giriş Yap");
   }
 }
-
 async function register(){
   setStatus("registerStatus", "");
   setButtonLoading(registerBtn, true, "Kayıt Ol");
@@ -504,7 +499,6 @@ async function register(){
     setButtonLoading(registerBtn, false, "Kayıt Ol");
   }
 }
-
 async function logout(){
   try{await client.auth.signOut({ scope: "local" });}catch{}
   document.getElementById("activeUserText").textContent = "Henüz giriş yapılmadı.";
@@ -512,7 +506,6 @@ async function logout(){
   showLogin();
   setPageStatus("Çıkış yapıldı.", true);
 }
-
 async function getServiceAreaConfig(){
   try{
     const { data, error } = await client.from("site_settings").select("*").eq("key", SERVICE_SETTINGS_KEY).maybeSingle();
@@ -562,7 +555,6 @@ async function validateServiceAreaBeforeOrder(profile){
     hideServiceAreaWarning();
     return { ok: true };
   }
-
   const address = String(profile?.address || "").trim();
   if(!address){
     const text = "Sipariş verebilmek için profil adresin gerekli.";
@@ -570,7 +562,6 @@ async function validateServiceAreaBeforeOrder(profile){
     setPageStatus(text, false);
     return { ok: false };
   }
-
   const addressOk = addressMatchesServiceArea(address, config.areas || []);
   let geoOk = true;
   const savedGeo = localStorage.getItem("canakoglu_geo_coords");
@@ -581,43 +572,36 @@ async function validateServiceAreaBeforeOrder(profile){
       geoOk = dist <= Number(config.radiusKm);
     }catch(_){}
   }
-
   if(!addressOk){
     const text = "Hizmet alanı dışındasınız. Şu bölgelerde hizmet veriyoruz: " + (config.areas || []).join(", ");
     showServiceAreaWarning(text);
     setPageStatus(text, false);
     return { ok: false };
   }
-
   if(!geoOk){
     const text = "Konumunuza göre hizmet alanı dışında görünüyorsunuz. Adresiniz uygun olsa da lütfen bölgeyi kontrol edin.";
     showServiceAreaWarning(text);
     setPageStatus(text, false);
     return { ok: false };
   }
-
   hideServiceAreaWarning();
   return { ok: true };
 }
-
 async function createOrderFromCartIfNeeded(){
   if(!hasOrderIntent() || orderSubmitLock) return false;
   const user = await getCurrentUserFast();
   if(!user) return false;
-
   const cart = readCart();
   if(!cart.length){
     setPageStatus("Sepet boş görünüyor.", false);
     clearOrderIntent();
     return false;
   }
-
   const profile = await getCurrentProfile();
   if(!profile){
     setPageStatus("Profil bilgisi bulunamadı.", false);
     return false;
   }
-
   const serviceCheck = await validateServiceAreaBeforeOrder(profile);
   if(!serviceCheck.ok) return false;
 
@@ -625,7 +609,6 @@ async function createOrderFromCartIfNeeded(){
   orderSubmitLock = true;
   try{
     setPageStatus("Sipariş oluşturuluyor...", true);
-
     const totalAmount = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
     const { data: order, error: orderError } = await client.from("orders").insert([{
       customer_id: user.id,
@@ -677,7 +660,6 @@ async function createOrderFromCartIfNeeded(){
     orderSubmitLock = false;
   }
 }
-
 function renderOrders(orders, itemsByOrder={}){
   window.__lastRenderedOrders = orders || [];
   window.__lastItemsByOrder = itemsByOrder || {};
@@ -712,7 +694,6 @@ function renderOrders(orders, itemsByOrder={}){
       </div>`;
   }).join("");
 }
-
 async function loadOrders(){
   const user = await getCurrentUserFast();
   if(!user){renderOrders([], {});return;}
@@ -735,7 +716,6 @@ async function loadOrders(){
   renderOrders(orders || [], itemsByOrder);
   maybeNotifyStatusChanges(orders || []);
 }
-
 function openOrderDetail(orderId){
   const order = (window.__lastRenderedOrders || []).find((item) => String(item.id) === String(orderId));
   const items = (window.__lastItemsByOrder || {})[orderId] || [];
@@ -777,7 +757,6 @@ function reorderItems(orderId){
   writeCart(cart);
   window.location.href = "index.html";
 }
-
 async function afterLoginOrExistingSession(){
   const loggedIn = await refreshUserUI();
   if(!loggedIn) return;
@@ -794,13 +773,11 @@ async function afterLoginOrExistingSession(){
   }
   startStatusPolling();
 }
-
 tabLogin.addEventListener("click", showLogin);
 tabRegister.addEventListener("click", showRegister);
 loginBtn.addEventListener("click", login);
 registerBtn.addEventListener("click", register);
 logoutBtn.addEventListener("click", logout);
-
 document.getElementById("successModal").addEventListener("click", (e) => {
   if(e.target.id === "successModal") closeSuccessModal();
 });
@@ -810,7 +787,6 @@ document.getElementById("orderDetailModal").addEventListener("click", (e) => {
 document.getElementById("receiptModal").addEventListener("click", (e) => {
   if(e.target.id === "receiptModal") closeReceipt();
 });
-
 window.closeSuccessModal = closeSuccessModal;
 window.sendOrderToWhatsApp = sendOrderToWhatsApp;
 window.closeOrderDetail = closeOrderDetail;
@@ -819,7 +795,6 @@ window.printReceipt = printReceipt;
 window.openOrderDetail = openOrderDetail;
 window.openReceiptById = openReceiptById;
 window.reorderItems = reorderItems;
-
 (async function init(){
   rememberOrderIntent();
   const user = await getCurrentUserFast();
