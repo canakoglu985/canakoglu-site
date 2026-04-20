@@ -7,8 +7,16 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
-      --bg:#eef3f9;--card:#fff;--text:#17324f;--muted:#6f8196;--primary:#f49a27;--primary2:#ffb34d;
-      --navy:#1d4678;--border:#dbe6f1;--soft:0 8px 20px rgba(18,50,85,.07)
+      --bg:#eef3f9;
+      --card:#fff;
+      --text:#17324f;
+      --muted:#6f8196;
+      --primary:#f49a27;
+      --primary2:#ffb34d;
+      --navy:#1d4678;
+      --border:#dbe6f1;
+      --soft:0 8px 20px rgba(18,50,85,.07);
+      --shadow:0 12px 30px rgba(18,50,85,.10);
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -16,30 +24,67 @@
     .wrap{max-width:1220px;margin:0 auto;padding:22px}
     .topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
     .brand{display:flex;align-items:center;gap:14px}
-    .brand-logo{width:72px;height:72px;border-radius:50%;background:#fff;border:1px solid #f0d8b2;overflow:hidden;display:block}
+    .brand-logo{
+      width:72px;height:72px;border-radius:50%;background:#fff;border:1px solid #f0d8b2;
+      overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    }
     .brand-logo img{width:100%;height:100%;object-fit:cover;display:block}
+    .brand-logo.fallback{
+      color:var(--navy);
+      font-size:13px;
+      font-weight:900;
+      text-align:center;
+      line-height:1.2;
+      padding:8px;
+    }
     .brand h1{margin:0;font-size:22px;color:var(--navy)}
     .muted{color:var(--muted)}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border:none;border-radius:14px;font-weight:800;cursor:pointer}
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border:none;
+      border-radius:14px;font-weight:800;cursor:pointer
+    }
     .primary{background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);color:#fff}
     .secondary{background:#fff;color:var(--navy);border:1px solid var(--border)}
     .card{background:var(--card);border:1px solid var(--border);border-radius:24px;box-shadow:var(--soft)}
+    .loading-box{padding:22px}
+    .notice-box{
+      padding:18px 20px;
+      border-radius:22px;
+      background:#fff;
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      margin-bottom:20px;
+    }
+    .notice-box h2{margin:0 0 8px;color:var(--navy);font-size:26px}
+    .notice-box p{margin:0;color:var(--muted);line-height:1.7}
     .product-layout{display:grid;grid-template-columns:1.05fr .95fr;gap:22px}
     .media-card{padding:22px}
-    .media-box{height:520px;border-radius:22px;background:#f7f9fc;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .media-box{
+      height:520px;border-radius:22px;background:#f7f9fc;border:1px solid var(--border);
+      display:flex;align-items:center;justify-content:center;overflow:hidden
+    }
     .media-box img{max-width:100%;max-height:100%;object-fit:contain}
     .fallback{color:var(--muted);font-size:22px;font-weight:900}
-    .badge{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;background:#edf4ff;color:#225996;border:1px solid #cddcf7;font-size:12px;font-weight:900}
+    .badge{
+      display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;
+      background:#edf4ff;color:#225996;border:1px solid #cddcf7;font-size:12px;font-weight:900
+    }
     .title{font-size:42px;line-height:1.05;font-weight:900;margin:14px 0 10px;color:var(--navy)}
     .category{font-size:14px;color:var(--muted);margin-bottom:14px}
     .price-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:18px 0}
     .old-price{text-decoration:line-through;color:var(--muted);font-size:24px;font-weight:800}
     .new-price{font-size:54px;line-height:1;font-weight:900;color:#0f60c8}
-    .discount{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:999px;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.22);font-size:14px;font-weight:900}
+    .discount{
+      display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:999px;
+      background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.22);font-size:14px;font-weight:900
+    }
     .stock{margin:10px 0 18px;font-weight:800}
     .stock.ok{color:#1e7b36}
     .stock.out{color:#d93025}
-    .desc{background:#fbfcfe;border:1px solid var(--border);border-radius:18px;padding:16px;line-height:1.75;color:#45607d;margin:18px 0}
+    .desc{
+      background:#fbfcfe;border:1px solid var(--border);border-radius:18px;padding:16px;
+      line-height:1.75;color:#45607d;margin:18px 0
+    }
     .buy-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
     .qty-box{display:flex;align-items:center;background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
     .qty-box button{width:44px;height:48px;border:none;background:#fff;font-size:22px;font-weight:900;cursor:pointer;color:var(--navy)}
@@ -50,9 +95,14 @@
     .meta-item .label{font-size:12px;color:var(--muted);font-weight:900;margin-bottom:8px}
     .meta-item .value{font-size:18px;color:var(--navy);font-weight:900}
     .related{margin-top:26px}
+    .section-head{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:14px}
+    .section-title{font-size:32px;font-weight:900;color:#17324f}
     .related-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
     .mini-card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:14px;box-shadow:var(--soft)}
-    .mini-card img,.mini-fallback{width:100%;height:160px;border-radius:14px;background:#f7f9fc;display:flex;align-items:center;justify-content:center;object-fit:contain}
+    .mini-card img,.mini-fallback{
+      width:100%;height:160px;border-radius:14px;background:#f7f9fc;display:flex;align-items:center;
+      justify-content:center;object-fit:contain
+    }
     .mini-name{font-size:18px;font-weight:900;color:var(--navy);margin:12px 0 8px;line-height:1.2}
     .mini-price{font-size:28px;font-weight:900;color:#0f60c8}
     @media (max-width:980px){
@@ -76,7 +126,9 @@
   <div class="wrap">
     <div class="topbar">
       <a class="brand" href="index.html">
-        <div class="brand-logo"><img src="logo.png" alt="Çanakoğlu Logo"></div>
+        <div class="brand-logo" id="brandLogo">
+          <img src="logo.png" alt="Çanakoğlu Logo" onerror="useLogoFallback()">
+        </div>
         <div>
           <h1>Çanakoğlu Kapıda</h1>
           <div class="muted">Tek tıkla kapımda • mahalle marketin</div>
@@ -88,14 +140,19 @@
       </div>
     </div>
 
-    <div id="loadingBox" class="card" style="padding:22px">Yükleniyor...</div>
+    <div id="loadingBox" class="card loading-box">Yükleniyor...</div>
+
+    <div id="missingBox" class="notice-box" style="display:none;">
+      <h2>Ürün seçmedin</h2>
+      <p>Bu sayfa tek başına açıldığında boş görünmesin diye aşağıya ürünler bırakıyorum. İstersen ana sayfaya dönebilir ya da aşağıdan bir ürün seçebilirsin.</p>
+    </div>
 
     <div id="productPage" style="display:none">
       <div class="product-layout">
         <div class="card media-card">
           <div class="media-box" id="productImageBox"></div>
         </div>
-        <div class="card info-card">
+        <div class="card" style="padding:22px;">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
             <span id="campaignBadge" class="badge" style="display:none"></span>
             <span id="discountBadge" class="discount" style="display:none"></span>
@@ -127,16 +184,16 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="related">
-        <div style="display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:14px">
-          <div>
-            <div style="font-size:32px;font-weight:900;color:#17324f">Benzer Ürünler</div>
-            <div class="muted">Aynı kategoriden diğer ürünler</div>
-          </div>
+    <div id="relatedSection" class="related" style="display:none;">
+      <div class="section-head">
+        <div>
+          <div class="section-title" id="relatedTitle">Benzer Ürünler</div>
+          <div class="muted" id="relatedSubtitle">Aynı kategoriden diğer ürünler</div>
         </div>
-        <div id="relatedGrid" class="related-grid"></div>
       </div>
+      <div id="relatedGrid" class="related-grid"></div>
     </div>
   </div>
 
@@ -166,6 +223,11 @@ function normalizeProduct(row){
     campaignLabel: row.campaign_label || row.campaignLabel || "",
     stockQty: Number(row.stock_qty ?? row.stock ?? 0)
   };
+}
+function useLogoFallback(){
+  const box = document.getElementById("brandLogo");
+  box.classList.add("fallback");
+  box.innerHTML = "Çanakoğlu";
 }
 function changeQty(delta){
   const input = document.getElementById("qtyInput");
@@ -203,11 +265,20 @@ function addCurrentProductToCart(){
     });
   }
   saveCart(cart);
-  alert("Urun sepete eklendi");
+  alert("Ürün sepete eklendi");
+}
+function showLoading(text){
+  const box = document.getElementById("loadingBox");
+  box.style.display = "block";
+  box.textContent = text;
+}
+function hideLoading(){
+  document.getElementById("loadingBox").style.display = "none";
 }
 function renderProduct(product){
   currentProduct = product;
-  document.getElementById("loadingBox").style.display = "none";
+  hideLoading();
+  document.getElementById("missingBox").style.display = "none";
   document.getElementById("productPage").style.display = "block";
 
   document.getElementById("productImageBox").innerHTML = product.image
@@ -253,12 +324,15 @@ function renderProduct(product){
   document.getElementById("metaUnit").textContent = product.unit || "adet";
   document.getElementById("metaCategory").textContent = product.category || "-";
 }
-function renderRelated(list){
+function renderProductGrid(list){
   const grid = document.getElementById("relatedGrid");
+  const section = document.getElementById("relatedSection");
   if(!list || !list.length){
-    grid.innerHTML = '<div class="muted">Benzer ürün bulunamadı.</div>';
+    section.style.display = "block";
+    grid.innerHTML = '<div class="muted">Gösterilecek ürün bulunamadı.</div>';
     return;
   }
+  section.style.display = "block";
   grid.innerHTML = list.map((item) => `
     <a class="mini-card" href="urun.html?id=${encodeURIComponent(item.id)}">
       ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name || "Ürün")}">` : `<div class="mini-fallback">Görsel yok</div>`}
@@ -268,21 +342,31 @@ function renderRelated(list){
     </a>
   `).join("");
 }
-async function loadPage(){
-  const id = getParam("id");
-  if(!id){
-    document.getElementById("loadingBox").textContent = "Ürün bulunamadı.";
-    return;
-  }
-  const { data, error } = await client.from("products").select("*").eq("id", id).single();
-  if(error || !data){
-    document.getElementById("loadingBox").textContent = "Ürün yüklenemedi.";
-    return;
-  }
-  const product = normalizeProduct(data);
-  renderProduct(product);
+async function loadFeaturedFallback(){
+  document.getElementById("missingBox").style.display = "block";
+  document.getElementById("productPage").style.display = "none";
+  document.getElementById("relatedTitle").textContent = "Ürünler";
+  document.getElementById("relatedSubtitle").textContent = "Buradan bir ürün seçip detayına geçebilirsin.";
 
-  const { data: relatedData } = await client
+  const { data, error } = await client
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending:false })
+    .limit(8);
+
+  hideLoading();
+  if(error){
+    renderProductGrid([]);
+    return;
+  }
+  renderProductGrid((data || []).map(normalizeProduct));
+}
+async function loadRelatedByCategory(product){
+  document.getElementById("relatedTitle").textContent = "Benzer Ürünler";
+  document.getElementById("relatedSubtitle").textContent = "Aynı kategoriden diğer ürünler";
+
+  const { data } = await client
     .from("products")
     .select("*")
     .eq("is_active", true)
@@ -290,11 +374,30 @@ async function loadPage(){
     .neq("id", product.id)
     .limit(8);
 
-  renderRelated((relatedData || []).map(normalizeProduct));
+  renderProductGrid((data || []).map(normalizeProduct));
+}
+async function loadPage(){
+  const id = getParam("id");
+  if(!id){
+    await loadFeaturedFallback();
+    return;
+  }
+
+  showLoading("Ürün yükleniyor...");
+  const { data, error } = await client.from("products").select("*").eq("id", id).maybeSingle();
+  if(error || !data){
+    await loadFeaturedFallback();
+    return;
+  }
+
+  const product = normalizeProduct(data);
+  renderProduct(product);
+  await loadRelatedByCategory(product);
 }
 
 window.changeQty = changeQty;
 window.addCurrentProductToCart = addCurrentProductToCart;
+window.useLogoFallback = useLogoFallback;
 loadPage();
 </script>
 </body>
