@@ -35,8 +35,9 @@ header{
 .header-inner,.wrap{max-width:1320px;margin:0 auto}
 .header-inner{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:12px}
-.brand-logo{width:68px;height:68px;border-radius:50%;overflow:hidden;border:1px solid rgba(255,255,255,.22);background:#fff;flex-shrink:0}
+.brand-logo{width:62px;height:62px;border-radius:50%;overflow:hidden;border:1px solid rgba(255,255,255,.22);background:#fff;flex-shrink:0}
 .brand-logo img{width:100%;height:100%;object-fit:cover;display:block}
+.brand-text{display:flex;flex-direction:column}
 .brand-title{font-size:30px;font-weight:900}
 .brand-sub{font-size:14px;opacity:.92;margin-top:4px}
 .wrap{padding:22px}
@@ -186,8 +187,8 @@ code.inline{
   <header>
     <div class="header-inner">
       <div class="brand">
-        <div class="brand-logo"><img src="logo.png" alt="Canakoglu Logo"></div>
-        <div>
+        <div class="brand-logo"><img src="logo.png" alt="Çanakoğlu Logo" /></div>
+        <div class="brand-text">
           <div class="brand-title">Çanakoğlu Admin Panel</div>
           <div class="brand-sub">Tek dosya yönetim ekranı • sipariş • ürün • kampanya • hizmet alanı • rapor</div>
         </div>
@@ -398,11 +399,9 @@ code.inline{
             <div class="field"><label>Banner 1 Başlık</label><input id="banner1Title" placeholder="Örn: Mahalle marketin artık online" /></div>
             <div class="field"><label>Banner 1 Alt Metin</label><input id="banner1Subtitle" placeholder="Örn: Hızlı teslimat ve güçlü kampanyalar" /></div>
             <div class="field"><label>Banner 1 Buton</label><input id="banner1Button" placeholder="Örn: Ürünlere Git" /></div>
-
             <div class="field"><label>Banner 2 Başlık</label><input id="banner2Title" placeholder="Örn: Haftanın fırsatları" /></div>
             <div class="field"><label>Banner 2 Alt Metin</label><input id="banner2Subtitle" placeholder="Örn: Seçili ürünlerde özel fiyatlar" /></div>
             <div class="field"><label>Banner 2 Buton</label><input id="banner2Button" placeholder="Örn: Kampanyaları Gör" /></div>
-
             <div class="field"><label>Banner 3 Başlık</label><input id="banner3Title" placeholder="Örn: Çanakoğlu Kapıda" /></div>
             <div class="field"><label>Banner 3 Alt Metin</label><input id="banner3Subtitle" placeholder="Örn: Tek tıkla kapımda" /></div>
             <div class="field"><label>Banner 3 Buton</label><input id="banner3Button" placeholder="Örn: Hesabıma Git" /></div>
@@ -431,18 +430,9 @@ code.inline{
                 <option value="false">Kapalı</option>
               </select>
             </div>
-            <div class="field">
-              <label>Merkez Enlem</label>
-              <input id="serviceLat" placeholder="Örn: 37.7831" />
-            </div>
-            <div class="field">
-              <label>Merkez Boylam</label>
-              <input id="serviceLng" placeholder="Örn: 29.0947" />
-            </div>
-            <div class="field">
-              <label>Servis Yarıçapı (km)</label>
-              <input id="serviceKm" placeholder="Örn: 12" />
-            </div>
+            <div class="field"><label>Merkez Enlem</label><input id="serviceLat" placeholder="Örn: 37.7831" /></div>
+            <div class="field"><label>Merkez Boylam</label><input id="serviceLng" placeholder="Örn: 29.0947" /></div>
+            <div class="field"><label>Servis Yarıçapı (km)</label><input id="serviceKm" placeholder="Örn: 12" /></div>
           </div>
           <div>
             <div class="field">
@@ -499,23 +489,11 @@ code.inline{
       <div class="grid-2">
         <div class="card">
           <h2 class="panel-section-title">Banner Formu</h2>
-          <div class="field">
-            <label for="bTitle">Başlık</label>
-            <input id="bTitle" placeholder="Örn: Haftanın fırsatları" />
-          </div>
-          <div class="field">
-            <label for="bDesc">Açıklama</label>
-            <textarea id="bDesc" placeholder="Örn: Seçili ürünlerde özel fiyatlar"></textarea>
-          </div>
-          <div class="field">
-            <label for="bImage">Görsel URL</label>
-            <input id="bImage" placeholder="https://..." />
-          </div>
+          <div class="field"><label for="bTitle">Başlık</label><input id="bTitle" placeholder="Örn: Haftanın fırsatları" /></div>
+          <div class="field"><label for="bDesc">Açıklama</label><textarea id="bDesc" placeholder="Örn: Seçili ürünlerde özel fiyatlar"></textarea></div>
+          <div class="field"><label for="bImage">Görsel URL</label><input id="bImage" placeholder="https://..." /></div>
           <div class="grid-2">
-            <div class="field">
-              <label for="bOrder">Sıra</label>
-              <input id="bOrder" type="number" value="0" />
-            </div>
+            <div class="field"><label for="bOrder">Sıra</label><input id="bOrder" type="number" value="0" /></div>
             <div class="field">
               <label for="bActive">Durum</label>
               <select id="bActive">
@@ -698,7 +676,9 @@ async function login(){
 }
 async function logout(){
   clearInterval(pollTimer);
-  try{ await client.auth.signOut(); }catch(_){}
+  try{
+    await client.auth.signOut();
+  }catch(_){}
   location.reload();
 }
 function updateStats(){
@@ -716,7 +696,6 @@ function updateStats(){
 function renderOrderRows(targetId, limit=null){
   const body = document.getElementById(targetId);
   if(!body) return;
-
   const q = (document.getElementById('orderSearch')?.value || '').trim().toLowerCase();
   const statusFilter = (document.getElementById('orderStatusFilter')?.value || '').trim().toLowerCase();
 
@@ -746,9 +725,7 @@ function renderOrderRows(targetId, limit=null){
   body.innerHTML = source.map((order) => {
     const items = getOrderItems(order.id);
     const itemsHtml = items.length
-      ? items.slice(0, 4).map((item) => `
-          <div class="small">${escapeHtml(item.product_name || item.name || 'Ürün')} • ${Number(item.quantity || 0)} adet</div>
-        `).join('') + (items.length > 4 ? `<div class="small muted">+${items.length - 4} ürün daha</div>` : '')
+      ? items.slice(0, 4).map((item) => `<div class="small">${escapeHtml(item.product_name || item.name || 'Ürün')} • ${Number(item.quantity || 0)} adet</div>`).join('') + (items.length > 4 ? `<div class="small muted">+${items.length - 4} ürün daha</div>` : '')
       : '<div class="small muted">Ürün detayı yok</div>';
 
     const current = String(order.status || 'yeni').trim().toLowerCase();
@@ -793,11 +770,7 @@ async function saveStatus(orderId, targetId, btn){
     btn.disabled = true;
     btn.textContent = 'Kaydediliyor...';
 
-    const { error } = await client
-      .from('orders')
-      .update({ status })
-      .eq('id', isNaN(Number(orderId)) ? orderId : Number(orderId));
-
+    const { error } = await client.from('orders').update({ status }).eq('id', isNaN(Number(orderId)) ? orderId : Number(orderId));
     if(error) throw error;
 
     setGlobalStatus('Sipariş durumu güncellendi.', true);
@@ -926,18 +899,9 @@ async function saveProduct(){
       is_active: document.getElementById('pActive').value === 'true'
     };
 
-    if(!payload.name){
-      setBoxStatus('productFormStatus', 'Ürün adı gerekli.');
-      return;
-    }
-    if(!payload.category){
-      setBoxStatus('productFormStatus', 'Kategori gerekli.');
-      return;
-    }
-    if(payload.price <= 0){
-      setBoxStatus('productFormStatus', 'Fiyat 0’dan büyük olmalı.');
-      return;
-    }
+    if(!payload.name){ setBoxStatus('productFormStatus', 'Ürün adı gerekli.'); return; }
+    if(!payload.category){ setBoxStatus('productFormStatus', 'Kategori gerekli.'); return; }
+    if(payload.price <= 0){ setBoxStatus('productFormStatus', 'Fiyat 0’dan büyük olmalı.'); return; }
 
     const duplicateBarcode = payload.barcode && products.some((p) =>
       String(p.barcode || '').trim() === payload.barcode &&
@@ -969,13 +933,8 @@ async function saveProduct(){
 }
 async function toggleProductActive(id, nextState){
   try{
-    const { error } = await client
-      .from('products')
-      .update({ is_active: nextState })
-      .eq('id', id);
-
+    const { error } = await client.from('products').update({ is_active: nextState }).eq('id', id);
     if(error) throw error;
-
     topNote(nextState ? 'Ürün aktif yapıldı' : 'Ürün pasife alındı');
     await loadAllData();
   }catch(err){
@@ -985,81 +944,53 @@ async function toggleProductActive(id, nextState){
 }
 function normalizeCsvHeader(value=''){
   return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/İ/g, 'i')
-    .replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u')
-    .replace(/\s+/g, '_');
+    .trim().toLowerCase()
+    .replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/İ/g,'i')
+    .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u')
+    .replace(/\s+/g,'_');
 }
 function parseCsvLine(line=''){
   const result = [];
   let current = '';
   let inQuotes = false;
-  for(let i = 0; i < line.length; i++){
+  for(let i=0;i<line.length;i++){
     const ch = line[i];
-    const next = line[i + 1];
-    if(ch === '"' && inQuotes && next === '"'){
-      current += '"';
-      i++;
-      continue;
-    }
-    if(ch === '"'){
-      inQuotes = !inQuotes;
-      continue;
-    }
-    if(ch === ',' && !inQuotes){
-      result.push(current);
-      current = '';
-      continue;
-    }
+    const next = line[i+1];
+    if(ch === '"' && inQuotes && next === '"'){ current += '"'; i++; continue; }
+    if(ch === '"'){ inQuotes = !inQuotes; continue; }
+    if(ch === ',' && !inQuotes){ result.push(current); current=''; continue; }
     current += ch;
   }
   result.push(current);
   return result.map((v) => String(v).trim());
 }
 function parseCsvText(text=''){
-  const lines = String(text || '')
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .split('\n')
-    .filter((line) => line.trim());
-
+  const lines = String(text || '').replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter((line) => line.trim());
   if(!lines.length) return [];
-
   const headers = parseCsvLine(lines[0]).map(normalizeCsvHeader);
   return lines.slice(1).map((line) => {
     const values = parseCsvLine(line);
     const row = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index] ?? '';
-    });
+    headers.forEach((header, index) => { row[header] = values[index] ?? ''; });
     return row;
   });
 }
 function csvBool(value=''){
   const v = String(value || '').trim().toLowerCase();
-  if(['1', 'true', 'evet', 'aktif', 'yes'].includes(v)) return true;
-  if(['0', 'false', 'hayir', 'hayır', 'pasif', 'no'].includes(v)) return false;
+  if(['1','true','evet','aktif','yes'].includes(v)) return true;
+  if(['0','false','hayir','hayır','pasif','no'].includes(v)) return false;
   return true;
 }
 async function importProductsFromCsv(){
   try{
     const file = document.getElementById('csvFileInput')?.files?.[0];
     const addMissing = document.getElementById('csvAddMissingCheckbox')?.checked === true;
-
-    if(!file){
-      setBoxStatus('csvStatus', 'Önce bir CSV dosyası seç.', false);
-      return;
-    }
+    if(!file){ setBoxStatus('csvStatus', 'Önce bir CSV dosyası seç.', false); return; }
 
     setBoxStatus('csvStatus', 'CSV okunuyor...', true);
     const text = await file.text();
     const rows = parseCsvText(text);
-
-    if(!rows.length){
-      setBoxStatus('csvStatus', 'CSV içinde veri bulunamadı.', false);
-      return;
-    }
+    if(!rows.length){ setBoxStatus('csvStatus', 'CSV içinde veri bulunamadı.', false); return; }
 
     const parsed = rows.map((row) => ({
       barcode: String(row.barkod || row.barcode || '').trim() || null,
@@ -1081,11 +1012,7 @@ async function importProductsFromCsv(){
     }
 
     const uniqueBarcodes = [...new Set(parsed.map((p) => p.barcode))];
-    const existingRes = await client
-      .from('products')
-      .select('id, barcode')
-      .in('barcode', uniqueBarcodes);
-
+    const existingRes = await client.from('products').select('id, barcode').in('barcode', uniqueBarcodes);
     if(existingRes.error) throw existingRes.error;
 
     const existingBarcodeSet = new Set((existingRes.data || []).map((p) => String(p.barcode || '').trim()));
@@ -1101,13 +1028,11 @@ async function importProductsFromCsv(){
       if(res.error) throw res.error;
       updatedCount = toUpdate.length;
     }
-
     if(toInsert.length){
       const res = await client.from('products').insert(toInsert);
       if(res.error) throw res.error;
       insertedCount = toInsert.length;
     }
-
     if(!addMissing){
       skippedCount = parsed.filter((p) => !existingBarcodeSet.has(p.barcode)).length;
     }
@@ -1132,13 +1057,12 @@ async function loadServiceAreas(){
       setBoxStatus('serviceStatus', 'site_settings tablosu erişilemedi. Bölüm pasif kalabilir.', false, true);
       return;
     }
-
     const value = data?.value || {};
     document.getElementById('serviceEnabled').value = String(value.enabled ?? true);
     document.getElementById('serviceLat').value = value.center_lat ?? '';
     document.getElementById('serviceLng').value = value.center_lng ?? '';
     document.getElementById('serviceKm').value = value.radius_km ?? '';
-    const areas = Array.isArray(value.areas) && value.areas.length ? value.areas : ['Akhan', 'Güzelköy', 'Kocadere', 'Pınarkent'];
+    const areas = Array.isArray(value.areas) && value.areas.length ? value.areas : ['Akhan','Güzelköy','Kocadere','Pınarkent'];
     document.getElementById('serviceAreas').value = areas.join('\n');
     setBoxStatus('serviceStatus', 'Hizmet bölgeleri yüklendi.', true);
   }catch(err){
@@ -1154,10 +1078,7 @@ async function saveServiceAreas(){
         center_lat: Number(document.getElementById('serviceLat').value || 0) || null,
         center_lng: Number(document.getElementById('serviceLng').value || 0) || null,
         radius_km: Number(document.getElementById('serviceKm').value || 0) || null,
-        areas: document.getElementById('serviceAreas').value
-          .split('\n')
-          .map((v) => v.trim())
-          .filter(Boolean)
+        areas: document.getElementById('serviceAreas').value.split('\n').map((v) => v.trim()).filter(Boolean)
       }
     };
     const { error } = await client.from('site_settings').upsert(payload, { onConflict: 'key' });
@@ -1175,7 +1096,6 @@ async function loadCampaignSettings(){
       setBoxStatus('campaignStatus', 'Kampanya ayarları okunamadı.', false, true);
       return;
     }
-
     const value = data?.value || {};
     document.getElementById('campaignTitle').value = value.title || '';
     document.getElementById('campaignSubtitle').value = value.subtitle || '';
@@ -1421,15 +1341,8 @@ async function saveBanner(){
       sort_order: Number(document.getElementById('bOrder').value || 0),
       is_active: document.getElementById('bActive').value === 'true'
     };
-
-    if(!payload.title){
-      setBoxStatus('bannerStatus', 'Başlık gerekli.');
-      return;
-    }
-    if(!payload.image_url){
-      setBoxStatus('bannerStatus', 'Görsel URL gerekli.');
-      return;
-    }
+    if(!payload.title){ setBoxStatus('bannerStatus', 'Başlık gerekli.'); return; }
+    if(!payload.image_url){ setBoxStatus('bannerStatus', 'Görsel URL gerekli.'); return; }
 
     let res;
     if(editingBannerId){
@@ -1437,7 +1350,6 @@ async function saveBanner(){
     }else{
       res = await client.from('banners').insert([payload]);
     }
-
     if(res.error) throw res.error;
 
     setBoxStatus('bannerStatus', 'Banner kaydedildi.', true);
@@ -1472,11 +1384,7 @@ async function deleteBanner(id){
 }
 async function loadBanners(){
   try{
-    const { data, error } = await client
-      .from('banners')
-      .select('*')
-      .order('sort_order', { ascending: true });
-
+    const { data, error } = await client.from('banners').select('*').order('sort_order', { ascending: true });
     if(error) throw error;
 
     bannerCache = data || [];
