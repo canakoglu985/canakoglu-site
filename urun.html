@@ -26,7 +26,6 @@
     .brand-logo{
       width:70px;height:70px;border-radius:50%;background:#fff;border:1px solid #f0d8b2;
       display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;
-      color:var(--navy);font-size:13px;font-weight:900;text-align:center;line-height:1.2;padding:8px
     }
     .brand-logo img{width:100%;height:100%;object-fit:cover;display:block}
     .brand h1{margin:0;font-size:24px;color:var(--navy)}
@@ -38,8 +37,6 @@
     .primary{background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);color:#fff}
     .secondary{background:#fff;color:var(--navy);border:1px solid var(--border)}
     .card{background:var(--card);border:1px solid var(--border);border-radius:24px;box-shadow:var(--soft)}
-    .message-box{padding:22px;line-height:1.7}
-    .message-box h2{margin:0 0 8px;color:var(--navy)}
     .product-layout{display:grid;grid-template-columns:1fr 1fr;gap:22px}
     .media-card,.info-card{padding:22px}
     .media-box{
@@ -74,6 +71,7 @@
     .meta-item{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px}
     .meta-item .label{font-size:12px;color:var(--muted);font-weight:900;margin-bottom:8px}
     .meta-item .value{font-size:18px;color:var(--navy);font-weight:900}
+    .hidden{display:none !important}
     @media (max-width:960px){
       .product-layout{grid-template-columns:1fr}
       .media-box{height:340px}
@@ -88,7 +86,7 @@
     <div class="topbar">
       <a class="brand" href="index.html">
         <div class="brand-logo" id="brandLogo">
-          <img src="logo.png" alt="Çanakoğlu Logo" onerror="useLogoFallback()">
+          <img src="logo.png" alt="" onerror="hideLogoImage()">
         </div>
         <div>
           <h1>Çanakoğlu Kapıda</h1>
@@ -101,27 +99,27 @@
       </div>
     </div>
 
-    <div id="stateBox" class="card message-box">
-      <h2>Yükleniyor</h2>
-      <p>Ürün bilgisi hazırlanıyor.</p>
+    <div id="stateBox" class="card" style="padding:22px;">
+      <h2 style="margin:0 0 8px;color:var(--navy);">Yükleniyor</h2>
+      <p style="margin:0;line-height:1.7;color:var(--muted);">Ürün bilgisi hazırlanıyor.</p>
     </div>
 
-    <div id="productPage" style="display:none">
+    <div id="productPage" class="hidden">
       <div class="product-layout">
         <div class="card media-card">
           <div class="media-box" id="productImageBox"></div>
         </div>
         <div class="card info-card">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-            <span id="campaignBadge" class="badge" style="display:none"></span>
-            <span id="discountBadge" class="discount" style="display:none"></span>
+            <span id="campaignBadge" class="badge hidden"></span>
+            <span id="discountBadge" class="discount hidden"></span>
           </div>
 
           <div id="productTitle" class="title">Ürün</div>
           <div id="productCategory" class="category">Kategori</div>
 
           <div class="price-row">
-            <div id="oldPrice" class="old-price" style="display:none"></div>
+            <div id="oldPrice" class="old-price hidden"></div>
             <div id="newPrice" class="new-price"></div>
           </div>
 
@@ -174,18 +172,17 @@ function normalizeProduct(row){
     stockQty: Number(row.stock_qty ?? row.stock ?? 0)
   };
 }
-function useLogoFallback(){
-  const box = document.getElementById("brandLogo");
-  box.innerHTML = "Çanakoğlu";
+function hideLogoImage(){
+  const logo = document.querySelector("#brandLogo img");
+  if(logo) logo.style.display = "none";
 }
 function setState(title, text){
   const box = document.getElementById("stateBox");
-  box.style.display = "block";
-  box.innerHTML = `<h2>${escapeHtml(title)}</h2><p>${escapeHtml(text)}</p>`;
+  box.innerHTML = `<h2 style="margin:0 0 8px;color:var(--navy);">${escapeHtml(title)}</h2><p style="margin:0;line-height:1.7;color:var(--muted);">${escapeHtml(text)}</p>`;
 }
 function showProductPage(){
-  document.getElementById("stateBox").style.display = "none";
-  document.getElementById("productPage").style.display = "block";
+  document.getElementById("stateBox").classList.add("hidden");
+  document.getElementById("productPage").classList.remove("hidden");
 }
 function changeQty(delta){
   const input = document.getElementById("qtyInput");
@@ -245,27 +242,27 @@ function renderProduct(product){
 
   const oldPriceEl = document.getElementById("oldPrice");
   if(product.comparePrice > product.price){
-    oldPriceEl.style.display = "block";
+    oldPriceEl.classList.remove("hidden");
     oldPriceEl.textContent = money(product.comparePrice);
   } else {
-    oldPriceEl.style.display = "none";
+    oldPriceEl.classList.add("hidden");
   }
 
   const campaign = document.getElementById("campaignBadge");
   if(product.campaignLabel){
-    campaign.style.display = "inline-flex";
+    campaign.classList.remove("hidden");
     campaign.textContent = product.campaignLabel;
   } else {
-    campaign.style.display = "none";
+    campaign.classList.add("hidden");
   }
 
   const discount = document.getElementById("discountBadge");
   if(product.comparePrice > product.price){
     const percent = Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100);
-    discount.style.display = "inline-flex";
+    discount.classList.remove("hidden");
     discount.textContent = `-%${percent}`;
   } else {
-    discount.style.display = "none";
+    discount.classList.add("hidden");
   }
 
   const stockEl = document.getElementById("stockInfo");
@@ -296,7 +293,7 @@ async function loadPage(){
     const { data, error } = await client.from("products").select("*").eq("id", id).maybeSingle();
 
     if(error || !data){
-      setState("Ürün bulunamadı", "Bu ürün silinmiş olabilir ya da link eksik olabilir. Ana sayfaya dönüp ürünü yeniden seç.");
+      window.location.href = "index.html";
       return;
     }
 
@@ -308,9 +305,7 @@ async function loadPage(){
 
 window.changeQty = changeQty;
 window.addCurrentProductToCart = addCurrentProductToCart;
-window.useLogoFallback = useLogoFallback;
 loadPage();
 </script>
 </body>
 </html>
-
