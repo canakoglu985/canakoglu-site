@@ -110,7 +110,6 @@ textarea{resize:vertical;min-height:100px}
 }
 .grid-2{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
 .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .panel-section-title{margin:0 0 12px;color:var(--navy)}
 .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:18px;background:#fff}
 table{width:100%;border-collapse:collapse;min-width:980px}
@@ -153,12 +152,16 @@ code.inline{
 .stock-ok{color:#1e7b36;font-weight:900}
 .stock-low{color:#c97507;font-weight:900}
 .stock-out{color:#d93025;font-weight:900}
+.vitrin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.vitrin-card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:14px;box-shadow:var(--soft)}
+.vitrin-thumb{width:100%;height:150px;border-radius:14px;background:#f7f9fc;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.vitrin-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 @media (max-width: 980px){
-  .stats,.grid-3,.grid-4{grid-template-columns:1fr 1fr}
+  .stats,.grid-3,.vitrin-grid{grid-template-columns:1fr 1fr}
   .grid-2{grid-template-columns:1fr}
 }
 @media (max-width: 640px){
-  .stats,.grid-3,.grid-4{grid-template-columns:1fr}
+  .stats,.grid-3,.vitrin-grid{grid-template-columns:1fr}
   .bar-row{grid-template-columns:1fr}
 }
 </style>
@@ -190,7 +193,7 @@ code.inline{
         <div class="brand-logo"><img src="logo.png" alt="Çanakoğlu Logo" /></div>
         <div class="brand-text">
           <div class="brand-title">Çanakoğlu Admin Panel</div>
-          <div class="brand-sub">Tek dosya yönetim ekranı • sipariş • ürün • kampanya • hizmet alanı • rapor</div>
+          <div class="brand-sub">Tek dosya yönetim ekranı • sipariş • ürün • kampanya • hizmet alanı • vitrin • rapor</div>
         </div>
       </div>
       <div class="row-actions">
@@ -216,6 +219,7 @@ code.inline{
       <button class="tabbtn active" data-tab="dashboard">Dashboard</button>
       <button class="tabbtn" data-tab="orders">Siparişler</button>
       <button class="tabbtn" data-tab="products">Ürünler</button>
+      <button class="tabbtn" data-tab="vitrin">Vitrin</button>
       <button class="tabbtn" data-tab="campaigns">Kampanya Alanları</button>
       <button class="tabbtn" data-tab="service">Hizmet Bölgeleri</button>
       <button class="tabbtn" data-tab="reports">Raporlar</button>
@@ -356,6 +360,28 @@ code.inline{
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-vitrin" class="tab-section hidden">
+      <div class="section-stack">
+        <div class="card">
+          <h2 class="panel-section-title">Vitrin Ürünleri</h2>
+          <div class="muted" style="margin-bottom:12px;">Öne çıkan ürünleri ayrı yönet. Sıra küçükten büyüğe gösterilir.</div>
+          <div id="vitrinGrid" class="vitrin-grid"></div>
+        </div>
+
+        <div class="card">
+          <h2 class="panel-section-title">Vitrine Ürün Ekle</h2>
+          <div class="row-actions" style="margin-bottom:12px">
+            <select id="vitrinProductSelect" style="max-width:360px">
+              <option value="">Ürün seç</option>
+            </select>
+            <input id="vitrinRankInput" type="number" placeholder="Vitrin sırası" style="max-width:180px" />
+            <button id="addToVitrinBtn" class="btn primary" type="button">Vitrine Ekle</button>
+          </div>
+          <div id="vitrinStatus" class="status-box">Hazır.</div>
         </div>
       </div>
     </section>
@@ -696,6 +722,7 @@ function updateStats(){
 function renderOrderRows(targetId, limit=null){
   const body = document.getElementById(targetId);
   if(!body) return;
+
   const q = (document.getElementById('orderSearch')?.value || '').trim().toLowerCase();
   const statusFilter = (document.getElementById('orderStatusFilter')?.value || '').trim().toLowerCase();
 
@@ -843,6 +870,88 @@ function renderProducts(){
       </td>
     </tr>
   `).join('');
+}
+function renderVitrin(){
+  const grid = document.getElementById('vitrinGrid');
+  const select = document.getElementById('vitrinProductSelect');
+  if(!grid || !select) return;
+
+  const featured = [...products]
+    .filter((p) => p.is_featured === true)
+    .sort((a, b) => Number(a.featured_rank || 9999) - Number(b.featured_rank || 9999));
+
+  const available = [...products]
+    .filter((p) => p.is_active !== false && p.is_featured !== true)
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'tr'));
+
+  select.innerHTML = '<option value="">Ürün seç</option>' + available.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name || 'Ürün')}</option>`).join('');
+
+  if(!featured.length){
+    grid.innerHTML = '<div class="item-box"><div class="muted">Henüz vitrinde ürün yok.</div></div>';
+    return;
+  }
+
+  grid.innerHTML = featured.map((p) => `
+    <div class="vitrin-card">
+      <div class="vitrin-thumb">${p.image_url ? `<img src="${escapeHtml(p.image_url)}" alt="">` : '<div class="muted">Görsel yok</div>'}</div>
+      <div style="margin-top:12px;">
+        <strong style="display:block;color:#1d4678;">${escapeHtml(p.name || 'Ürün')}</strong>
+        <div class="small muted" style="margin-top:6px;">${escapeHtml(p.category || '-')}</div>
+        <div class="chips" style="margin-top:10px;">
+          <span class="chip">Sıra: ${Number(p.featured_rank || 0)}</span>
+          <span class="chip">${money(p.price || 0)}</span>
+        </div>
+        <div class="row-actions" style="margin-top:12px;">
+          <input type="number" id="vitrin-rank-${escapeHtml(p.id)}" value="${Number(p.featured_rank || 0)}" style="max-width:110px" />
+          <button class="btn secondary" type="button" onclick="updateVitrinRank('${escapeForOnclick(p.id)}')">Sırayı Kaydet</button>
+          <button class="btn danger" type="button" onclick="removeFromVitrin('${escapeForOnclick(p.id)}')">Vitrinden Kaldır</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+async function addToVitrin(){
+  try{
+    const id = document.getElementById('vitrinProductSelect').value;
+    const rank = Number(document.getElementById('vitrinRankInput').value || 0);
+    if(!id){
+      setBoxStatus('vitrinStatus', 'Önce ürün seç.');
+      return;
+    }
+    const { error } = await client.from('products').update({ is_featured: true, featured_rank: rank || 1 }).eq('id', id);
+    if(error) throw error;
+    setBoxStatus('vitrinStatus', 'Ürün vitrinde gösterilecek.', true);
+    topNote('Ürün vitrinde');
+    document.getElementById('vitrinProductSelect').value = '';
+    document.getElementById('vitrinRankInput').value = '';
+    await loadAllData();
+  }catch(err){
+    setBoxStatus('vitrinStatus', 'Vitrine eklenemedi: ' + (err.message || err));
+  }
+}
+async function updateVitrinRank(id){
+  try{
+    const input = document.getElementById('vitrin-rank-' + id);
+    const rank = Number(input?.value || 0);
+    const { error } = await client.from('products').update({ featured_rank: rank || 1 }).eq('id', id);
+    if(error) throw error;
+    setBoxStatus('vitrinStatus', 'Vitrin sırası güncellendi.', true);
+    topNote('Vitrin sırası güncellendi');
+    await loadAllData();
+  }catch(err){
+    setBoxStatus('vitrinStatus', 'Sıra güncellenemedi: ' + (err.message || err));
+  }
+}
+async function removeFromVitrin(id){
+  try{
+    const { error } = await client.from('products').update({ is_featured: false, featured_rank: null }).eq('id', id);
+    if(error) throw error;
+    setBoxStatus('vitrinStatus', 'Ürün vitrinden kaldırıldı.', true);
+    topNote('Vitrinden kaldırıldı');
+    await loadAllData();
+  }catch(err){
+    setBoxStatus('vitrinStatus', 'Kaldırılamadı: ' + (err.message || err));
+  }
 }
 function clearProductForm(){
   editingProductId = null;
@@ -1453,6 +1562,7 @@ async function loadAllData(){
     renderOrderRows('ordersBody', 8);
     renderOrderRows('ordersBodyFull');
     renderProducts();
+    renderVitrin();
     renderSummary();
     renderReports();
     await loadServiceAreas();
@@ -1497,7 +1607,17 @@ document.getElementById('orderSearch').addEventListener('input', () => renderOrd
 document.getElementById('orderStatusFilter').addEventListener('change', () => renderOrderRows('ordersBodyFull'));
 document.getElementById('productSearch').addEventListener('input', renderProducts);
 document.getElementById('campaignFilter').addEventListener('change', renderProducts);
+document.getElementById('addToVitrinBtn').addEventListener('click', addToVitrin);
 document.querySelectorAll('.tabbtn').forEach((btn) => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+window.saveStatus = saveStatus;
+window.editProduct = editProduct;
+window.toggleProductActive = toggleProductActive;
+window.editBanner = editBanner;
+window.toggleBanner = toggleBanner;
+window.deleteBanner = deleteBanner;
+window.updateVitrinRank = updateVitrinRank;
+window.removeFromVitrin = removeFromVitrin;
 
 (async function init(){
   try{
