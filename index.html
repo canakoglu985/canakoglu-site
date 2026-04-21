@@ -33,6 +33,11 @@
     .btn:disabled { cursor:not-allowed; opacity:.58; transform:none; }
     .primary { background:var(--orange-gradient); color:#fff; box-shadow:0 10px 20px rgba(244,154,39,.2); }
     .secondary { background:#edf4fb; color:var(--navy); border:1px solid var(--border); }
+    .cart-trigger { min-width:132px; }
+    .cart-count {
+      min-width:22px; height:22px; padding:0 7px; border-radius:999px; background:var(--primary); color:#fff;
+      display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:900;
+    }
     .wrap { padding:20px; }
     .hero { background:linear-gradient(135deg,rgba(9,33,63,.96) 0%,rgba(22,55,94,.98) 52%,rgba(37,91,148,.95) 100%); color:#fff; padding:28px; border-radius:26px; box-shadow:var(--shadow); margin-bottom:18px; }
     .hero h1 { margin:0 0 10px; font-size:38px; }
@@ -57,23 +62,38 @@
     .showcase-dot { width:10px; height:10px; border:none; border-radius:50%; background:#c7d5e6; cursor:pointer; }
     .showcase-dot.active { background:#f49a27; transform:scale(1.12); }
     .featured-section { margin-bottom:18px; display:none; }
-    .featured-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .featured-head {
+      display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap;
+      margin-bottom:12px;
+    }
     .featured-head h2 { margin:0; color:var(--navy); font-size:30px; }
     .featured-head p { margin:4px 0 0; color:var(--muted); line-height:1.5; }
     .featured-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
-    .featured-card { background:#fff; border:1px solid var(--border); border-radius:22px; padding:14px; box-shadow:var(--shadow-soft); display:grid; grid-template-columns:112px 1fr; gap:12px; align-items:center; }
-    .featured-media { width:112px; height:112px; border-radius:18px; background:#f7f9fc; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; color:var(--muted); font-size:12px; font-weight:900; }
+    .featured-card {
+      background:#fff; border:1px solid var(--border); border-radius:22px; padding:14px;
+      box-shadow:var(--shadow-soft); display:grid; grid-template-columns:112px 1fr; gap:12px; align-items:center;
+    }
+    .featured-media {
+      width:112px; height:112px; border-radius:18px; background:#f7f9fc; border:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center; overflow:hidden; color:var(--muted); font-size:12px; font-weight:900;
+    }
     .featured-media img { width:100%; height:100%; object-fit:cover; display:block; }
     .featured-name { color:var(--navy); font-size:18px; font-weight:900; line-height:1.2; text-decoration:none; }
     .featured-price { color:#0f60c8; font-size:24px; font-weight:900; margin-top:6px; }
     .featured-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
     .featured-actions .btn { padding:10px 12px; border-radius:12px; font-size:13px; }
-    .search-card { background:#fff; border:1px solid var(--border); border-radius:22px; padding:14px; box-shadow:var(--shadow-soft); display:grid; grid-template-columns:1fr 240px auto; gap:10px; margin-bottom:16px; }
+    .market-nav {
+      background:#fff; border:1px solid var(--border); border-radius:18px; padding:12px 14px; box-shadow:var(--shadow-soft);
+      display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-bottom:18px;
+    }
+    .market-nav a,.market-nav button { border:none; background:transparent; padding:6px 0; color:var(--navy); font-weight:900; cursor:pointer; text-decoration:none; }
+    .market-nav .hot { color:#c97507; }
+    .search-card { background:#fff; border:1px solid var(--border); border-radius:22px; padding:14px; box-shadow:var(--shadow-soft); display:grid; grid-template-columns:1fr 240px auto; gap:10px; margin-bottom:12px; }
     .field { width:100%; padding:13px 14px; border:1px solid var(--border); border-radius:14px; background:#f7f9fc; color:var(--text); outline:none; }
     .chips { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
     .chip { border:none; border-radius:999px; padding:10px 14px; cursor:pointer; background:#fff; border:1px solid var(--border); color:var(--navy); font-weight:800; box-shadow:var(--shadow-soft); }
     .chip.active { background:var(--orange-gradient); color:#fff; border-color:transparent; }
-    .layout { display:grid; grid-template-columns:minmax(0,1fr) 350px; gap:18px; align-items:start; }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; align-items:start; }
     .panel { background:#fff; border:1px solid var(--border); border-radius:24px; padding:20px; box-shadow:var(--shadow-soft); }
     .panel h2 { margin:0 0 6px; font-size:32px; color:var(--navy); }
     .panel-copy { color:var(--muted); line-height:1.6; margin:0 0 16px; }
@@ -92,7 +112,15 @@
     .stock.low { color:#c97507; font-weight:900; }
     .stock.out { color:var(--danger); font-weight:900; }
     .product-actions { display:grid; grid-template-columns:1fr auto; gap:10px; }
-    .cart-box { position:sticky; top:90px; display:grid; gap:14px; }
+    .cart-box {
+      position:fixed; top:0; right:0; width:min(430px,100%); height:100vh; z-index:76; background:#fff;
+      box-shadow:-20px 0 60px rgba(10,28,52,.24); transform:translateX(105%); transition:transform .24s ease;
+      display:block; overflow:auto;
+    }
+    .cart-box.open { transform:translateX(0); }
+    .cart-box .panel { min-height:100%; border-radius:0; border:none; box-shadow:none; }
+    .cart-close-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+    .icon-close { width:42px; height:42px; border:none; border-radius:12px; background:#edf4fb; color:var(--navy); font-size:24px; font-weight:900; cursor:pointer; }
     .notice { padding:14px; border-radius:18px; background:#fbfcfe; border:1px solid var(--border); color:var(--navy); font-weight:800; line-height:1.65; font-size:13px; }
     .cart-items { display:grid; gap:10px; margin-top:10px; }
     .cart-empty { padding:22px 14px; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:16px; background:#fbfcfe; font-weight:800; }
@@ -109,19 +137,33 @@
     .status { margin-top:12px; font-size:13px; font-weight:800; }
     .status.ok { color:var(--success); }
     .status.error { color:var(--danger); }
-    .modal-backdrop { position:fixed; inset:0; background:rgba(9,33,63,.52); z-index:80; display:none; align-items:center; justify-content:center; padding:18px; }
+    .modal-backdrop {
+      position:fixed; inset:0; background:rgba(9,33,63,.52); z-index:80; display:none;
+      align-items:center; justify-content:center; padding:18px;
+    }
     .modal-backdrop.open { display:flex; }
-    .order-modal { width:min(520px,100%); max-height:90vh; overflow:auto; background:#fff; border:1px solid var(--border); border-radius:24px; box-shadow:0 24px 70px rgba(10,28,52,.26); padding:20px; }
+    .order-modal {
+      width:min(520px,100%); max-height:90vh; overflow:auto; background:#fff; border:1px solid var(--border);
+      border-radius:24px; box-shadow:0 24px 70px rgba(10,28,52,.26); padding:20px;
+    }
     .order-modal h3 { margin:0 0 8px; color:var(--navy); font-size:26px; }
     .order-modal p { margin:0 0 14px; color:var(--muted); line-height:1.55; }
     .order-summary-list { display:grid; gap:8px; margin:14px 0; }
-    .order-summary-item { display:grid; grid-template-columns:1fr auto; gap:10px; padding:10px 0; border-bottom:1px solid #eef3f9; color:var(--navy); }
+    .order-summary-item {
+      display:grid; grid-template-columns:1fr auto; gap:10px; padding:10px 0;
+      border-bottom:1px solid #eef3f9; color:var(--navy);
+    }
     .order-summary-item strong { overflow-wrap:anywhere; }
     .order-summary-meta { color:var(--muted); font-size:13px; margin-top:4px; }
-    .order-summary-total { display:grid; gap:8px; padding:14px; border-radius:18px; background:#fbfcfe; border:1px solid var(--border); margin-top:12px; }
+    .order-summary-total {
+      display:grid; gap:8px; padding:14px; border-radius:18px; background:#fbfcfe; border:1px solid var(--border);
+      margin-top:12px;
+    }
     .modal-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
-    @media (max-width:980px){ .layout { grid-template-columns:1fr; } .cart-box { position:static; } .featured-grid { grid-template-columns:1fr 1fr; } }
-    @media (max-width:760px){ .wrap { padding:12px; } .hero { padding:18px; } .hero h1 { font-size:30px; } .search-card { grid-template-columns:1fr; } .products-grid,.featured-grid { grid-template-columns:1fr; } .featured-card { grid-template-columns:92px 1fr; } .featured-media { width:92px; height:92px; } .product-actions { grid-template-columns:1fr; } .brand-title { font-size:24px; } .brand-logo { width:52px; height:52px; } }
+    .drawer-backdrop { position:fixed; inset:0; background:rgba(9,33,63,.42); z-index:75; display:none; }
+    .drawer-backdrop.open { display:block; }
+    @media (max-width:980px){ .featured-grid { grid-template-columns:1fr 1fr; } }
+    @media (max-width:760px){ .wrap { padding:12px; } .hero { padding:18px; } .hero h1 { font-size:30px; } .search-card { grid-template-columns:1fr; } .market-nav { gap:12px; } .products-grid,.featured-grid { grid-template-columns:1fr; } .featured-card { grid-template-columns:92px 1fr; } .featured-media { width:92px; height:92px; } .product-actions { grid-template-columns:1fr; } .brand-title { font-size:24px; } .brand-logo { width:52px; height:52px; } .cart-trigger { width:100%; } }
   </style>
 </head>
 <body>
@@ -137,6 +179,7 @@
     <div class="header-actions">
       <a class="btn secondary" href="hesap.html">Hesabım</a>
       <a class="btn secondary" href="admin.html">Admin Panel</a>
+      <button id="cartToggleBtn" class="btn secondary cart-trigger" type="button">Sepetim <span id="cartCount" class="cart-count">0</span></button>
     </div>
   </div>
 </header>
@@ -177,6 +220,14 @@
     <button id="refreshBtn" class="btn secondary" type="button">Yenile</button>
   </section>
 
+  <nav class="market-nav" aria-label="Market menüsü">
+    <button type="button" onclick="setCategoryChip('')">Kategoriler</button>
+    <a class="hot" href="#featuredSection">Vitrin</a>
+    <a href="#productsGrid">Ürünler</a>
+    <a href="#productsGrid">Kampanyalar</a>
+    <button type="button" onclick="openCartDrawer()">Sepetim</button>
+  </nav>
+
   <div id="categoryChips" class="chips"></div>
 
   <div class="layout">
@@ -189,7 +240,10 @@
 
     <aside class="cart-box">
       <section class="panel">
-        <h2 style="font-size:28px">Sepetim</h2>
+        <div class="cart-close-row">
+          <h2 style="font-size:28px">Sepetim</h2>
+          <button id="closeCartBtn" class="icon-close" type="button">×</button>
+        </div>
         <p class="panel-copy">Siparişi hesap sayfasında tamamlarsın.</p>
         <div class="notice">
           Sipariş vermek için önce <a href="hesap.html" style="text-decoration:underline;">hesap sayfasından giriş yap</a>.
@@ -203,10 +257,8 @@
         </div>
         <div style="display:grid;gap:10px;margin-top:12px;">
           <select id="deliverySlot" class="field">
-            <option value="Hemen">Hemen</option>
-            <option value="09:00 - 12:00">09:00 - 12:00</option>
-            <option value="12:00 - 15:00">12:00 - 15:00</option>
-            <option value="15:00 - 18:00">15:00 - 18:00</option>
+            <option value="Hemen">Hemen</option><option value="09:00 - 12:00">09:00 - 12:00</option>
+            <option value="12:00 - 15:00">12:00 - 15:00</option><option value="15:00 - 18:00">15:00 - 18:00</option>
             <option value="18:00 - 21:00">18:00 - 21:00</option>
           </select>
           <select id="paymentMethod" class="field">
@@ -220,6 +272,8 @@
     </aside>
   </div>
 </div>
+
+<div id="cartDrawerBackdrop" class="drawer-backdrop"></div>
 
 <div id="orderConfirmModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="orderConfirmTitle">
   <div class="order-modal">
@@ -317,14 +371,10 @@ function renderProducts(){
   const grid = document.getElementById("productsGrid");
   const status = document.getElementById("productsStatus");
   const products = getFilteredProducts();
-
   if (!products.length) {
     grid.innerHTML = '<div class="cart-empty" style="grid-column:1/-1">Aramana uygun ürün bulunamadı.</div>';
-    status.className = "status";
-    status.textContent = "";
-    return;
+    status.className = "status"; status.textContent = ""; return;
   }
-
   grid.innerHTML = products.map((product) => {
     const disabled = product.stock !== null && Number(product.stock) <= 0;
     const oldPrice = product.comparePrice > product.price ? money(product.comparePrice) : "&nbsp;";
@@ -332,7 +382,6 @@ function renderProducts(){
     const image = product.image
       ? `<a href="${detailHref}"><img class="product-media" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" onerror="this.outerHTML='<div class=\\'product-fallback\\'>Görsel yok</div>'"></a>`
       : `<a href="${detailHref}" class="product-fallback">Görsel yok</a>`;
-
     return `
       <article class="product-card">
         ${image}
@@ -349,7 +398,6 @@ function renderProducts(){
         </div>
       </article>`;
   }).join("");
-
   status.className = "status ok";
   status.textContent = `${products.length} ürün listeleniyor.`;
 }
@@ -393,71 +441,49 @@ function renderFeaturedProducts(){
 function addToCart(productId){
   const product = allProducts.find((item) => String(item.id) === String(productId));
   if (!product) return;
-
   if (product.stock !== null && getCartQuantity(product.id) >= Number(product.stock || 0)) {
     alert("Bu üründen stok miktarı kadar ekledin.");
     return;
   }
-
   const existing = cart.find((item) => String(item.id) === String(product.id));
-  if (existing) {
-    existing.quantity += 1;
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name,
-      unit: product.unit,
-      price: product.price,
-      quantity: 1
-    });
-  }
-  writeCart();
-  renderCart();
+  if (existing) existing.quantity += 1;
+  else cart.push({ id:product.id, name:product.name, unit:product.unit, price:product.price, quantity:1 });
+  writeCart(); renderCart(); openCartDrawer();
 }
 function updateCartItem(productId, delta){
   const item = cart.find((entry) => String(entry.id) === String(productId));
   if (!item) return;
-
   const product = allProducts.find((entry) => String(entry.id) === String(productId));
   const nextQuantity = Number(item.quantity || 0) + delta;
-
   if (product && product.stock !== null && nextQuantity > Number(product.stock || 0)) {
     alert("Stok miktarından fazla ekleyemezsin.");
     return;
   }
-
   item.quantity = nextQuantity;
-  if (item.quantity <= 0) {
-    cart = cart.filter((entry) => String(entry.id) !== String(productId));
-  }
-  writeCart();
-  renderCart();
+  if (item.quantity <= 0) cart = cart.filter((entry) => String(entry.id) !== String(productId));
+  writeCart(); renderCart();
 }
-function clearCart(){
-  cart = [];
-  localStorage.removeItem(CHECKOUT_META_KEY);
-  writeCart();
-  renderCart();
+function clearCart(){ cart = []; localStorage.removeItem(CHECKOUT_META_KEY); writeCart(); renderCart(); }
+function openCartDrawer(){
+  document.querySelector(".cart-box").classList.add("open");
+  document.getElementById("cartDrawerBackdrop").classList.add("open");
+}
+function closeCartDrawer(){
+  document.querySelector(".cart-box").classList.remove("open");
+  document.getElementById("cartDrawerBackdrop").classList.remove("open");
 }
 function renderCart(){
   const box = document.getElementById("cartItems");
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
-
+  const count = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  document.getElementById("cartCount").textContent = String(count);
   document.getElementById("subtotalText").textContent = money(subtotal);
   document.getElementById("deliveryText").textContent = money(0);
   document.getElementById("grandTotalText").textContent = money(subtotal);
-
-  if (!cart.length) {
-    box.innerHTML = '<div class="cart-empty">Sepetin boş. Ürün kartlarından ürün seçerek başlayabilirsin.</div>';
-    return;
-  }
-
+  if (!cart.length) { box.innerHTML = '<div class="cart-empty">Sepetin boş. Ürün kartlarından ürün seçerek başlayabilirsin.</div>'; return; }
   box.innerHTML = cart.map((item) => `
     <div class="cart-item">
-      <div class="cart-row">
-        <div class="cart-name">${escapeHtml(item.name)}</div>
-        <div class="cart-total">${money(Number(item.price || 0) * Number(item.quantity || 0))}</div>
-      </div>
+      <div class="cart-row"><div class="cart-name">${escapeHtml(item.name)}</div><div class="cart-total">${money(Number(item.price || 0) * Number(item.quantity || 0))}</div></div>
       <div class="cart-sub">${escapeHtml(item.unit || "adet")} • ${money(item.price)}</div>
       <div class="qty">
         <button type="button" onclick="updateCartItem('${jsString(item.id)}', -1)">−</button>
@@ -475,22 +501,13 @@ function storeCheckoutMeta(){
 function orderTotals(){
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
   const delivery = subtotal > 0 ? 0 : 0;
-  return {
-    subtotal,
-    delivery,
-    grandTotal: subtotal + delivery
-  };
+  return { subtotal, delivery, grandTotal: subtotal + delivery };
 }
 function openOrderConfirm(){
-  if (!cart.length) {
-    alert("Sepet boş.");
-    return;
-  }
-
-  const totals = orderTotals();
+  if (!cart.length) { alert("Sepet boş."); return; }
+  const { subtotal, delivery, grandTotal } = orderTotals();
   const slot = document.getElementById("deliverySlot").value;
   const payment = document.getElementById("paymentMethod").value;
-
   document.getElementById("orderConfirmContent").innerHTML = `
     <div class="order-summary-list">
       ${cart.map((item) => `
@@ -506,27 +523,19 @@ function openOrderConfirm(){
     <div class="order-summary-total">
       <div class="summary-line"><span>Teslimat Saati</span><span>${escapeHtml(slot)}</span></div>
       <div class="summary-line"><span>Ödeme</span><span>${escapeHtml(payment)}</span></div>
-      <div class="summary-line"><span>Ara Toplam</span><span>${money(totals.subtotal)}</span></div>
-      <div class="summary-line"><span>Teslimat</span><span>${money(totals.delivery)}</span></div>
-      <div class="summary-line summary-total"><span>Genel Toplam</span><span>${money(totals.grandTotal)}</span></div>
+      <div class="summary-line"><span>Ara Toplam</span><span>${money(subtotal)}</span></div>
+      <div class="summary-line"><span>Teslimat</span><span>${money(delivery)}</span></div>
+      <div class="summary-line summary-total"><span>Genel Toplam</span><span>${money(grandTotal)}</span></div>
     </div>
   `;
-
   document.getElementById("orderConfirmModal").classList.add("open");
 }
 function closeOrderConfirm(){
   document.getElementById("orderConfirmModal").classList.remove("open");
 }
 function confirmOrderAndGo(){
-  if (!cart.length) {
-    closeOrderConfirm();
-    alert("Sepet boş.");
-    return;
-  }
-
-  writeCart();
-  storeCheckoutMeta();
-  window.location.href = "hesap.html?redirect=order";
+  if (!cart.length) { closeOrderConfirm(); alert("Sepet boş."); return; }
+  writeCart(); storeCheckoutMeta(); window.location.href = "hesap.html?redirect=order";
 }
 function guessBannerHref(slide = {}){
   const blob = `${slide.title || ""} ${slide.subtitle || ""} ${slide.button || ""}`.toLocaleLowerCase("tr-TR");
@@ -546,118 +555,53 @@ function updateBannerSlider(){
   track.style.transform = `translateX(-${currentBannerIndex * 100}%)`;
   dots.forEach((dot, index) => dot.classList.toggle("active", index === currentBannerIndex));
 }
-function showBanner(index){
-  if (!bannerSlides.length) return;
-  currentBannerIndex = (index + bannerSlides.length) % bannerSlides.length;
-  updateBannerSlider();
-}
-function stopBannerAutoplay(){
-  clearInterval(bannerTimer);
-}
-function startBannerAutoplay(){
-  stopBannerAutoplay();
-  if (bannerSlides.length <= 1) return;
-  bannerTimer = setInterval(() => showBanner(currentBannerIndex + 1), 4500);
-}
+function showBanner(index){ if (!bannerSlides.length) return; currentBannerIndex = (index + bannerSlides.length) % bannerSlides.length; updateBannerSlider(); }
+function stopBannerAutoplay(){ clearInterval(bannerTimer); }
+function startBannerAutoplay(){ stopBannerAutoplay(); if (bannerSlides.length <= 1) return; bannerTimer = setInterval(() => showBanner(currentBannerIndex + 1), 4500); }
 function renderHomeBanners(value = {}){
-  const wrap = document.getElementById("showcaseWrap");
-  const note = document.getElementById("bannerNoteBox");
-  const track = document.getElementById("showcaseTrack");
-  const dots = document.getElementById("showcaseDots");
+  const wrap = document.getElementById("showcaseWrap"), note = document.getElementById("bannerNoteBox"), track = document.getElementById("showcaseTrack"), dots = document.getElementById("showcaseDots");
   const variants = ["", "accent", "soft"];
-
-  bannerSlides = Array.isArray(value.slides)
-    ? value.slides.filter((slide) => slide && (slide.title || slide.subtitle || slide.button)).slice(0, 3)
-    : [];
+  bannerSlides = Array.isArray(value.slides) ? value.slides.filter((slide) => slide && (slide.title || slide.subtitle || slide.button)).slice(0, 3) : [];
   currentBannerIndex = 0;
-
-  if (value.note) {
-    note.style.display = "block";
-    note.textContent = value.note;
-  } else {
-    note.style.display = "none";
-  }
-
-  if (!bannerSlides.length) {
-    wrap.style.display = "none";
-    track.innerHTML = "";
-    dots.innerHTML = "";
-    stopBannerAutoplay();
-    return;
-  }
-
+  if (value.note) { note.style.display = "block"; note.textContent = value.note; } else note.style.display = "none";
+  if (!bannerSlides.length) { wrap.style.display = "none"; track.innerHTML = ""; dots.innerHTML = ""; stopBannerAutoplay(); return; }
   track.innerHTML = bannerSlides.map((slide, index) => {
     const href = guessBannerHref(slide);
-    return `
-      <article class="banner-card ${variants[index] || ""}">
-        <div>
-          <div class="banner-eyebrow">Vitrin Banneri</div>
-          <h3 class="banner-title">${escapeHtml(slide.title || "Çanakoğlu Online")}</h3>
-          <p class="banner-text">${escapeHtml(slide.subtitle || "Güncel ürünler ve kampanyalar burada.")}</p>
-        </div>
-        <a class="banner-link" href="${escapeHtml(href)}" onclick="scrollToBannerTarget(event, '${jsString(href)}')">${escapeHtml(slide.button || "İncele")}</a>
-      </article>`;
+    return `<article class="banner-card ${variants[index] || ""}">
+      <div><div class="banner-eyebrow">Vitrin Banneri</div><h3 class="banner-title">${escapeHtml(slide.title || "Çanakoğlu Online")}</h3><p class="banner-text">${escapeHtml(slide.subtitle || "Güncel ürünler ve kampanyalar burada.")}</p></div>
+      <a class="banner-link" href="${escapeHtml(href)}" onclick="scrollToBannerTarget(event, '${jsString(href)}')">${escapeHtml(slide.button || "İncele")}</a>
+    </article>`;
   }).join("");
-
-  dots.innerHTML = bannerSlides.map((_, index) =>
-    `<button class="showcase-dot ${index === 0 ? "active" : ""}" type="button" onclick="showBanner(${index})"></button>`
-  ).join("");
-
-  wrap.style.display = "block";
-  updateBannerSlider();
-  startBannerAutoplay();
+  dots.innerHTML = bannerSlides.map((_, index) => `<button class="showcase-dot ${index === 0 ? "active" : ""}" type="button" onclick="showBanner(${index})"></button>`).join("");
+  wrap.style.display = "block"; updateBannerSlider(); startBannerAutoplay();
 }
 async function loadHomeBanners(){
   try {
-    const { data, error } = await client
-      .from("site_settings")
-      .select("value")
-      .eq("key", HOME_BANNER_KEY)
-      .maybeSingle();
-
+    const { data, error } = await client.from("site_settings").select("value").eq("key", HOME_BANNER_KEY).maybeSingle();
     if (error) throw error;
     renderHomeBanners(data?.value || {});
-  } catch (err) {
-    console.error(err);
-    renderHomeBanners({});
-  }
+  } catch (err) { console.error(err); renderHomeBanners({}); }
 }
 async function loadProducts(){
   const status = document.getElementById("productsStatus");
-  status.className = "status";
-  status.textContent = "Ürünler yükleniyor...";
-
+  status.className = "status"; status.textContent = "Ürünler yükleniyor...";
   try {
-    const { data, error } = await client
-      .from("products")
-      .select("*")
-      .eq("is_active", true)
-      .order("featured_rank", { ascending:true, nullsFirst:false })
-      .order("created_at", { ascending:false });
-
+    const { data, error } = await client.from("products").select("*").eq("is_active", true).order("featured_rank", { ascending:true, nullsFirst:false }).order("created_at", { ascending:false });
     if (error) throw error;
-
     allProducts = (data || []).map(normalizeProduct).filter((product) => product.price >= 0);
-    renderCategoryOptions(allProducts);
-    renderCategoryChips(allProducts);
-    renderFeaturedProducts();
-    renderProducts();
-    renderCart();
+    renderCategoryOptions(allProducts); renderCategoryChips(allProducts); renderFeaturedProducts(); renderProducts(); renderCart();
   } catch (err) {
     console.error(err);
     document.getElementById("productsGrid").innerHTML = '<div class="cart-empty">Ürünler yüklenemedi.</div>';
-    status.className = "status error";
-    status.textContent = "Ürünler alınamadı: " + (err.message || err);
+    status.className = "status error"; status.textContent = "Ürünler alınamadı: " + (err.message || err);
   }
 }
-
 document.getElementById("searchInput").addEventListener("input", renderProducts);
-document.getElementById("categoryFilter").addEventListener("change", (event) => {
-  activeChip = event.target.value;
-  renderCategoryChips(allProducts);
-  renderProducts();
-});
+document.getElementById("categoryFilter").addEventListener("change", (event) => { activeChip = event.target.value; renderCategoryChips(allProducts); renderProducts(); });
 document.getElementById("refreshBtn").addEventListener("click", loadProducts);
+document.getElementById("cartToggleBtn").addEventListener("click", openCartDrawer);
+document.getElementById("closeCartBtn").addEventListener("click", closeCartDrawer);
+document.getElementById("cartDrawerBackdrop").addEventListener("click", closeCartDrawer);
 document.getElementById("clearCartBtn").addEventListener("click", clearCart);
 document.getElementById("placeOrderBtn").addEventListener("click", openOrderConfirm);
 document.getElementById("cancelOrderConfirmBtn").addEventListener("click", closeOrderConfirm);
@@ -667,29 +611,17 @@ document.getElementById("orderConfirmModal").addEventListener("click", (event) =
 });
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeOrderConfirm();
+  if (event.key === "Escape") closeCartDrawer();
 });
 document.getElementById("deliverySlot").addEventListener("change", storeCheckoutMeta);
 document.getElementById("paymentMethod").addEventListener("change", storeCheckoutMeta);
-document.getElementById("showcasePrev").addEventListener("click", () => {
-  showBanner(currentBannerIndex - 1);
-  startBannerAutoplay();
-});
-document.getElementById("showcaseNext").addEventListener("click", () => {
-  showBanner(currentBannerIndex + 1);
-  startBannerAutoplay();
-});
+document.getElementById("showcasePrev").addEventListener("click", () => { showBanner(currentBannerIndex - 1); startBannerAutoplay(); });
+document.getElementById("showcaseNext").addEventListener("click", () => { showBanner(currentBannerIndex + 1); startBannerAutoplay(); });
 document.getElementById("showcase").addEventListener("mouseenter", stopBannerAutoplay);
 document.getElementById("showcase").addEventListener("mouseleave", startBannerAutoplay);
-
-window.addToCart = addToCart;
-window.updateCartItem = updateCartItem;
-window.setCategoryChip = setCategoryChip;
-window.showBanner = showBanner;
-window.scrollToBannerTarget = scrollToBannerTarget;
-
-renderCart();
-loadHomeBanners();
-loadProducts();
+window.addToCart = addToCart; window.updateCartItem = updateCartItem; window.setCategoryChip = setCategoryChip; window.showBanner = showBanner; window.scrollToBannerTarget = scrollToBannerTarget;
+window.openCartDrawer = openCartDrawer;
+renderCart(); loadHomeBanners(); loadProducts();
 </script>
 </body>
 </html>
