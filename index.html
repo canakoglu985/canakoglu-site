@@ -56,6 +56,18 @@
     .showcase-dots { display:flex; justify-content:center; gap:8px; margin-top:10px; }
     .showcase-dot { width:10px; height:10px; border:none; border-radius:50%; background:#c7d5e6; cursor:pointer; }
     .showcase-dot.active { background:#f49a27; transform:scale(1.12); }
+    .featured-section { margin-bottom:18px; display:none; }
+    .featured-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .featured-head h2 { margin:0; color:var(--navy); font-size:30px; }
+    .featured-head p { margin:4px 0 0; color:var(--muted); line-height:1.5; }
+    .featured-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    .featured-card { background:#fff; border:1px solid var(--border); border-radius:22px; padding:14px; box-shadow:var(--shadow-soft); display:grid; grid-template-columns:112px 1fr; gap:12px; align-items:center; }
+    .featured-media { width:112px; height:112px; border-radius:18px; background:#f7f9fc; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; overflow:hidden; color:var(--muted); font-size:12px; font-weight:900; }
+    .featured-media img { width:100%; height:100%; object-fit:cover; display:block; }
+    .featured-name { color:var(--navy); font-size:18px; font-weight:900; line-height:1.2; text-decoration:none; }
+    .featured-price { color:#0f60c8; font-size:24px; font-weight:900; margin-top:6px; }
+    .featured-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .featured-actions .btn { padding:10px 12px; border-radius:12px; font-size:13px; }
     .search-card { background:#fff; border:1px solid var(--border); border-radius:22px; padding:14px; box-shadow:var(--shadow-soft); display:grid; grid-template-columns:1fr 240px auto; gap:10px; margin-bottom:16px; }
     .field { width:100%; padding:13px 14px; border:1px solid var(--border); border-radius:14px; background:#f7f9fc; color:var(--text); outline:none; }
     .chips { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
@@ -97,31 +109,19 @@
     .status { margin-top:12px; font-size:13px; font-weight:800; }
     .status.ok { color:var(--success); }
     .status.error { color:var(--danger); }
-    .modal-backdrop {
-      position:fixed; inset:0; background:rgba(9,33,63,.52); z-index:80; display:none;
-      align-items:center; justify-content:center; padding:18px;
-    }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(9,33,63,.52); z-index:80; display:none; align-items:center; justify-content:center; padding:18px; }
     .modal-backdrop.open { display:flex; }
-    .order-modal {
-      width:min(520px,100%); max-height:90vh; overflow:auto; background:#fff; border:1px solid var(--border);
-      border-radius:24px; box-shadow:0 24px 70px rgba(10,28,52,.26); padding:20px;
-    }
+    .order-modal { width:min(520px,100%); max-height:90vh; overflow:auto; background:#fff; border:1px solid var(--border); border-radius:24px; box-shadow:0 24px 70px rgba(10,28,52,.26); padding:20px; }
     .order-modal h3 { margin:0 0 8px; color:var(--navy); font-size:26px; }
     .order-modal p { margin:0 0 14px; color:var(--muted); line-height:1.55; }
     .order-summary-list { display:grid; gap:8px; margin:14px 0; }
-    .order-summary-item {
-      display:grid; grid-template-columns:1fr auto; gap:10px; padding:10px 0;
-      border-bottom:1px solid #eef3f9; color:var(--navy);
-    }
+    .order-summary-item { display:grid; grid-template-columns:1fr auto; gap:10px; padding:10px 0; border-bottom:1px solid #eef3f9; color:var(--navy); }
     .order-summary-item strong { overflow-wrap:anywhere; }
     .order-summary-meta { color:var(--muted); font-size:13px; margin-top:4px; }
-    .order-summary-total {
-      display:grid; gap:8px; padding:14px; border-radius:18px; background:#fbfcfe; border:1px solid var(--border);
-      margin-top:12px;
-    }
+    .order-summary-total { display:grid; gap:8px; padding:14px; border-radius:18px; background:#fbfcfe; border:1px solid var(--border); margin-top:12px; }
     .modal-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
-    @media (max-width:980px){ .layout { grid-template-columns:1fr; } .cart-box { position:static; } }
-    @media (max-width:760px){ .wrap { padding:12px; } .hero { padding:18px; } .hero h1 { font-size:30px; } .search-card { grid-template-columns:1fr; } .products-grid { grid-template-columns:1fr; } .product-actions { grid-template-columns:1fr; } .brand-title { font-size:24px; } .brand-logo { width:52px; height:52px; } }
+    @media (max-width:980px){ .layout { grid-template-columns:1fr; } .cart-box { position:static; } .featured-grid { grid-template-columns:1fr 1fr; } }
+    @media (max-width:760px){ .wrap { padding:12px; } .hero { padding:18px; } .hero h1 { font-size:30px; } .search-card { grid-template-columns:1fr; } .products-grid,.featured-grid { grid-template-columns:1fr; } .featured-card { grid-template-columns:92px 1fr; } .featured-media { width:92px; height:92px; } .product-actions { grid-template-columns:1fr; } .brand-title { font-size:24px; } .brand-logo { width:52px; height:52px; } }
   </style>
 </head>
 <body>
@@ -158,6 +158,17 @@
       </div>
     </div>
     <div class="showcase-dots" id="showcaseDots"></div>
+  </section>
+
+  <section id="featuredSection" class="featured-section">
+    <div class="featured-head">
+      <div>
+        <h2>Vitrin Ürünleri</h2>
+        <p>Öne çıkan ürünler ve güncel fırsatlar.</p>
+      </div>
+      <a class="btn secondary" href="#productsGrid">Tüm Ürünler</a>
+    </div>
+    <div id="featuredGrid" class="featured-grid"></div>
   </section>
 
   <section class="search-card">
@@ -237,31 +248,11 @@ let bannerSlides = [];
 let currentBannerIndex = 0;
 let bannerTimer = null;
 
-function money(value){
-  return new Intl.NumberFormat("tr-TR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(Number(value || 0)) + " TL";
-}
-function escapeHtml(text){
-  return String(text ?? "").replace(/[&<>"']/g, (m) => ({
-    "&":"&amp;",
-    "<":"&lt;",
-    ">":"&gt;",
-    '"':"&quot;",
-    "'":"&#39;"
-  }[m]));
-}
-function jsString(value){
-  return String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-}
-function readCart(){
-  try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
-  catch { return []; }
-}
-function writeCart(){
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-}
+function money(value){ return new Intl.NumberFormat("tr-TR", { minimumFractionDigits:2, maximumFractionDigits:2 }).format(Number(value || 0)) + " TL"; }
+function escapeHtml(text){ return String(text ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[m])); }
+function jsString(value){ return String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'"); }
+function readCart(){ try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } }
+function writeCart(){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
 function normalizeProduct(row){
   return {
     id: row.id,
@@ -272,20 +263,18 @@ function normalizeProduct(row){
     unit: row.unit || "adet",
     stock: row.stock_qty ?? row.stock ?? null,
     image: row.image_url || row.image || "",
-    campaignLabel: row.campaign_label || ""
+    campaignLabel: row.campaign_label || "",
+    isFeatured: row.is_featured === true,
+    featuredRank: Number(row.featured_rank || 9999)
   };
 }
 function renderCategoryOptions(products){
-  const categories = [...new Set(products.map((item) => item.category).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, "tr"));
-  document.getElementById("categoryFilter").innerHTML =
-    '<option value="">Tüm Kategoriler</option>' +
-    categories.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+  const categories = [...new Set(products.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "tr"));
+  document.getElementById("categoryFilter").innerHTML = '<option value="">Tüm Kategoriler</option>' + categories.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
 }
 function renderCategoryChips(products){
   const box = document.getElementById("categoryChips");
-  const categories = [...new Set(products.map((item) => item.category).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, "tr"));
+  const categories = [...new Set(products.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "tr"));
   box.innerHTML = ["Tümü", ...categories].map((item) => {
     const value = item === "Tümü" ? "" : item;
     return `<button class="chip ${activeChip === value ? "active" : ""}" type="button" onclick="setCategoryChip('${jsString(value)}')">${escapeHtml(item)}</button>`;
@@ -319,10 +308,7 @@ function getFilteredProducts(){
   const search = document.getElementById("searchInput").value.trim().toLocaleLowerCase("tr-TR");
   const category = document.getElementById("categoryFilter").value;
   return allProducts.filter((product) => {
-    const textMatch = !search || [product.name, product.category, product.campaignLabel]
-      .join(" ")
-      .toLocaleLowerCase("tr-TR")
-      .includes(search);
+    const textMatch = !search || [product.name, product.category, product.campaignLabel].join(" ").toLocaleLowerCase("tr-TR").includes(search);
     const categoryMatch = !category || product.category === category;
     return textMatch && categoryMatch;
   });
@@ -355,14 +341,8 @@ function renderProducts(){
           ${product.campaignLabel ? `<span class="tag campaign">${escapeHtml(product.campaignLabel)}</span>` : ""}
         </div>
         <a class="product-name" href="${detailHref}">${escapeHtml(product.name)}</a>
-        <div class="product-meta">
-          <span>${escapeHtml(product.unit)}</span>
-          <span class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</span>
-        </div>
-        <div class="price-stack">
-          <div class="old-price">${oldPrice}</div>
-          <div class="new-price">${money(product.price)}</div>
-        </div>
+        <div class="product-meta"><span>${escapeHtml(product.unit)}</span><span class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</span></div>
+        <div class="price-stack"><div class="old-price">${oldPrice}</div><div class="new-price">${money(product.price)}</div></div>
         <div class="product-actions">
           <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${jsString(product.id)}')">${disabled ? "Tükendi" : "Sepete Ekle"}</button>
           <a class="btn secondary" href="${detailHref}">Detay</a>
@@ -372,6 +352,43 @@ function renderProducts(){
 
   status.className = "status ok";
   status.textContent = `${products.length} ürün listeleniyor.`;
+}
+function renderFeaturedProducts(){
+  const section = document.getElementById("featuredSection");
+  const grid = document.getElementById("featuredGrid");
+  const featured = [...allProducts]
+    .filter((product) => product.isFeatured)
+    .sort((a, b) => a.featuredRank - b.featuredRank)
+    .slice(0, 6);
+
+  if (!featured.length) {
+    section.style.display = "none";
+    grid.innerHTML = "";
+    return;
+  }
+
+  grid.innerHTML = featured.map((product) => {
+    const disabled = product.stock !== null && Number(product.stock) <= 0;
+    const detailHref = `urun.html?id=${encodeURIComponent(product.id)}`;
+    const image = product.image
+      ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">`
+      : "Görsel yok";
+
+    return `
+      <article class="featured-card">
+        <a class="featured-media" href="${detailHref}">${image}</a>
+        <div>
+          <a class="featured-name" href="${detailHref}">${escapeHtml(product.name)}</a>
+          <div class="featured-price">${money(product.price)}</div>
+          <div class="featured-actions">
+            <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${jsString(product.id)}')">${disabled ? "Tükendi" : "Sepete Ekle"}</button>
+            <a class="btn secondary" href="${detailHref}">Detay</a>
+          </div>
+        </div>
+      </article>`;
+  }).join("");
+
+  section.style.display = "block";
 }
 function addToCart(productId){
   const product = allProducts.find((item) => String(item.id) === String(productId));
@@ -623,6 +640,7 @@ async function loadProducts(){
     allProducts = (data || []).map(normalizeProduct).filter((product) => product.price >= 0);
     renderCategoryOptions(allProducts);
     renderCategoryChips(allProducts);
+    renderFeaturedProducts();
     renderProducts();
     renderCart();
   } catch (err) {
