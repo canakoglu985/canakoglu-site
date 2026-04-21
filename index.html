@@ -6,21 +6,34 @@
 <title>Çanakoğlu Online Market</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--bg:#eef3f9;--card:#fff;--text:#17324f;--muted:#6f8196;--primary:#f49a27;--navy:#1d4678;--border:#dbe6f1;--success:#39a852;--danger:#c62828;--shadow:0 12px 30px rgba(18,50,85,.10);--soft:0 8px 18px rgba(18,50,85,.07);--orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%)}
+:root{
+  --bg:#eef3f9;--card:#fff;--text:#17324f;--muted:#6f8196;--primary:#f49a27;--navy:#1d4678;--border:#dbe6f1;
+  --success:#39a852;--danger:#c62828;--shadow:0 12px 30px rgba(18,50,85,.10);--soft:0 8px 18px rgba(18,50,85,.07);
+  --orange-gradient:linear-gradient(135deg,#f49a27 0%,#ffb34d 100%)
+}
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
 a{text-decoration:none;color:inherit}
-header{background:linear-gradient(135deg,rgba(12,34,63,.98),rgba(20,55,94,.98) 45%,rgba(29,70,120,.98));color:#fff;padding:16px 20px;position:sticky;top:0;z-index:40;box-shadow:0 14px 34px rgba(10,28,52,.22)}
+header{
+  background:linear-gradient(135deg,rgba(12,34,63,.98),rgba(20,55,94,.98) 45%,rgba(29,70,120,.98));
+  color:#fff;padding:10px 20px;position:sticky;top:0;z-index:40;box-shadow:0 14px 34px rgba(10,28,52,.22)
+}
 .header-inner,.wrap{max-width:1280px;margin:0 auto}
-.header-inner{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:22px}
-.brand-logo{width:645px;height:330px;border-radius:0;overflow:visible;background:transparent;border:none;flex-shrink:0;box-shadow:none;padding:0;display:flex;align-items:center;justify-content:center}
+.header-inner{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;min-height:150px}
+.brand{display:flex;align-items:center;gap:22px;min-width:0}
+.brand-logo{
+  width:300px;height:150px;border-radius:0;overflow:visible;background:transparent;border:none;flex-shrink:0;
+  box-shadow:none;padding:0;display:flex;align-items:center;justify-content:center
+}
 .brand-logo img{width:100%;height:100%;object-fit:contain;display:block;border:none;background:transparent;box-shadow:none}
-.brand-text{display:flex;flex-direction:column;gap:6px}
-.brand-title{font-size:30px;font-weight:900;letter-spacing:.2px}
+.brand-text{display:flex;flex-direction:column;gap:6px;min-width:0}
+.brand-title{font-size:30px;font-weight:900;letter-spacing:.2px;white-space:nowrap}
 .brand-sub{font-size:14px;opacity:.9}
 .header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.btn{border:none;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s ease;font-size:15px}
+.btn{
+  border:none;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s ease;font-size:15px
+}
 .btn:hover{filter:brightness(1.03);transform:translateY(-1px)}
 .btn:disabled{cursor:not-allowed;opacity:.55;transform:none}
 .primary{background:var(--orange-gradient);color:#fff;box-shadow:0 10px 20px rgba(244,154,39,.2)}
@@ -28,7 +41,10 @@ header{background:linear-gradient(135deg,rgba(12,34,63,.98),rgba(20,55,94,.98) 4
 .cart-trigger{min-width:132px}
 .cart-count{min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:var(--primary);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
 .wrap{padding:20px}
-.hero{background:linear-gradient(135deg,rgba(9,33,63,.96),rgba(22,55,94,.98) 52%,rgba(37,91,148,.95));color:#fff;padding:28px;border-radius:26px;box-shadow:var(--shadow);margin-bottom:18px}
+.hero{
+  background:linear-gradient(135deg,rgba(9,33,63,.96),rgba(22,55,94,.98) 52%,rgba(37,91,148,.95));
+  color:#fff;padding:28px;border-radius:26px;box-shadow:var(--shadow);margin-bottom:18px
+}
 .hero h1{margin:0 0 10px;font-size:38px}
 .hero p{margin:0;line-height:1.6;opacity:.95}
 .banner-note{margin-bottom:18px;border-radius:18px;padding:14px 16px;background:#fff;color:var(--navy);border:1px solid var(--border);box-shadow:var(--soft);font-weight:800}
@@ -140,8 +156,8 @@ header{background:linear-gradient(135deg,rgba(12,34,63,.98),rgba(20,55,94,.98) 4
 .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 @media(max-width:980px){.featured-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){
-  .wrap{padding:12px}header{padding:12px}.brand{gap:14px}.brand-logo{width:390px;height:203px}.brand-logo img{width:100%;height:100%}
-  .brand-title{font-size:24px}.hero{padding:18px}.hero h1{font-size:30px}.search-card{grid-template-columns:1fr}
+  header{padding:10px 12px}.header-inner{min-height:110px}.wrap{padding:12px}.brand{gap:12px}.brand-logo{width:190px;height:105px}
+  .brand-title{font-size:24px;white-space:normal}.brand-sub{font-size:13px}.hero{padding:18px}.hero h1{font-size:30px}.search-card{grid-template-columns:1fr}
   .featured-grid,.products-grid{grid-template-columns:1fr}.featured-card{grid-template-columns:92px 1fr}.featured-media{width:92px;height:92px}
   .deal-card{flex-basis:280px}.deal-body{grid-template-columns:96px 1fr}.deal-img{width:96px;height:96px}.deal-price{font-size:30px}
   .product-actions{grid-template-columns:1fr}.cart-trigger{width:100%}
