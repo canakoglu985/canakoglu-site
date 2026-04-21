@@ -97,6 +97,29 @@
     .status { margin-top:12px; font-size:13px; font-weight:800; }
     .status.ok { color:var(--success); }
     .status.error { color:var(--danger); }
+    .modal-backdrop {
+      position:fixed; inset:0; background:rgba(9,33,63,.52); z-index:80; display:none;
+      align-items:center; justify-content:center; padding:18px;
+    }
+    .modal-backdrop.open { display:flex; }
+    .order-modal {
+      width:min(520px,100%); max-height:90vh; overflow:auto; background:#fff; border:1px solid var(--border);
+      border-radius:24px; box-shadow:0 24px 70px rgba(10,28,52,.26); padding:20px;
+    }
+    .order-modal h3 { margin:0 0 8px; color:var(--navy); font-size:26px; }
+    .order-modal p { margin:0 0 14px; color:var(--muted); line-height:1.55; }
+    .order-summary-list { display:grid; gap:8px; margin:14px 0; }
+    .order-summary-item {
+      display:grid; grid-template-columns:1fr auto; gap:10px; padding:10px 0;
+      border-bottom:1px solid #eef3f9; color:var(--navy);
+    }
+    .order-summary-item strong { overflow-wrap:anywhere; }
+    .order-summary-meta { color:var(--muted); font-size:13px; margin-top:4px; }
+    .order-summary-total {
+      display:grid; gap:8px; padding:14px; border-radius:18px; background:#fbfcfe; border:1px solid var(--border);
+      margin-top:12px;
+    }
+    .modal-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
     @media (max-width:980px){ .layout { grid-template-columns:1fr; } .cart-box { position:static; } }
     @media (max-width:760px){ .wrap { padding:12px; } .hero { padding:18px; } .hero h1 { font-size:30px; } .search-card { grid-template-columns:1fr; } .products-grid { grid-template-columns:1fr; } .product-actions { grid-template-columns:1fr; } .brand-title { font-size:24px; } .brand-logo { width:52px; height:52px; } }
   </style>
@@ -169,8 +192,10 @@
         </div>
         <div style="display:grid;gap:10px;margin-top:12px;">
           <select id="deliverySlot" class="field">
-            <option value="Hemen">Hemen</option><option value="09:00 - 12:00">09:00 - 12:00</option>
-            <option value="12:00 - 15:00">12:00 - 15:00</option><option value="15:00 - 18:00">15:00 - 18:00</option>
+            <option value="Hemen">Hemen</option>
+            <option value="09:00 - 12:00">09:00 - 12:00</option>
+            <option value="12:00 - 15:00">12:00 - 15:00</option>
+            <option value="15:00 - 18:00">15:00 - 18:00</option>
             <option value="18:00 - 21:00">18:00 - 21:00</option>
           </select>
           <select id="paymentMethod" class="field">
@@ -182,6 +207,18 @@
         </div>
       </section>
     </aside>
+  </div>
+</div>
+
+<div id="orderConfirmModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="orderConfirmTitle">
+  <div class="order-modal">
+    <h3 id="orderConfirmTitle">Sipariş Özeti</h3>
+    <p>Sepetini kontrol et. Onayladıktan sonra siparişi tamamlamak için hesap sayfasına geçeceksin.</p>
+    <div id="orderConfirmContent"></div>
+    <div class="modal-actions">
+      <button id="cancelOrderConfirmBtn" class="btn secondary" type="button">Vazgeç</button>
+      <button id="confirmOrderBtn" class="btn primary" type="button">Onayla</button>
+    </div>
   </div>
 </div>
 
@@ -200,11 +237,31 @@ let bannerSlides = [];
 let currentBannerIndex = 0;
 let bannerTimer = null;
 
-function money(value){ return new Intl.NumberFormat("tr-TR", { minimumFractionDigits:2, maximumFractionDigits:2 }).format(Number(value || 0)) + " TL"; }
-function escapeHtml(text){ return String(text ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[m])); }
-function jsString(value){ return String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'"); }
-function readCart(){ try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } }
-function writeCart(){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+function money(value){
+  return new Intl.NumberFormat("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value || 0)) + " TL";
+}
+function escapeHtml(text){
+  return String(text ?? "").replace(/[&<>"']/g, (m) => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[m]));
+}
+function jsString(value){
+  return String(value ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+function readCart(){
+  try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
+  catch { return []; }
+}
+function writeCart(){
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+}
 function normalizeProduct(row){
   return {
     id: row.id,
@@ -219,12 +276,16 @@ function normalizeProduct(row){
   };
 }
 function renderCategoryOptions(products){
-  const categories = [...new Set(products.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "tr"));
-  document.getElementById("categoryFilter").innerHTML = '<option value="">Tüm Kategoriler</option>' + categories.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+  const categories = [...new Set(products.map((item) => item.category).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "tr"));
+  document.getElementById("categoryFilter").innerHTML =
+    '<option value="">Tüm Kategoriler</option>' +
+    categories.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
 }
 function renderCategoryChips(products){
   const box = document.getElementById("categoryChips");
-  const categories = [...new Set(products.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "tr"));
+  const categories = [...new Set(products.map((item) => item.category).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "tr"));
   box.innerHTML = ["Tümü", ...categories].map((item) => {
     const value = item === "Tümü" ? "" : item;
     return `<button class="chip ${activeChip === value ? "active" : ""}" type="button" onclick="setCategoryChip('${jsString(value)}')">${escapeHtml(item)}</button>`;
@@ -258,7 +319,10 @@ function getFilteredProducts(){
   const search = document.getElementById("searchInput").value.trim().toLocaleLowerCase("tr-TR");
   const category = document.getElementById("categoryFilter").value;
   return allProducts.filter((product) => {
-    const textMatch = !search || [product.name, product.category, product.campaignLabel].join(" ").toLocaleLowerCase("tr-TR").includes(search);
+    const textMatch = !search || [product.name, product.category, product.campaignLabel]
+      .join(" ")
+      .toLocaleLowerCase("tr-TR")
+      .includes(search);
     const categoryMatch = !category || product.category === category;
     return textMatch && categoryMatch;
   });
@@ -267,10 +331,14 @@ function renderProducts(){
   const grid = document.getElementById("productsGrid");
   const status = document.getElementById("productsStatus");
   const products = getFilteredProducts();
+
   if (!products.length) {
     grid.innerHTML = '<div class="cart-empty" style="grid-column:1/-1">Aramana uygun ürün bulunamadı.</div>';
-    status.className = "status"; status.textContent = ""; return;
+    status.className = "status";
+    status.textContent = "";
+    return;
   }
+
   grid.innerHTML = products.map((product) => {
     const disabled = product.stock !== null && Number(product.stock) <= 0;
     const oldPrice = product.comparePrice > product.price ? money(product.comparePrice) : "&nbsp;";
@@ -278,6 +346,7 @@ function renderProducts(){
     const image = product.image
       ? `<a href="${detailHref}"><img class="product-media" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" onerror="this.outerHTML='<div class=\\'product-fallback\\'>Görsel yok</div>'"></a>`
       : `<a href="${detailHref}" class="product-fallback">Görsel yok</a>`;
+
     return `
       <article class="product-card">
         ${image}
@@ -286,53 +355,92 @@ function renderProducts(){
           ${product.campaignLabel ? `<span class="tag campaign">${escapeHtml(product.campaignLabel)}</span>` : ""}
         </div>
         <a class="product-name" href="${detailHref}">${escapeHtml(product.name)}</a>
-        <div class="product-meta"><span>${escapeHtml(product.unit)}</span><span class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</span></div>
-        <div class="price-stack"><div class="old-price">${oldPrice}</div><div class="new-price">${money(product.price)}</div></div>
+        <div class="product-meta">
+          <span>${escapeHtml(product.unit)}</span>
+          <span class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</span>
+        </div>
+        <div class="price-stack">
+          <div class="old-price">${oldPrice}</div>
+          <div class="new-price">${money(product.price)}</div>
+        </div>
         <div class="product-actions">
           <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${jsString(product.id)}')">${disabled ? "Tükendi" : "Sepete Ekle"}</button>
           <a class="btn secondary" href="${detailHref}">Detay</a>
         </div>
       </article>`;
   }).join("");
+
   status.className = "status ok";
   status.textContent = `${products.length} ürün listeleniyor.`;
 }
 function addToCart(productId){
   const product = allProducts.find((item) => String(item.id) === String(productId));
   if (!product) return;
+
   if (product.stock !== null && getCartQuantity(product.id) >= Number(product.stock || 0)) {
     alert("Bu üründen stok miktarı kadar ekledin.");
     return;
   }
+
   const existing = cart.find((item) => String(item.id) === String(product.id));
-  if (existing) existing.quantity += 1;
-  else cart.push({ id:product.id, name:product.name, unit:product.unit, price:product.price, quantity:1 });
-  writeCart(); renderCart();
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      unit: product.unit,
+      price: product.price,
+      quantity: 1
+    });
+  }
+  writeCart();
+  renderCart();
 }
 function updateCartItem(productId, delta){
   const item = cart.find((entry) => String(entry.id) === String(productId));
   if (!item) return;
+
   const product = allProducts.find((entry) => String(entry.id) === String(productId));
   const nextQuantity = Number(item.quantity || 0) + delta;
+
   if (product && product.stock !== null && nextQuantity > Number(product.stock || 0)) {
     alert("Stok miktarından fazla ekleyemezsin.");
     return;
   }
+
   item.quantity = nextQuantity;
-  if (item.quantity <= 0) cart = cart.filter((entry) => String(entry.id) !== String(productId));
-  writeCart(); renderCart();
+  if (item.quantity <= 0) {
+    cart = cart.filter((entry) => String(entry.id) !== String(productId));
+  }
+  writeCart();
+  renderCart();
 }
-function clearCart(){ cart = []; localStorage.removeItem(CHECKOUT_META_KEY); writeCart(); renderCart(); }
+function clearCart(){
+  cart = [];
+  localStorage.removeItem(CHECKOUT_META_KEY);
+  writeCart();
+  renderCart();
+}
 function renderCart(){
   const box = document.getElementById("cartItems");
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+
   document.getElementById("subtotalText").textContent = money(subtotal);
   document.getElementById("deliveryText").textContent = money(0);
   document.getElementById("grandTotalText").textContent = money(subtotal);
-  if (!cart.length) { box.innerHTML = '<div class="cart-empty">Sepetin boş. Ürün kartlarından ürün seçerek başlayabilirsin.</div>'; return; }
+
+  if (!cart.length) {
+    box.innerHTML = '<div class="cart-empty">Sepetin boş. Ürün kartlarından ürün seçerek başlayabilirsin.</div>';
+    return;
+  }
+
   box.innerHTML = cart.map((item) => `
     <div class="cart-item">
-      <div class="cart-row"><div class="cart-name">${escapeHtml(item.name)}</div><div class="cart-total">${money(Number(item.price || 0) * Number(item.quantity || 0))}</div></div>
+      <div class="cart-row">
+        <div class="cart-name">${escapeHtml(item.name)}</div>
+        <div class="cart-total">${money(Number(item.price || 0) * Number(item.quantity || 0))}</div>
+      </div>
       <div class="cart-sub">${escapeHtml(item.unit || "adet")} • ${money(item.price)}</div>
       <div class="qty">
         <button type="button" onclick="updateCartItem('${jsString(item.id)}', -1)">−</button>
@@ -347,9 +455,61 @@ function storeCheckoutMeta(){
     payment_method: document.getElementById("paymentMethod").value
   }));
 }
-function goToAccountForOrder(){
-  if (!cart.length) { alert("Sepet boş."); return; }
-  writeCart(); storeCheckoutMeta(); window.location.href = "hesap.html?redirect=order";
+function orderTotals(){
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+  const delivery = subtotal > 0 ? 0 : 0;
+  return {
+    subtotal,
+    delivery,
+    grandTotal: subtotal + delivery
+  };
+}
+function openOrderConfirm(){
+  if (!cart.length) {
+    alert("Sepet boş.");
+    return;
+  }
+
+  const totals = orderTotals();
+  const slot = document.getElementById("deliverySlot").value;
+  const payment = document.getElementById("paymentMethod").value;
+
+  document.getElementById("orderConfirmContent").innerHTML = `
+    <div class="order-summary-list">
+      ${cart.map((item) => `
+        <div class="order-summary-item">
+          <div>
+            <strong>${escapeHtml(item.name)}</strong>
+            <div class="order-summary-meta">${Number(item.quantity || 0)} ${escapeHtml(item.unit || "adet")} x ${money(item.price)}</div>
+          </div>
+          <strong>${money(Number(item.price || 0) * Number(item.quantity || 0))}</strong>
+        </div>
+      `).join("")}
+    </div>
+    <div class="order-summary-total">
+      <div class="summary-line"><span>Teslimat Saati</span><span>${escapeHtml(slot)}</span></div>
+      <div class="summary-line"><span>Ödeme</span><span>${escapeHtml(payment)}</span></div>
+      <div class="summary-line"><span>Ara Toplam</span><span>${money(totals.subtotal)}</span></div>
+      <div class="summary-line"><span>Teslimat</span><span>${money(totals.delivery)}</span></div>
+      <div class="summary-line summary-total"><span>Genel Toplam</span><span>${money(totals.grandTotal)}</span></div>
+    </div>
+  `;
+
+  document.getElementById("orderConfirmModal").classList.add("open");
+}
+function closeOrderConfirm(){
+  document.getElementById("orderConfirmModal").classList.remove("open");
+}
+function confirmOrderAndGo(){
+  if (!cart.length) {
+    closeOrderConfirm();
+    alert("Sepet boş.");
+    return;
+  }
+
+  writeCart();
+  storeCheckoutMeta();
+  window.location.href = "hesap.html?redirect=order";
 }
 function guessBannerHref(slide = {}){
   const blob = `${slide.title || ""} ${slide.subtitle || ""} ${slide.button || ""}`.toLocaleLowerCase("tr-TR");
@@ -369,60 +529,149 @@ function updateBannerSlider(){
   track.style.transform = `translateX(-${currentBannerIndex * 100}%)`;
   dots.forEach((dot, index) => dot.classList.toggle("active", index === currentBannerIndex));
 }
-function showBanner(index){ if (!bannerSlides.length) return; currentBannerIndex = (index + bannerSlides.length) % bannerSlides.length; updateBannerSlider(); }
-function stopBannerAutoplay(){ clearInterval(bannerTimer); }
-function startBannerAutoplay(){ stopBannerAutoplay(); if (bannerSlides.length <= 1) return; bannerTimer = setInterval(() => showBanner(currentBannerIndex + 1), 4500); }
+function showBanner(index){
+  if (!bannerSlides.length) return;
+  currentBannerIndex = (index + bannerSlides.length) % bannerSlides.length;
+  updateBannerSlider();
+}
+function stopBannerAutoplay(){
+  clearInterval(bannerTimer);
+}
+function startBannerAutoplay(){
+  stopBannerAutoplay();
+  if (bannerSlides.length <= 1) return;
+  bannerTimer = setInterval(() => showBanner(currentBannerIndex + 1), 4500);
+}
 function renderHomeBanners(value = {}){
-  const wrap = document.getElementById("showcaseWrap"), note = document.getElementById("bannerNoteBox"), track = document.getElementById("showcaseTrack"), dots = document.getElementById("showcaseDots");
+  const wrap = document.getElementById("showcaseWrap");
+  const note = document.getElementById("bannerNoteBox");
+  const track = document.getElementById("showcaseTrack");
+  const dots = document.getElementById("showcaseDots");
   const variants = ["", "accent", "soft"];
-  bannerSlides = Array.isArray(value.slides) ? value.slides.filter((slide) => slide && (slide.title || slide.subtitle || slide.button)).slice(0, 3) : [];
+
+  bannerSlides = Array.isArray(value.slides)
+    ? value.slides.filter((slide) => slide && (slide.title || slide.subtitle || slide.button)).slice(0, 3)
+    : [];
   currentBannerIndex = 0;
-  if (value.note) { note.style.display = "block"; note.textContent = value.note; } else note.style.display = "none";
-  if (!bannerSlides.length) { wrap.style.display = "none"; track.innerHTML = ""; dots.innerHTML = ""; stopBannerAutoplay(); return; }
+
+  if (value.note) {
+    note.style.display = "block";
+    note.textContent = value.note;
+  } else {
+    note.style.display = "none";
+  }
+
+  if (!bannerSlides.length) {
+    wrap.style.display = "none";
+    track.innerHTML = "";
+    dots.innerHTML = "";
+    stopBannerAutoplay();
+    return;
+  }
+
   track.innerHTML = bannerSlides.map((slide, index) => {
     const href = guessBannerHref(slide);
-    return `<article class="banner-card ${variants[index] || ""}">
-      <div><div class="banner-eyebrow">Vitrin Banneri</div><h3 class="banner-title">${escapeHtml(slide.title || "Çanakoğlu Online")}</h3><p class="banner-text">${escapeHtml(slide.subtitle || "Güncel ürünler ve kampanyalar burada.")}</p></div>
-      <a class="banner-link" href="${escapeHtml(href)}" onclick="scrollToBannerTarget(event, '${jsString(href)}')">${escapeHtml(slide.button || "İncele")}</a>
-    </article>`;
+    return `
+      <article class="banner-card ${variants[index] || ""}">
+        <div>
+          <div class="banner-eyebrow">Vitrin Banneri</div>
+          <h3 class="banner-title">${escapeHtml(slide.title || "Çanakoğlu Online")}</h3>
+          <p class="banner-text">${escapeHtml(slide.subtitle || "Güncel ürünler ve kampanyalar burada.")}</p>
+        </div>
+        <a class="banner-link" href="${escapeHtml(href)}" onclick="scrollToBannerTarget(event, '${jsString(href)}')">${escapeHtml(slide.button || "İncele")}</a>
+      </article>`;
   }).join("");
-  dots.innerHTML = bannerSlides.map((_, index) => `<button class="showcase-dot ${index === 0 ? "active" : ""}" type="button" onclick="showBanner(${index})"></button>`).join("");
-  wrap.style.display = "block"; updateBannerSlider(); startBannerAutoplay();
+
+  dots.innerHTML = bannerSlides.map((_, index) =>
+    `<button class="showcase-dot ${index === 0 ? "active" : ""}" type="button" onclick="showBanner(${index})"></button>`
+  ).join("");
+
+  wrap.style.display = "block";
+  updateBannerSlider();
+  startBannerAutoplay();
 }
 async function loadHomeBanners(){
   try {
-    const { data, error } = await client.from("site_settings").select("value").eq("key", HOME_BANNER_KEY).maybeSingle();
+    const { data, error } = await client
+      .from("site_settings")
+      .select("value")
+      .eq("key", HOME_BANNER_KEY)
+      .maybeSingle();
+
     if (error) throw error;
     renderHomeBanners(data?.value || {});
-  } catch (err) { console.error(err); renderHomeBanners({}); }
+  } catch (err) {
+    console.error(err);
+    renderHomeBanners({});
+  }
 }
 async function loadProducts(){
   const status = document.getElementById("productsStatus");
-  status.className = "status"; status.textContent = "Ürünler yükleniyor...";
+  status.className = "status";
+  status.textContent = "Ürünler yükleniyor...";
+
   try {
-    const { data, error } = await client.from("products").select("*").eq("is_active", true).order("featured_rank", { ascending:true, nullsFirst:false }).order("created_at", { ascending:false });
+    const { data, error } = await client
+      .from("products")
+      .select("*")
+      .eq("is_active", true)
+      .order("featured_rank", { ascending:true, nullsFirst:false })
+      .order("created_at", { ascending:false });
+
     if (error) throw error;
+
     allProducts = (data || []).map(normalizeProduct).filter((product) => product.price >= 0);
-    renderCategoryOptions(allProducts); renderCategoryChips(allProducts); renderProducts(); renderCart();
+    renderCategoryOptions(allProducts);
+    renderCategoryChips(allProducts);
+    renderProducts();
+    renderCart();
   } catch (err) {
     console.error(err);
     document.getElementById("productsGrid").innerHTML = '<div class="cart-empty">Ürünler yüklenemedi.</div>';
-    status.className = "status error"; status.textContent = "Ürünler alınamadı: " + (err.message || err);
+    status.className = "status error";
+    status.textContent = "Ürünler alınamadı: " + (err.message || err);
   }
 }
+
 document.getElementById("searchInput").addEventListener("input", renderProducts);
-document.getElementById("categoryFilter").addEventListener("change", (event) => { activeChip = event.target.value; renderCategoryChips(allProducts); renderProducts(); });
+document.getElementById("categoryFilter").addEventListener("change", (event) => {
+  activeChip = event.target.value;
+  renderCategoryChips(allProducts);
+  renderProducts();
+});
 document.getElementById("refreshBtn").addEventListener("click", loadProducts);
 document.getElementById("clearCartBtn").addEventListener("click", clearCart);
-document.getElementById("placeOrderBtn").addEventListener("click", goToAccountForOrder);
+document.getElementById("placeOrderBtn").addEventListener("click", openOrderConfirm);
+document.getElementById("cancelOrderConfirmBtn").addEventListener("click", closeOrderConfirm);
+document.getElementById("confirmOrderBtn").addEventListener("click", confirmOrderAndGo);
+document.getElementById("orderConfirmModal").addEventListener("click", (event) => {
+  if (event.target.id === "orderConfirmModal") closeOrderConfirm();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeOrderConfirm();
+});
 document.getElementById("deliverySlot").addEventListener("change", storeCheckoutMeta);
 document.getElementById("paymentMethod").addEventListener("change", storeCheckoutMeta);
-document.getElementById("showcasePrev").addEventListener("click", () => { showBanner(currentBannerIndex - 1); startBannerAutoplay(); });
-document.getElementById("showcaseNext").addEventListener("click", () => { showBanner(currentBannerIndex + 1); startBannerAutoplay(); });
+document.getElementById("showcasePrev").addEventListener("click", () => {
+  showBanner(currentBannerIndex - 1);
+  startBannerAutoplay();
+});
+document.getElementById("showcaseNext").addEventListener("click", () => {
+  showBanner(currentBannerIndex + 1);
+  startBannerAutoplay();
+});
 document.getElementById("showcase").addEventListener("mouseenter", stopBannerAutoplay);
 document.getElementById("showcase").addEventListener("mouseleave", startBannerAutoplay);
-window.addToCart = addToCart; window.updateCartItem = updateCartItem; window.setCategoryChip = setCategoryChip; window.showBanner = showBanner; window.scrollToBannerTarget = scrollToBannerTarget;
-renderCart(); loadHomeBanners(); loadProducts();
+
+window.addToCart = addToCart;
+window.updateCartItem = updateCartItem;
+window.setCategoryChip = setCategoryChip;
+window.showBanner = showBanner;
+window.scrollToBannerTarget = scrollToBannerTarget;
+
+renderCart();
+loadHomeBanners();
+loadProducts();
 </script>
 </body>
 </html>
