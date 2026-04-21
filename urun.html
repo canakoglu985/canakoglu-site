@@ -7,15 +7,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
-      --bg:#eef3f9;
-      --card:#ffffff;
-      --text:#17324f;
-      --muted:#6f8196;
-      --primary:#f49a27;
-      --primary2:#ffb34d;
-      --navy:#1d4678;
-      --border:#dbe6f1;
-      --soft:0 8px 20px rgba(18,50,85,.07);
+      --bg:#eef3f9; --card:#ffffff; --text:#17324f; --muted:#6f8196; --primary:#f49a27;
+      --primary2:#ffb34d; --navy:#1d4678; --border:#dbe6f1; --soft:0 8px 20px rgba(18,50,85,.07);
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -23,41 +16,27 @@
     .wrap{max-width:1180px;margin:0 auto;padding:22px}
     .topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
     .brand{display:flex;align-items:center;gap:14px}
-    .brand-logo{
-      width:70px;height:70px;border-radius:50%;background:#fff;border:1px solid #f0d8b2;
-      display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;
-    }
+    .brand-logo{width:70px;height:70px;border-radius:50%;background:#fff;border:1px solid #f0d8b2;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
     .brand-logo img{width:100%;height:100%;object-fit:cover;display:block}
     .brand h1{margin:0;font-size:24px;color:var(--navy)}
     .muted{color:var(--muted)}
-    .btn{
-      display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border:none;
-      border-radius:14px;font-weight:800;cursor:pointer
-    }
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border:none;border-radius:14px;font-weight:800;cursor:pointer}
+    .btn:disabled{cursor:not-allowed;opacity:.55}
     .primary{background:linear-gradient(135deg,var(--primary) 0%,var(--primary2) 100%);color:#fff}
     .secondary{background:#fff;color:var(--navy);border:1px solid var(--border)}
     .card{background:var(--card);border:1px solid var(--border);border-radius:24px;box-shadow:var(--soft)}
     .product-layout{display:grid;grid-template-columns:1fr 1fr;gap:22px}
     .media-card,.info-card{padding:22px}
-    .media-box{
-      height:500px;border-radius:22px;background:#f7f9fc;border:1px solid var(--border);
-      display:flex;align-items:center;justify-content:center;overflow:hidden
-    }
+    .media-box{height:500px;border-radius:22px;background:#f7f9fc;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
     .media-box img{max-width:100%;max-height:100%;object-fit:contain}
     .fallback{color:var(--muted);font-size:22px;font-weight:900}
-    .badge{
-      display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;
-      background:#edf4ff;color:#225996;border:1px solid #cddcf7;font-size:12px;font-weight:900
-    }
+    .badge{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:999px;background:#edf4ff;color:#225996;border:1px solid #cddcf7;font-size:12px;font-weight:900}
     .title{font-size:40px;line-height:1.06;font-weight:900;margin:14px 0 10px;color:var(--navy)}
     .category{font-size:14px;color:var(--muted);margin-bottom:14px}
     .price-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:18px 0}
     .old-price{text-decoration:line-through;color:var(--muted);font-size:24px;font-weight:800}
     .new-price{font-size:50px;line-height:1;font-weight:900;color:#0f60c8}
-    .discount{
-      display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:999px;
-      background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.22);font-size:14px;font-weight:900
-    }
+    .discount{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:999px;background:#fff5e7;color:#c97507;border:1px solid rgba(244,154,39,.22);font-size:14px;font-weight:900}
     .stock{margin:10px 0 18px;font-weight:800}
     .stock.ok{color:#1e7b36}
     .stock.out{color:#d93025}
@@ -70,28 +49,17 @@
     .meta-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px}
     .meta-item{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px}
     .meta-item .label{font-size:12px;color:var(--muted);font-weight:900;margin-bottom:8px}
-    .meta-item .value{font-size:18px;color:var(--navy);font-weight:900}
+    .meta-item .value{font-size:18px;color:var(--navy);font-weight:900;overflow-wrap:anywhere}
     .hidden{display:none !important}
-    @media (max-width:960px){
-      .product-layout{grid-template-columns:1fr}
-      .media-box{height:340px}
-      .title{font-size:32px}
-      .new-price{font-size:40px}
-      .meta-grid{grid-template-columns:1fr}
-    }
+    @media (max-width:960px){.product-layout{grid-template-columns:1fr}.media-box{height:340px}.title{font-size:32px}.new-price{font-size:40px}.meta-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar">
       <a class="brand" href="index.html">
-        <div class="brand-logo" id="brandLogo">
-          <img src="logo.png" alt="" onerror="hideLogoImage()">
-        </div>
-        <div>
-          <h1>Çanakoğlu Kapıda</h1>
-          <div class="muted">Tek tıkla kapımda • mahalle marketin</div>
-        </div>
+        <div class="brand-logo" id="brandLogo"><img src="logo.png" alt="" onerror="hideLogoImage()"></div>
+        <div><h1>Çanakoğlu Kapıda</h1><div class="muted">Tek tıkla kapımda • mahalle marketin</div></div>
       </a>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a class="btn secondary" href="index.html">← Ana Sayfa</a>
@@ -106,35 +74,25 @@
 
     <div id="productPage" class="hidden">
       <div class="product-layout">
-        <div class="card media-card">
-          <div class="media-box" id="productImageBox"></div>
-        </div>
+        <div class="card media-card"><div class="media-box" id="productImageBox"></div></div>
         <div class="card info-card">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
             <span id="campaignBadge" class="badge hidden"></span>
             <span id="discountBadge" class="discount hidden"></span>
           </div>
-
           <div id="productTitle" class="title">Ürün</div>
           <div id="productCategory" class="category">Kategori</div>
-
-          <div class="price-row">
-            <div id="oldPrice" class="old-price hidden"></div>
-            <div id="newPrice" class="new-price"></div>
-          </div>
-
+          <div class="price-row"><div id="oldPrice" class="old-price hidden"></div><div id="newPrice" class="new-price"></div></div>
           <div id="stockInfo" class="stock ok"></div>
           <div id="productDesc" class="desc">Açıklama bulunamadı.</div>
-
           <div class="buy-bar">
             <div class="qty-box">
               <button type="button" onclick="changeQty(-1)">−</button>
               <input id="qtyInput" type="number" min="1" value="1" />
               <button type="button" onclick="changeQty(1)">+</button>
             </div>
-            <button class="btn primary full" type="button" onclick="addCurrentProductToCart()">Sepete Ekle</button>
+            <button id="addCartBtn" class="btn primary full" type="button" onclick="addCurrentProductToCart()">Sepete Ekle</button>
           </div>
-
           <div class="meta-grid">
             <div class="meta-item"><div class="label">Barkod</div><div id="metaBarcode" class="value">-</div></div>
             <div class="meta-item"><div class="label">Birim</div><div id="metaUnit" class="value">adet</div></div>
@@ -150,130 +108,68 @@ const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
 const CART_KEY = "canakoglu_cart_v1";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 let currentProduct = null;
 
-function money(v){
-  const n = Number(v || 0);
-  return new Intl.NumberFormat("tr-TR", { style:"currency", currency:"TRY", maximumFractionDigits:2 }).format(n);
-}
-function escapeHtml(str=""){
-  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-}
-function getParam(name){
-  return new URL(window.location.href).searchParams.get(name);
-}
+function money(v){ return new Intl.NumberFormat("tr-TR", { style:"currency", currency:"TRY", maximumFractionDigits:2 }).format(Number(v || 0)); }
+function escapeHtml(str=""){ return String(str ?? "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[m])); }
+function getParam(name){ return new URL(window.location.href).searchParams.get(name); }
 function normalizeProduct(row){
   return {
     ...row,
     image: row.image_url || row.image || "",
     comparePrice: Number(row.compare_at_price || 0),
     campaignLabel: row.campaign_label || "",
-    stockQty: Number(row.stock_qty ?? row.stock ?? 0)
+    stockQty: Number(row.stock_qty ?? row.stock ?? 0),
+    price: Number(row.price || 0)
   };
 }
-function hideLogoImage(){
-  const logo = document.querySelector("#brandLogo img");
-  if(logo) logo.style.display = "none";
-}
+function hideLogoImage(){ const logo = document.querySelector("#brandLogo img"); if(logo) logo.style.display = "none"; }
 function setState(title, text){
-  const box = document.getElementById("stateBox");
-  box.innerHTML = `<h2 style="margin:0 0 8px;color:var(--navy);">${escapeHtml(title)}</h2><p style="margin:0;line-height:1.7;color:var(--muted);">${escapeHtml(text)}</p>`;
+  document.getElementById("stateBox").innerHTML = `<h2 style="margin:0 0 8px;color:var(--navy);">${escapeHtml(title)}</h2><p style="margin:0;line-height:1.7;color:var(--muted);">${escapeHtml(text)}</p>`;
 }
-function showProductPage(){
-  document.getElementById("stateBox").classList.add("hidden");
-  document.getElementById("productPage").classList.remove("hidden");
-}
+function showProductPage(){ document.getElementById("stateBox").classList.add("hidden"); document.getElementById("productPage").classList.remove("hidden"); }
 function changeQty(delta){
   const input = document.getElementById("qtyInput");
-  let value = Number(input.value || 1);
-  value += delta;
+  let value = Number(input.value || 1) + delta;
   if(value < 1) value = 1;
-  if(currentProduct && currentProduct.stockQty > 0 && value > currentProduct.stockQty){
-    value = currentProduct.stockQty;
-  }
+  if(currentProduct && currentProduct.stockQty > 0 && value > currentProduct.stockQty) value = currentProduct.stockQty;
   input.value = value;
 }
-function getCart(){
-  try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); }
-  catch { return []; }
-}
-function saveCart(cart){
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-}
+function getCart(){ try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; } }
+function saveCart(cart){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
 function addCurrentProductToCart(){
-  if(!currentProduct){
-    alert("Ürün bilgisi bulunamadı.");
-    return;
-  }
-  if(currentProduct.stockQty <= 0){
-    alert("Bu ürün stokta yok.");
-    return;
-  }
+  if(!currentProduct){ alert("Ürün bilgisi bulunamadı."); return; }
+  if(currentProduct.stockQty <= 0){ alert("Bu ürün stokta yok."); return; }
   const qty = Math.max(1, Number(document.getElementById("qtyInput").value || 1));
   const cart = getCart();
   const found = cart.find((item) => String(item.id) === String(currentProduct.id));
-  if(found){
-    found.quantity = Number(found.quantity || 0) + qty;
-  }else{
-    cart.push({
-      id: currentProduct.id,
-      name: currentProduct.name,
-      price: Number(currentProduct.price || 0),
-      image: currentProduct.image || "",
-      unit: currentProduct.unit || "adet",
-      quantity: qty
-    });
+  const oldQty = Number(found?.quantity || 0);
+  if(oldQty + qty > currentProduct.stockQty){
+    alert("Stok miktarından fazla ekleyemezsin.");
+    return;
   }
+  if(found) found.quantity = oldQty + qty;
+  else cart.push({ id:currentProduct.id, name:currentProduct.name, price:currentProduct.price, image:currentProduct.image || "", unit:currentProduct.unit || "adet", quantity:qty });
   saveCart(cart);
   alert("Ürün sepete eklendi.");
 }
 function renderProduct(product){
   currentProduct = product;
   showProductPage();
-
-  document.getElementById("productImageBox").innerHTML = product.image
-    ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name || "Ürün")}">`
-    : `<div class="fallback">Görsel yok</div>`;
-
+  document.getElementById("productImageBox").innerHTML = product.image ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name || "Ürün")}">` : `<div class="fallback">Görsel yok</div>`;
   document.getElementById("productTitle").textContent = product.name || "Ürün";
   document.getElementById("productCategory").textContent = product.category || "Kategori yok";
   document.getElementById("newPrice").textContent = money(product.price || 0);
-
   const oldPriceEl = document.getElementById("oldPrice");
-  if(product.comparePrice > product.price){
-    oldPriceEl.classList.remove("hidden");
-    oldPriceEl.textContent = money(product.comparePrice);
-  } else {
-    oldPriceEl.classList.add("hidden");
-  }
-
+  if(product.comparePrice > product.price){ oldPriceEl.classList.remove("hidden"); oldPriceEl.textContent = money(product.comparePrice); } else oldPriceEl.classList.add("hidden");
   const campaign = document.getElementById("campaignBadge");
-  if(product.campaignLabel){
-    campaign.classList.remove("hidden");
-    campaign.textContent = product.campaignLabel;
-  } else {
-    campaign.classList.add("hidden");
-  }
-
+  if(product.campaignLabel){ campaign.classList.remove("hidden"); campaign.textContent = product.campaignLabel; } else campaign.classList.add("hidden");
   const discount = document.getElementById("discountBadge");
-  if(product.comparePrice > product.price){
-    const percent = Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100);
-    discount.classList.remove("hidden");
-    discount.textContent = `-%${percent}`;
-  } else {
-    discount.classList.add("hidden");
-  }
-
+  if(product.comparePrice > product.price){ discount.classList.remove("hidden"); discount.textContent = `-%${Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}`; } else discount.classList.add("hidden");
   const stockEl = document.getElementById("stockInfo");
-  if(product.stockQty > 0){
-    stockEl.className = "stock ok";
-    stockEl.textContent = `Stokta var • ${product.stockQty} adet`;
-  } else {
-    stockEl.className = "stock out";
-    stockEl.textContent = "Stokta yok";
-  }
-
+  const addBtn = document.getElementById("addCartBtn");
+  if(product.stockQty > 0){ stockEl.className = "stock ok"; stockEl.textContent = `Stokta var • ${product.stockQty} adet`; addBtn.disabled = false; addBtn.textContent = "Sepete Ekle"; }
+  else { stockEl.className = "stock out"; stockEl.textContent = "Stokta yok"; addBtn.disabled = true; addBtn.textContent = "Tükendi"; }
   document.getElementById("productDesc").textContent = product.description || "Bu ürün için açıklama eklenmemiş.";
   document.getElementById("metaBarcode").textContent = product.barcode || "-";
   document.getElementById("metaUnit").textContent = product.unit || "adet";
@@ -281,30 +177,21 @@ function renderProduct(product){
 }
 async function loadPage(){
   const id = getParam("id");
-
-  if(!id){
-    window.location.href = "index.html";
-    return;
-  }
-
+  if(!id){ window.location.href = "index.html"; return; }
   setState("Yükleniyor", "Ürün bilgisi hazırlanıyor.");
-
   try{
-    const { data, error } = await client.from("products").select("*").eq("id", id).maybeSingle();
-
-    if(error || !data){
-      window.location.href = "index.html";
-      return;
-    }
-
+    const { data, error } = await client.from("products").select("*").eq("id", id).eq("is_active", true).maybeSingle();
+    if(error || !data){ window.location.href = "index.html"; return; }
     renderProduct(normalizeProduct(data));
   }catch(err){
+    console.error(err);
     setState("Sayfa açılmadı", "Bağlantı kurulamadı. Sayfayı yenileyip tekrar dene.");
   }
 }
-
+document.getElementById("qtyInput").addEventListener("change", () => changeQty(0));
 window.changeQty = changeQty;
 window.addCurrentProductToCart = addCurrentProductToCart;
+window.hideLogoImage = hideLogoImage;
 loadPage();
 </script>
 </body>
