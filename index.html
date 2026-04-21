@@ -21,27 +21,12 @@ header{
 }
 .header-inner,.wrap{max-width:1280px;margin:0 auto}
 .header-inner{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:18px}
 .brand-logo{
-  width:132px;
-  height:82px;
-  border-radius:20px;
-  overflow:hidden;
-  background:#fff;
-  border:1px solid rgba(255,255,255,.16);
-  flex-shrink:0;
-  box-shadow:0 6px 14px rgba(10,28,52,.12);
-  padding:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  width:132px;height:132px;border-radius:50%;overflow:hidden;background:transparent;border:1px solid rgba(255,255,255,.16);
+  flex-shrink:0;box-shadow:0 6px 14px rgba(10,28,52,.12);padding:0;display:flex;align-items:center;justify-content:center
 }
-.brand-logo img{
-  width:118%;
-  height:118%;
-  object-fit:contain;
-  display:block;
-}
+.brand-logo img{width:128%;height:128%;object-fit:contain;display:block}
 .brand-text{display:flex;flex-direction:column;gap:6px}
 .brand-title{font-size:30px;font-weight:900}
 .brand-sub{font-size:14px;opacity:.9}
@@ -251,7 +236,7 @@ header{
   .wrap{padding:12px}.hero{padding:18px}.hero h1{font-size:30px}.search-card{grid-template-columns:1fr}.market-nav{gap:12px}
   .products-grid,.featured-grid{grid-template-columns:1fr}.featured-card{grid-template-columns:92px 1fr}.featured-media{width:92px;height:92px}
   .deal-card{flex-basis:280px}.deal-body{grid-template-columns:96px 1fr}.deal-img{width:96px;height:96px}.deal-price{font-size:30px}
-  .product-actions{grid-template-columns:1fr}.brand-title{font-size:24px}.brand-logo{width:112px;height:72px}.cart-trigger{width:100%}
+  .product-actions{grid-template-columns:1fr}.brand-title{font-size:24px}.brand-logo{width:104px;height:104px}.cart-trigger{width:100%}
 }
 </style>
 </head>
@@ -399,6 +384,571 @@ header{
 const SUPABASE_URL = "https://jpguymicdiujhutnycvl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwZ3V5bWljZGl1amh1dG55Y3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDQyMjcsImV4cCI6MjA5MTU4MDIyN30.ERKRF1rB2sodqaZ6HltLVYl8vCTZOx1Ve0HY39Zdl_I";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const CART_KEY = "canakoglu_cart_v1";
+const CHECKOUT_META_KEY = "canakoglu_checkout_meta_v1";
+const HOME_BANNER_KEY = "home_banner_v1";
+
+const DEFAULT_HOME_BANNERS = {
+  note: "Siparişini oluştur, ürünlerini seç, hesabından hızlıca tamamla.",
+  slides: [
+    { title: "Haftanın Fırsatları", subtitle: "Seçili ürünlerde özel fiyatlar seni bekliyor.", button: "Ürünlere Git" },
+    { title: "Taze Ürünler Kapında", subtitle: "Sebze, meyve ve market ürünlerini kolayca sipariş ver.", button: "Sepeti Hazırla" },
+    { title: "Çanakoğlu Kapıda", subtitle: "Mahalle marketin tek tıkla kapına gelsin.", button: "Hesabıma Git" }
+  ]
+};
+
+let allProducts = [];
+let cart = readCart();
+let activeChip = "";
+let bannerSlides = [];
+let currentBannerIndex = 0;
+let bannerTimer = null;
+
+function money(value){
+  return new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value || 0)) + " TL";
+}
+function escapeHtml(text){
+  return String(text ?? "").replace(/[&<>"']/g,function(m){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];
+  });
+}
+function jsString(value){
+  return String(value ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+}
+function readCart(){
+  try{return JSON.parse(localStorage.getItem(CART_KEY) || "[]");}
+  catch{return [];}
+}
+function writeCart(){
+  localStorage.setItem(CART_KEY,JSON.stringify(cart));
+}
+function normalizeProduct(row){
+  return {
+    id:row.id,
+    name:row.name || row.product_name || row.title || "Ürün",
+    category:row.category || "Diğer",
+    price:Number(row.price || 0),
+    comparePrice:Number(row.compare_at_price || 0),
+    unit:row.unit || "adet",
+    stock:row.stock_qty ?? row.stock ?? null,
+    image:row.image_url || row.image || "",
+    campaignLabel:row.campaign_label || "",
+    isFeatured:row.is_featured === true,
+    featuredRank:Number(row.featured_rank || 9999)
+  };
+}
+function renderCategoryOptions(products){
+  const categories = [...new Set(products.map((item)=>item.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
+  document.getElementById("categoryFilter").innerHTML = '<option value="">Tüm Kategoriler</option>' + categories.map((item)=>`<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join("");
+}
+function renderCategoryChips(products){
+  const box = document.getElementById("categoryChips");
+  const categories = [...new Set(products.map((item)=>item.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
+  box.innerHTML = ["Tümü",...categories].map((item)=>{
+    const value = item === "Tümü" ? "" : item;
+    return `<button class="chip ${activeChip === value ? "active" : ""}" type="button" onclick="setCategoryChip('${jsString(value)}')">${escapeHtml(item)}</button>`;
+  }).join("");
+}
+function setCategoryChip(value){
+  activeChip = value;
+  document.getElementById("categoryFilter").value = value;
+  renderCategoryChips(allProducts);
+  renderProducts();
+}
+function stockClass(product){
+  const value = Number(product.stock ?? 0);
+  if(product.stock === null) return "ok";
+  if(value <= 0) return "out";
+  if(value <= 5) return "low";
+  return "ok";
+}
+function stockLabel(product){
+  if(product.stock === null) return "Stok bilgisi yok";
+  const value = Number(product.stock || 0);
+  if(value <= 0) return "Tükendi";
+  if(value <= 5) return `Az stok (${value})`;
+  return `Stokta (${value})`;
+}
+function getCartQuantity(productId){
+  const item = cart.find((entry)=>String(entry.id) === String(productId));
+  return Number(item?.quantity || 0);
+}
+function getFilteredProducts(){
+  const search = document.getElementById("searchInput").value.trim().toLocaleLowerCase("tr-TR");
+  const category = document.getElementById("categoryFilter").value;
+  return allProducts.filter((product)=>{
+    const textMatch = !search || [product.name,product.category,product.campaignLabel].join(" ").toLocaleLowerCase("tr-TR").includes(search);
+    const categoryMatch = !category || product.category === category;
+    return textMatch && categoryMatch;
+  });
+}
+function renderProducts(){
+  const grid = document.getElementById("productsGrid");
+  const status = document.getElementById("productsStatus");
+  const products = getFilteredProducts();
+
+  if(!products.length){
+    grid.innerHTML = '<div class="cart-empty" style="grid-column:1/-1">Aramana uygun ürün bulunamadı.</div>';
+    status.className = "status";
+    status.textContent = "";
+    return;
+  }
+
+  grid.innerHTML = products.map((product)=>{
+    const disabled = product.stock !== null && Number(product.stock) <= 0;
+    const oldPrice = product.comparePrice > product.price ? money(product.comparePrice) : "&nbsp;";
+    const detailHref = `urun.html?id=${encodeURIComponent(product.id)}`;
+    const image = product.image
+      ? `<a href="${detailHref}"><img class="product-media" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" onerror="this.outerHTML='<div class=\\'product-fallback\\'>Görsel yok</div>'"></a>`
+      : `<a href="${detailHref}" class="product-fallback">Görsel yok</a>`;
+
+    return `
+      <article class="product-card">
+        ${image}
+        <div class="tag-row">
+          <span class="tag">${escapeHtml(product.category)}</span>
+          ${product.campaignLabel ? `<span class="tag campaign">${escapeHtml(product.campaignLabel)}</span>` : ""}
+        </div>
+        <a class="product-name" href="${detailHref}">${escapeHtml(product.name)}</a>
+        <div class="product-meta">
+          <span>${escapeHtml(product.unit)}</span>
+          <span class="stock ${stockClass(product)}">${escapeHtml(stockLabel(product))}</span>
+        </div>
+        <div class="price-stack">
+          <div class="old-price">${oldPrice}</div>
+          <div class="new-price">${money(product.price)}</div>
+        </div>
+        <div class="product-actions">
+          <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${jsString(product.id)}')">
+            ${disabled ? "Tükendi" : "Sepete Ekle"}
+          </button>
+          <a class="btn secondary" href="${detailHref}">Detay</a>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  status.className = "status ok";
+  status.textContent = `${products.length} ürün listeleniyor.`;
+}
+function renderFeaturedProducts(){
+  const section = document.getElementById("featuredSection");
+  const grid = document.getElementById("featuredGrid");
+
+  const featured = [...allProducts]
+    .filter((product)=>product.isFeatured)
+    .sort((a,b)=>a.featuredRank - b.featuredRank)
+    .slice(0,6);
+
+  if(!featured.length){
+    section.style.display = "none";
+    grid.innerHTML = "";
+    return;
+  }
+
+  grid.innerHTML = featured.map((product)=>{
+    const disabled = product.stock !== null && Number(product.stock) <= 0;
+    const detailHref = `urun.html?id=${encodeURIComponent(product.id)}`;
+    const image = product.image ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">` : "Görsel yok";
+
+    return `
+      <article class="featured-card">
+        <a class="featured-media" href="${detailHref}">${image}</a>
+        <div>
+          <a class="featured-name" href="${detailHref}">${escapeHtml(product.name)}</a>
+          <div class="featured-price">${money(product.price)}</div>
+          <div class="featured-actions">
+            <button class="btn primary" type="button" ${disabled ? "disabled" : ""} onclick="addToCart('${jsString(product.id)}')">
+              ${disabled ? "Tükendi" : "Sepete Ekle"}
+            </button>
+            <a class="btn secondary" href="${detailHref}">Detay</a>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  section.style.display = "block";
+}
+function dealTheme(index){
+  return ["red","blue","orange"][index % 3];
+}
+function shortDateLabel(){
+  const now = new Date();
+  const end = new Date(now);
+  end.setDate(now.getDate() + 7);
+  return `${now.getDate()}-${end.getDate()} ${end.toLocaleDateString("tr-TR",{month:"long"})}`;
+}
+function renderDealRail(){
+  const section = document.getElementById("dealRailSection");
+  const rail = document.getElementById("dealRail");
+  if(!section || !rail) return;
+
+  const deals = [...allProducts]
+    .filter((product)=>product.stock === null || Number(product.stock) > 0)
+    .sort((a,b)=>{
+      const aScore = (a.comparePrice > a.price ? 3 : 0) + (a.campaignLabel ? 2 : 0) + (a.isFeatured ? 1 : 0);
+      const bScore = (b.comparePrice > b.price ? 3 : 0) + (b.campaignLabel ? 2 : 0) + (b.isFeatured ? 1 : 0);
+      return bScore - aScore || a.featuredRank - b.featuredRank;
+    })
+    .slice(0,12);
+
+  if(!deals.length){
+    section.style.display = "none";
+    rail.innerHTML = "";
+    return;
+  }
+
+  const dateText = shortDateLabel();
+
+  rail.innerHTML = deals.map((product,index)=>{
+    const detailHref = `urun.html?id=${encodeURIComponent(product.id)}`;
+    const oldPrice = product.comparePrice > product.price ? money(product.comparePrice) : "";
+    const image = product.image ? `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">` : "Görsel yok";
+    const badgeText = product.campaignLabel || (product.comparePrice > product.price ? "İndirim" : "Stokta");
+
+    return `
+      <article class="deal-card ${dealTheme(index)}">
+        <div class="deal-top">
+          <div>
+            ${escapeHtml(badgeText)}
+            <small>Online market özel</small>
+          </div>
+          <span class="deal-badge">Fırsat</span>
+        </div>
+        <div class="deal-body">
+          <a class="deal-img" href="${detailHref}">${image}</a>
+          <div>
+            <div class="deal-date">${escapeHtml(dateText)}</div>
+            <a class="deal-name" href="${detailHref}">${escapeHtml(product.name)}</a>
+            <div class="deal-old">${oldPrice}</div>
+            <div class="deal-price">${money(product.price).replace(" TL","")}<span> TL</span></div>
+            <button class="btn primary" type="button" style="margin-top:10px;padding:9px 11px;border-radius:12px;font-size:13px" onclick="addToCart('${jsString(product.id)}')">Sepete Ekle</button>
+          </div>
+        </div>
+        <div class="deal-bottom">Stoklarla sınırlıdır</div>
+      </article>
+    `;
+  }).join("");
+
+  section.style.display = "block";
+}
+function scrollDeals(direction){
+  const rail = document.getElementById("dealRail");
+  if(!rail) return;
+  rail.scrollBy({left:direction * 320,behavior:"smooth"});
+}
+function addToCart(productId){
+  const product = allProducts.find((item)=>String(item.id) === String(productId));
+  if(!product) return;
+
+  if(product.stock !== null && getCartQuantity(product.id) >= Number(product.stock || 0)){
+    alert("Bu üründen stok miktarı kadar ekledin.");
+    return;
+  }
+
+  const existing = cart.find((item)=>String(item.id) === String(product.id));
+  if(existing){
+    existing.quantity += 1;
+  }else{
+    cart.push({id:product.id,name:product.name,unit:product.unit,price:product.price,quantity:1});
+  }
+
+  writeCart();
+  renderCart();
+  openCartDrawer();
+}
+function updateCartItem(productId,delta){
+  const item = cart.find((entry)=>String(entry.id) === String(productId));
+  if(!item) return;
+
+  const product = allProducts.find((entry)=>String(entry.id) === String(productId));
+  const nextQuantity = Number(item.quantity || 0) + delta;
+
+  if(product && product.stock !== null && nextQuantity > Number(product.stock || 0)){
+    alert("Stok miktarından fazla ekleyemezsin.");
+    return;
+  }
+
+  item.quantity = nextQuantity;
+  if(item.quantity <= 0){
+    cart = cart.filter((entry)=>String(entry.id) !== String(productId));
+  }
+
+  writeCart();
+  renderCart();
+}
+function clearCart(){
+  cart = [];
+  localStorage.removeItem(CHECKOUT_META_KEY);
+  writeCart();
+  renderCart();
+}
+function openCartDrawer(){
+  document.querySelector(".cart-box").classList.add("open");
+  document.getElementById("cartDrawerBackdrop").classList.add("open");
+}
+function closeCartDrawer(){
+  document.querySelector(".cart-box").classList.remove("open");
+  document.getElementById("cartDrawerBackdrop").classList.remove("open");
+}
+function renderCart(){
+  const box = document.getElementById("cartItems");
+  const subtotal = cart.reduce((sum,item)=>sum + Number(item.price || 0) * Number(item.quantity || 0),0);
+  const count = cart.reduce((sum,item)=>sum + Number(item.quantity || 0),0);
+
+  document.getElementById("cartCount").textContent = String(count);
+  document.getElementById("subtotalText").textContent = money(subtotal);
+  document.getElementById("deliveryText").textContent = money(0);
+  document.getElementById("grandTotalText").textContent = money(subtotal);
+
+  if(!cart.length){
+    box.innerHTML = '<div class="cart-empty">Sepetin boş. Ürün kartlarından ürün seçerek başlayabilirsin.</div>';
+    return;
+  }
+
+  box.innerHTML = cart.map((item)=>`
+    <div class="cart-item">
+      <div class="cart-row">
+        <div class="cart-name">${escapeHtml(item.name)}</div>
+        <div class="cart-total">${money(Number(item.price || 0) * Number(item.quantity || 0))}</div>
+      </div>
+      <div class="cart-sub">${escapeHtml(item.unit || "adet")} • ${money(item.price)}</div>
+      <div class="qty">
+        <button type="button" onclick="updateCartItem('${jsString(item.id)}', -1)">−</button>
+        <strong>${Number(item.quantity || 0)}</strong>
+        <button type="button" onclick="updateCartItem('${jsString(item.id)}', 1)">+</button>
+      </div>
+    </div>
+  `).join("");
+}
+function storeCheckoutMeta(){
+  localStorage.setItem(CHECKOUT_META_KEY,JSON.stringify({
+    delivery_slot:document.getElementById("deliverySlot").value,
+    payment_method:document.getElementById("paymentMethod").value
+  }));
+}
+function orderTotals(){
+  const subtotal = cart.reduce((sum,item)=>sum + Number(item.price || 0) * Number(item.quantity || 0),0);
+  const delivery = subtotal > 0 ? 0 : 0;
+  return {subtotal,delivery,grandTotal:subtotal + delivery};
+}
+function openOrderConfirm(){
+  if(!cart.length){
+    alert("Sepet boş.");
+    return;
+  }
+
+  const totals = orderTotals();
+  const slot = document.getElementById("deliverySlot").value;
+  const payment = document.getElementById("paymentMethod").value;
+
+  document.getElementById("orderConfirmContent").innerHTML = `
+    <div class="order-summary-list">
+      ${cart.map((item)=>`
+        <div class="order-summary-item">
+          <div>
+            <strong>${escapeHtml(item.name)}</strong>
+            <div class="order-summary-meta">${Number(item.quantity || 0)} ${escapeHtml(item.unit || "adet")} x ${money(item.price)}</div>
+          </div>
+          <strong>${money(Number(item.price || 0) * Number(item.quantity || 0))}</strong>
+        </div>
+      `).join("")}
+    </div>
+    <div class="order-summary-total">
+      <div class="summary-line"><span>Teslimat Saati</span><span>${escapeHtml(slot)}</span></div>
+      <div class="summary-line"><span>Ödeme</span><span>${escapeHtml(payment)}</span></div>
+      <div class="summary-line"><span>Ara Toplam</span><span>${money(totals.subtotal)}</span></div>
+      <div class="summary-line"><span>Teslimat</span><span>${money(totals.delivery)}</span></div>
+      <div class="summary-line summary-total"><span>Genel Toplam</span><span>${money(totals.grandTotal)}</span></div>
+    </div>
+  `;
+
+  document.getElementById("orderConfirmModal").classList.add("open");
+}
+function closeOrderConfirm(){
+  document.getElementById("orderConfirmModal").classList.remove("open");
+}
+function confirmOrderAndGo(){
+  if(!cart.length){
+    closeOrderConfirm();
+    alert("Sepet boş.");
+    return;
+  }
+
+  writeCart();
+  storeCheckoutMeta();
+  window.location.href = "hesap.html?redirect=order";
+}
+function guessBannerHref(slide = {}){
+  const blob = `${slide.title || ""} ${slide.subtitle || ""} ${slide.button || ""}`.toLocaleLowerCase("tr-TR");
+  if(blob.includes("hesap")) return "hesap.html";
+  return "#productsGrid";
+}
+function scrollToBannerTarget(event,href){
+  if(!href.startsWith("#")) return;
+  event.preventDefault();
+  const target = document.querySelector(href);
+  if(target) target.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function updateBannerSlider(){
+  const track = document.getElementById("showcaseTrack");
+  const dots = document.querySelectorAll(".showcase-dot");
+  if(!bannerSlides.length) return;
+
+  track.style.transform = `translateX(-${currentBannerIndex * 100}%)`;
+  dots.forEach((dot,index)=>dot.classList.toggle("active",index === currentBannerIndex));
+}
+function showBanner(index){
+  if(!bannerSlides.length) return;
+  currentBannerIndex = (index + bannerSlides.length) % bannerSlides.length;
+  updateBannerSlider();
+}
+function stopBannerAutoplay(){
+  clearInterval(bannerTimer);
+}
+function startBannerAutoplay(){
+  stopBannerAutoplay();
+  if(bannerSlides.length <= 1) return;
+  bannerTimer = setInterval(()=>showBanner(currentBannerIndex + 1),4500);
+}
+function renderHomeBanners(value = {}){
+  const wrap = document.getElementById("showcaseWrap");
+  const note = document.getElementById("bannerNoteBox");
+  const track = document.getElementById("showcaseTrack");
+  const dots = document.getElementById("showcaseDots");
+  const variants = ["","accent","soft"];
+
+  const sourceSlides = Array.isArray(value.slides) && value.slides.length ? value.slides : DEFAULT_HOME_BANNERS.slides;
+  bannerSlides = sourceSlides.filter((slide)=>slide && (slide.title || slide.subtitle || slide.button)).slice(0,3);
+  currentBannerIndex = 0;
+
+  const noteText = value.note || DEFAULT_HOME_BANNERS.note;
+  if(noteText){
+    note.style.display = "block";
+    note.textContent = noteText;
+  }else{
+    note.style.display = "none";
+  }
+
+  if(!bannerSlides.length){
+    wrap.style.display = "none";
+    track.innerHTML = "";
+    dots.innerHTML = "";
+    stopBannerAutoplay();
+    return;
+  }
+
+  track.innerHTML = bannerSlides.map((slide,index)=>{
+    const href = guessBannerHref(slide);
+    return `
+      <article class="banner-card ${variants[index] || ""}">
+        <div>
+          <div class="banner-eyebrow">Vitrin Banneri</div>
+          <h3 class="banner-title">${escapeHtml(slide.title || "Çanakoğlu Online")}</h3>
+          <p class="banner-text">${escapeHtml(slide.subtitle || "Güncel ürünler ve kampanyalar burada.")}</p>
+        </div>
+        <a class="banner-link" href="${escapeHtml(href)}" onclick="scrollToBannerTarget(event, '${jsString(href)}')">${escapeHtml(slide.button || "İncele")}</a>
+      </article>
+    `;
+  }).join("");
+
+  dots.innerHTML = bannerSlides.map((_,index)=>`
+    <button class="showcase-dot ${index === 0 ? "active" : ""}" type="button" onclick="showBanner(${index})"></button>
+  `).join("");
+
+  wrap.style.display = "block";
+  updateBannerSlider();
+  startBannerAutoplay();
+}
+async function loadHomeBanners(){
+  try{
+    const {data,error} = await client.from("site_settings").select("value").eq("key",HOME_BANNER_KEY).maybeSingle();
+    if(error) throw error;
+    renderHomeBanners(data?.value || {});
+  }catch(err){
+    console.error(err);
+    renderHomeBanners({});
+  }
+}
+async function loadProducts(){
+  const status = document.getElementById("productsStatus");
+  status.className = "status";
+  status.textContent = "Ürünler yükleniyor...";
+
+  try{
+    const {data,error} = await client
+      .from("products")
+      .select("*")
+      .eq("is_active",true)
+      .order("featured_rank",{ascending:true,nullsFirst:false})
+      .order("created_at",{ascending:false});
+
+    if(error) throw error;
+
+    allProducts = (data || []).map(normalizeProduct).filter((product)=>product.price >= 0);
+    renderCategoryOptions(allProducts);
+    renderCategoryChips(allProducts);
+    renderFeaturedProducts();
+    renderDealRail();
+    renderProducts();
+    renderCart();
+  }catch(err){
+    console.error(err);
+    document.getElementById("productsGrid").innerHTML = '<div class="cart-empty">Ürünler yüklenemedi.</div>';
+    status.className = "status error";
+    status.textContent = "Ürünler alınamadı: " + (err.message || err);
+  }
+}
+
+document.getElementById("searchInput").addEventListener("input",renderProducts);
+document.getElementById("categoryFilter").addEventListener("change",(event)=>{
+  activeChip = event.target.value;
+  renderCategoryChips(allProducts);
+  renderProducts();
+});
+document.getElementById("refreshBtn").addEventListener("click",loadProducts);
+document.getElementById("cartToggleBtn").addEventListener("click",openCartDrawer);
+document.getElementById("closeCartBtn").addEventListener("click",closeCartDrawer);
+document.getElementById("cartDrawerBackdrop").addEventListener("click",closeCartDrawer);
+document.getElementById("clearCartBtn").addEventListener("click",clearCart);
+document.getElementById("placeOrderBtn").addEventListener("click",openOrderConfirm);
+document.getElementById("cancelOrderConfirmBtn").addEventListener("click",closeOrderConfirm);
+document.getElementById("confirmOrderBtn").addEventListener("click",confirmOrderAndGo);
+document.getElementById("orderConfirmModal").addEventListener("click",(event)=>{
+  if(event.target.id === "orderConfirmModal") closeOrderConfirm();
+});
+document.addEventListener("keydown",(event)=>{
+  if(event.key === "Escape"){
+    closeOrderConfirm();
+    closeCartDrawer();
+  }
+});
+document.getElementById("deliverySlot").addEventListener("change",storeCheckoutMeta);
+document.getElementById("paymentMethod").addEventListener("change",storeCheckoutMeta);
+document.getElementById("showcasePrev").addEventListener("click",()=>{
+  showBanner(currentBannerIndex - 1);
+  startBannerAutoplay();
+});
+document.getElementById("showcaseNext").addEventListener("click",()=>{
+  showBanner(currentBannerIndex + 1);
+  startBannerAutoplay();
+});
+document.getElementById("showcase").addEventListener("mouseenter",stopBannerAutoplay);
+document.getElementById("showcase").addEventListener("mouseleave",startBannerAutoplay);
+
+window.addToCart = addToCart;
+window.updateCartItem = updateCartItem;
+window.setCategoryChip = setCategoryChip;
+window.showBanner = showBanner;
+window.scrollToBannerTarget = scrollToBannerTarget;
+window.openCartDrawer = openCartDrawer;
+window.scrollDeals = scrollDeals;
+
+renderCart();
+loadHomeBanners();
+loadProducts();
 </script>
 </body>
 </html>
