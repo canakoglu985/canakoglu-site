@@ -71,6 +71,7 @@
     .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
     .primary{background:var(--orange-gradient);color:#fff;box-shadow:0 10px 20px rgba(244,154,39,.22)}
     .secondary{background:#edf4fb;color:var(--navy);border:1px solid var(--border)}
+    .whatsapp{background:#24d366;color:#fff;box-shadow:0 10px 20px rgba(36,211,102,.22)}
     .cart-trigger{min-width:170px}
     .cart-count{
       min-width:22px;
@@ -548,6 +549,7 @@
       </select>
 
       <button id="placeOrderBtn" class="btn primary" type="button">Siparişe Geç</button>
+      <button id="whatsappOrderBtn" class="btn whatsapp" type="button">WhatsApp ile Gönder</button>
       <button id="clearCartBtn" class="btn secondary" type="button">Sepeti Temizle</button>
     </div>
   </section>
@@ -575,6 +577,7 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const CART_KEY = "canakoglu_cart_v1";
 const CHECKOUT_META_KEY = "canakoglu_checkout_meta_v1";
 const HOME_BANNER_KEY = "home_banner_v1";
+const WHATSAPP_NUMBER = "905518857099";
 
 const DEFAULT_HOME_BANNERS = {
   note: "Siparişini oluştur, ürünlerini seç, hesabından hızlıca tamamla.",
@@ -962,6 +965,36 @@ function confirmOrderAndGo(){
   storeCheckoutMeta();
   window.location.href = "hesap.html?redirect=order";
 }
+function openWhatsAppOrder(){
+  if(!cart.length){
+    alert("Sepet boş.");
+    return;
+  }
+
+  storeCheckoutMeta();
+
+  const meta = JSON.parse(localStorage.getItem(CHECKOUT_META_KEY) || "{}");
+  const totals = orderTotals();
+
+  const productLines = cart.map((item) => {
+    const lineTotal = Number(item.price || 0) * Number(item.quantity || 0);
+    return `- ${item.name} x ${item.quantity} ${item.unit || "adet"} = ${money(lineTotal)}`;
+  }).join("\n");
+
+  const message =
+`Merhaba, sipariş vermek istiyorum.
+
+Sipariş:
+${productLines}
+
+Teslimat Saati: ${meta.delivery_slot || "Hemen"}
+Ödeme: ${meta.payment_method || "Kapıda Nakit"}
+
+Toplam: ${money(totals.grandTotal)}`;
+
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank");
+}
 function guessBannerHref(slide = {}){
   const blob = `${slide.title || ""} ${slide.subtitle || ""} ${slide.button || ""}`.toLocaleLowerCase("tr-TR");
   if(blob.includes("hesap")) return "hesap.html";
@@ -1100,6 +1133,7 @@ document.getElementById("closeCartBtn").addEventListener("click", closeCartDrawe
 document.getElementById("cartDrawerBackdrop").addEventListener("click", closeCartDrawer);
 document.getElementById("clearCartBtn").addEventListener("click", clearCart);
 document.getElementById("placeOrderBtn").addEventListener("click", openOrderConfirm);
+document.getElementById("whatsappOrderBtn").addEventListener("click", openWhatsAppOrder);
 document.getElementById("cancelOrderConfirmBtn").addEventListener("click", closeOrderConfirm);
 document.getElementById("confirmOrderBtn").addEventListener("click", confirmOrderAndGo);
 document.getElementById("orderConfirmModal").addEventListener("click", (event) => {
